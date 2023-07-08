@@ -11,7 +11,7 @@ add_to_file_if_not_present() {
 
 # Función para buscar el dispositivo GPU
 search_gpu_device() {
-    echo "Por favor, introduce el nombre del dispositivo que estás buscando:"
+    echo "Por favor, introduce el nombre del dispositivo que estás buscando (ejemplo: GTX 1080):"
     read dispositivo
     lspci -v | grep -i "$dispositivo"
 }
