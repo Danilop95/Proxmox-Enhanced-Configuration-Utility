@@ -54,17 +54,14 @@ modify_sources_list() {
     echo -e "${BLUE}| Modificando el archivo sources.list          |${NC}"
     echo -e "${BLUE}===============================================${NC}"
     
-    # Borrar el contenido actual del archivo
-    sudo echo "" > "/etc/apt/sources.list"
-
-    # Añadir las entradas al archivo
-    echo "deb http://download.proxmox.com/debian/pve bookworm pve-no-subscription" | sudo tee -a "/etc/apt/sources.list"
-    echo "deb http://download.proxmox.com/debian/ceph-quincy bookworm no-subscription" | sudo tee -a "/etc/apt/sources.list"
-
-    # Eliminar el directorio de repositorio Enterprise si existe
-    if [ -d /etc/apt/sources.list.d/ ]; then
-        sudo rm -rf /etc/apt/sources.list.d/
-    fi
+    # Agregar repositorios de Debian
+    echo "deb http://ftp.debian.org/debian bullseye main contrib" | sudo tee -a "/etc/apt/sources.list"
+    echo "deb http://ftp.debian.org/debian bullseye-updates main contrib" | sudo tee -a "/etc/apt/sources.list"
+    echo "deb http://security.debian.org/debian-security bullseye-security main contrib" | sudo tee -a "/etc/apt/sources.list"
+    
+    # Agregar repositorio de Proxmox VE
+    echo "# PVE pve-no-subscription repository provided by proxmox.com, NOT recommended for production use" | sudo tee -a "/etc/apt/sources.list"
+    echo "deb http://download.proxmox.com/debian/pve bullseye pve-no-subscription" | sudo tee -a "/etc/apt/sources.list"
 
     echo -e "${GREEN}Archivo sources.list modificado.${NC}"
 }
@@ -86,7 +83,7 @@ ask_continue "Instalar herramientas necesarias." || exit
 
 # Instalar herramientas necesarias
 echo -e "${GREEN}Instalando herramientas necesarias...${NC}"
-sudo apt -y install git build-essential dkms
+sudo apt -y install build-essential dkms
 ask_continue "Clonar repositorios necesarios." || exit
 
 # Clonar repositorios necesarios
