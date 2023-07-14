@@ -31,18 +31,6 @@ verify_iommu() {
     dmesg | grep -e DMAR -e IOMMU
 }
 
-# Función para verificar si se admite el remapeo de interrupciones
-verify_interrupt_remap() {
-    echo "Verificando si el remapeo de interrupciones está habilitado..."
-    dmesg | grep 'remapping'
-}
-
-# Función para verificar el aislamiento de IOMMU
-verify_iommu_isolation() {
-    echo "Verificando el aislamiento de IOMMU..."
-    pvesh get /nodes/{nodename}/hardware/pci --pci-class-blacklist ""
-}
-
 # Función para agregar opciones de MSI a la configuración de audio
 add_msi_options() {
     echo "Agregando opciones de MSI para dispositivos de audio..."
@@ -63,19 +51,25 @@ ask_reboot() {
     esac
 }
 
+# Función para aplicar la configuración del kernel
+apply_kernel_config() {
+    echo "Aplicando configuración del kernel..."
+    sudo update-initramfs -u -k all
+}
+
 # Script principal
 
-# 1. Selección de CPU
+# Habilitar IOMMU en GRUB
 echo "Seleccione el tipo de su CPU (1 para Intel, 2 para AMD):"
 select CPU_TYPE in Intel AMD
 do
     case $CPU_TYPE in
         Intel)
-            sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="quiet intel_iommu=on"/' /etc/default/grub
+            sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="quiet intel_iommu=on iommu=pt"/' /etc/default/grub
             break
             ;;
         AMD)
-            sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="quiet amd_iommu=on"/' /etc/default/grub
+            sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="quiet amd_iommu=on iommu=pt"/' /etc/default/grub
             break
             ;;
         *)
@@ -85,31 +79,29 @@ do
 done
 sudo update-grub
 
-# Añadiendo módulos
+# Añadir módulos requeridos
 add_to_file_if_not_present "/etc/modules" "vfio"
 add_to_file_if_not_present "/etc/modules" "vfio_iommu_type1"
 add_to_file_if_not_present "/etc/modules" "vfio_pci"
 add_to_file_if_not_present "/etc/modules" "vfio_virqfd"
 
-# Configurando opciones de VFIO e IOMMU
+# Añadir opciones de VFIO e IOMMU
 add_to_file_if_not_present "/etc/modprobe.d/iommu_unsafe_interrupts.conf" "options vfio_iommu_type1 allow_unsafe_interrupts=1"
 add_to_file_if_not_present "/etc/modprobe.d/kvm.conf" "options kvm ignore_msrs=1"
 
-# Añadiendo controladores a la lista negra
+# Añadir controladores a la lista negra
 add_to_file_if_not_present "/etc/modprobe.d/blacklist.conf" "blacklist radeon"
 add_to_file_if_not_present "/etc/modprobe.d/blacklist.conf" "blacklist nouveau"
 add_to_file_if_not_present "/etc/modprobe.d/blacklist.conf" "blacklist nvidia"
 
-# Buscando GPU y leyendo su ID
+# Buscar GPU y leer su ID
 search_gpu_device
 read_gpu_id
 add_to_file_if_not_present "/etc/modprobe.d/vfio.conf" "options vfio-pci ids=$GPU_VENDOR_ID disable_vga=1"
 
-sudo update-initramfs -u
+apply_kernel_config
 
 verify_iommu
-verify_interrupt_remap
-verify_iommu_isolation
 add_msi_options
 
 ask_reboot
