@@ -1,15 +1,28 @@
 #!/bin/bash
 
-# Función para ejecutar el script Repositorios...sh
+# Verificar si se está ejecutando como administrador
+if [[ $EUID -ne 0 ]]; then
+    echo "Este script debe ser ejecutado como administrador."
+    exit 1
+fi
+
+# Función para ejecutar el script Repositorios-sources_list.sh
 function ejecutar_menu() {
-    echo "Ejecutando el script Menu.sh..."
+    echo "Ejecutando el script Repositorios-sources_list.sh..."
     bash /ruta/a/Proxmox-local/Scripts/Repositorios-sources_list.sh
 }
 
 # Función para ejecutar el script Generico.sh
 function ejecutar_generico() {
     echo "Ejecutando el script Generico.sh..."
-    bash /Scripts/GPU-Passthrough/Generico.sh
+    bash /ruta/a/Proxmox-local/Scripts/GPU-Passthrough/Generico.sh
+}
+
+# Asignar permisos de ejecución a los scripts necesarios
+function asignar_permisos() {
+    echo "Asignando permisos de ejecución a los scripts..."
+    chmod +x /ruta/a/Proxmox-local/Scripts/Repositorios-sources_list.sh
+    chmod +x /ruta/a/Proxmox-local/Scripts/GPU-Passthrough/Generico.sh
 }
 
 # Mostrar el menú de selección
@@ -33,9 +46,11 @@ while true; do
     # Evaluar la opción seleccionada
     case $opcion in
         1)
+            asignar_permisos
             ejecutar_menu
             ;;
         2)
+            asignar_permisos
             ejecutar_generico
             ;;
         0)
