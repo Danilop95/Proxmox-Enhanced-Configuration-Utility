@@ -4,6 +4,7 @@
 RED='\e[0;31m'
 GREEN='\e[0;32m'
 BLUE='\e[0;34m'
+YELLOW='\e[0;33m'
 NC='\e[0m' # No Color
 
 # Ruta del directorio de backup
@@ -129,6 +130,7 @@ line_exists() {
 
 # Función para modificar el archivo sources.list
 modify_sources_list() {
+    rm -r /etc/apt/sources.list.d/* &&
     echo -e "${BLUE}=================================================${NC}"
     echo -e "${BLUE}| Modificando el archivo sources.list            |${NC}"
     echo -e "${BLUE}=================================================${NC}"
@@ -155,18 +157,106 @@ modify_sources_list() {
     fi
 }
 
-# Ejecutar las funciones
-select_option() {
+# Función para agregar opciones de MSI al archivo de configuración de audio
+add_msi_options() {
+    echo -e "${BLUE}=================================================${NC}"
+    echo -e "${BLUE}| Agregando opciones de MSI para audio           |${NC}"
+    echo -e "${BLUE}=================================================${NC}"
+    add_to_file_if_not_present "/etc/modprobe.d/snd-hda-intel.conf" "options snd-hda-intel enable_msi=1"
+    echo -e "${GREEN}Opciones de MSI agregadas.${NC}"
+}
+
+# Función para verificar si IOMMU está habilitado
+verify_iommu() {
+    echo -e "${BLUE}=================================================${NC}"
+    echo -e "${BLUE}| Verificando si IOMMU está habilitado           |${NC}"
+    echo -e "${BLUE}=================================================${NC}"
+    dmesg | grep -e DMAR -e IOMMU
+}
+
+# Función para aplicar la configuración del kernel
+apply_kernel_config() {
+    echo -e "${BLUE}=================================================${NC}"
+    echo -e "${BLUE}| Aplicando configuración del kernel             |${NC}"
+    echo -e "${BLUE}=================================================${NC}"
+    sudo update-initramfs -u -k all
+    echo -e "${GREEN}Configuración del kernel aplicada.${NC}"
+}
+
+# Función para preguntar si se quiere reiniciar
+ask_reboot() {
+    echo -e "${BLUE}=================================================${NC}"
+    echo -n -e "${BLUE}¿Quieres reiniciar ahora?${NC} (s/n): "
+    read answer
+    case $answer in
+        [sS])
+            echo -e "${BLUE}Reiniciando el sistema...${NC}"
+            sudo reboot
+            ;;
+        *)
+            echo -e "${BLUE}Por favor, recuerda reiniciar el sistema manualmente.${NC}"
+            ;;
+    esac
+}
+
+# Función para agregar una entrada a un archivo si no está presente
+add_to_file_if_not_present() {
+    local filename="$1"
+    local entry="$2"
+    if ! grep -Fxq "$entry" "$filename"; then
+        echo "$entry" | sudo tee -a "$filename"
+    fi
+}
+
+# Función para buscar el dispositivo GPU
+search_gpu_device() {
+    echo -e "${BLUE}Por favor, introduce el nombre del dispositivo que estás buscando (ejemplo: GTX 1080):${NC}"
+    read dispositivo
+    lspci -v | grep -i "$dispositivo"
+}
+
+# Función para leer el ID del GPU
+read_gpu_id() {
+    echo -e "${BLUE}Ingrese la ID del dispositivo de video (formato xx:xx.x):${NC}"
+    read GPU_ID
+    echo -e "${BLUE}Obteniendo la ID de su GPU:${NC}"
+    GPU_VENDOR_ID=$(lspci -n -s "$GPU_ID" | awk '{print $3}')
+    echo $GPU_VENDOR_ID
+}
+
+# Función para configurar el passthrough de GPU
+configure_gpu_passthrough() {
+    echo -e "${BLUE}=================================================${NC}"
+    echo -e "${BLUE}|        Configuración GPU Passthrough           |${NC}"
+    echo -e "${BLUE}=================================================${NC}"
+
+    # Buscar GPU y leer su ID
+    search_gpu_device
+    read_gpu_id
+
+    # Añadir controladores a la lista negra
+    add_to_file_if_not_present "/etc/modprobe.d/blacklist.conf" "blacklist nouveau"
+    add_to_file_if_not_present "/etc/modprobe.d/blacklist.conf" "blacklist nvidia"
+
+    # Agregar opciones de VFIO e IOMMU
+    add_to_file_if_not_present "/etc/modprobe.d/vfio.conf" "options vfio-pci ids=$GPU_VENDOR_ID disable_vga=1"
+
+    apply_kernel_config
+
+    ask_reboot
+}
+
+# Función principal del script
+main() {
     while true; do
         clear
         echo -e "${BLUE}=================================================${NC}"
         echo -e "${BLUE}|           Menú de Opciones                    |${NC}"
         echo -e "${BLUE}=================================================${NC}"
         echo -e "${BLUE} 1) Instalación de dependencias${NC}"
-        echo -e "${BLUE} 2) Preparación GPU-Pastrought${NC}"
-        echo -e "${BLUE} 5) Salir${NC}"
+        echo -e "${BLUE} 2) Configuración GPU Passthrough${NC}"
+        echo -e "${BLUE} 3) Salir${NC}"
         echo -e "${BLUE}=================================================${NC}"
-
         read -p "$(echo -e ${BLUE}Selecciona una opción:${NC} )" option
 
         case $option in
@@ -174,7 +264,7 @@ select_option() {
                 while true; do
                     clear
                     echo -e "${BLUE}=================================================${NC}"
-                    echo -e "${BLUE}|           Menú de Opciones (Dependencias)      |${NC}"
+                    echo -e "${BLUE}|    Menú de Opciones (Instalación dependencias) |${NC}"
                     echo -e "${BLUE}=================================================${NC}"
                     echo -e "${BLUE} 1) Hacer una copia de seguridad de sources.list${NC}"
                     echo -e "${BLUE} 2) Recuperar una copia anterior de sources.list${NC}"
@@ -182,7 +272,6 @@ select_option() {
                     echo -e "${BLUE} 4) Abrir sources.list con nano${NC}"
                     echo -e "${BLUE} 5) Volver al menú principal${NC}"
                     echo -e "${BLUE}=================================================${NC}"
-
                     read -p "$(echo -e ${BLUE}Selecciona una opción:${NC} )" option_deps
 
                     case $option_deps in
@@ -207,14 +296,15 @@ select_option() {
                             ;;
                         *)
                             echo -e "${RED}Opción inválida.${NC}"
+                            sleep 2
                             ;;
                     esac
                 done
                 ;;
             2)
-                # Colocar el código para la opción 2 (Preparación GPU-Pastrought) aquí
+                configure_gpu_passthrough
                 ;;
-            5)
+            3)
                 exit
                 ;;
             *)
@@ -224,5 +314,5 @@ select_option() {
     done
 }
 
-# Ejecutar el menú principal
-select_option
+# Ejecutar el script
+main
