@@ -21,8 +21,8 @@ function ejecutar_generico() {
 # Asignar permisos de ejecución a los scripts necesarios
 function asignar_permisos() {
     echo "Asignando permisos de ejecución a los scripts..."
-    chmod +x /ruta/a/Proxmox-local/Scripts/Repositorios-sources_list.sh
-    chmod +x /ruta/a/Proxmox-local/Scripts/GPU-Passthrough/Generico.sh
+    chmod +x Proxmox-local/Scripts/Repositorios-sources_list.sh
+    chmod +x Proxmox-local/Scripts/GPU-Passthrough/Generico.sh
 }
 
 # Mostrar el menú de selección
