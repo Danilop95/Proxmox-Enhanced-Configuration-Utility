@@ -1,76 +1,13 @@
 #!/bin/bash
 
-# Verificar si se está ejecutando como administrador
-if [[ $EUID -ne 0 ]]; then
-    echo "Este script debe ser ejecutado como administrador."
-    exit 1
-fi
-
-# Función para ejecutar el script Repositorios-sources_list.sh
-function ejecutar_menu() {
-    echo "Ejecutando el script Repositorios-sources_list.sh..."
-    bash Proxmox-local/Scripts/Repositorios-sources_list.sh
-}
-
-# Función para ejecutar el script Generico.sh
-function ejecutar_generico() {
-    echo "Ejecutando el script Generico.sh..."
-    bash Proxmox-local/Scripts/GPU-Passthrough/Generico.sh
-}
-
-# Asignar permisos de ejecución a los scripts necesarios
-function asignar_permisos() {
-    echo "Asignando permisos de ejecución a los scripts..."
-    chmod +x Proxmox-local/Scripts/Repositorios-sources_list.sh
-    chmod +x Proxmox-local/Scripts/GPU-Passthrough/Generico.sh
-}
-
-# Mostrar el menú de selección
-function mostrar_menu() {
-    clear
-    echo "Menú de selección:"
-    echo "1. Instalar repositorios Proxmox"
-    echo "2. Instalar y configurar GPU-Passthrough"
-    echo "0. Salir"
-    echo ""
-}
-
-# Bucle principal
-while true; do
-    mostrar_menu
-
-    # Leer la opción seleccionada
-    read -p "Ingrese el número de opción: " opcion
-    echo ""
-
-    # Evaluar la opción seleccionada
-    case $opcion in
-        1)
-            asignar_permisos
-            ejecutar_menu
-            ;;
-        2)
-            asignar_permisos
-            ejecutar_generico
-            ;;
-        0)
-            echo "Saliendo..."
-            exit 0
-            ;;
-        *)
-            echo "Opción inválida. Por favor, ingrese un número de opción válido."
-            ;;
-    esac
-
-    # Pausa antes de volver a mostrar el menú
-    read -p "Presione Enter para continuar..."
-done
-
 # Colores
 RED='\e[0;31m'
 GREEN='\e[0;32m'
 BLUE='\e[0;34m'
 NC='\e[0m' # No Color
+
+# Ruta del directorio de backup
+BACKUP_DIR="$(dirname "$0")/backup-script"
 
 # Comprobar si el usuario es root
 if [[ $EUID -ne 0 ]]; then
@@ -92,7 +29,8 @@ ask_continue() {
     echo -e "${BLUE}=================================================${NC}"
     echo -e "${GREEN}$1${NC}"
     echo -e "${BLUE}-------------------------------------------------${NC}"
-    read -p "$(echo -e ${BLUE}¿Deseas continuar?${NC} (y/n) )" answer
+    echo -n -e "${BLUE}¿Deseas continuar?${NC} (y/n): "
+    read answer
     case $answer in
         [yY])
             echo -e "${BLUE}Continuando...${NC}"
@@ -109,174 +47,182 @@ backup_file() {
     echo -e "${BLUE}=================================================${NC}"
     echo -e "${BLUE}| Creando una copia de seguridad de sources.list |${NC}"
     echo -e "${BLUE}=================================================${NC}"
-    backup_filename="/etc/apt/sources.list.bak_$(date +%Y%m%d_%H%M%S)"
+
+    # Verificar si el directorio de backup existe
+    if [[ ! -d "$BACKUP_DIR" ]]; then
+        mkdir -p "$BACKUP_DIR"
+        echo -e "${GREEN}Directorio de backup creado en $BACKUP_DIR.${NC}"
+    fi
+
+    # Limitar el número máximo de backups a 5
+    backup_files=("${BACKUP_DIR}/sources.list.bak_"*)
+    if [[ ${#backup_files[@]} -ge 5 ]]; then
+        echo -e "${BLUE}El número máximo de backups ha sido alcanzado. Elimina algunos backups para hacer nuevos.${NC}"
+        return 1
+    fi
+
+    backup_filename="${BACKUP_DIR}/sources.list.bak_$(date +%Y%m%d_%H%M%S)"
     sudo cp "/etc/apt/sources.list" "$backup_filename"
     echo -e "${GREEN}Copia de seguridad creada en $backup_filename.${NC}"
 }
 
-# Función para modificar el archivo sources.list
-modify_sources_list() {
-    echo -e "${BLUE}===============================================${NC}"
-    echo -e "${BLUE}| Modificando el archivo sources.list          |${NC}"
-    echo -e "${BLUE}===============================================${NC}"
-    
-    # Agregar repositorios de Debian
-    echo "deb http://ftp.debian.org/debian bullseye main contrib" | sudo tee -a "/etc/apt/sources.list"
-    echo "deb http://ftp.debian.org/debian bullseye-updates main contrib" | sudo tee -a "/etc/apt/sources.list"
-    echo "deb http://security.debian.org/debian-security bullseye-security main contrib" | sudo tee -a "/etc/apt/sources.list"
-    
-    # Agregar repositorio de Proxmox VE
-    echo "# PVE pve-no-subscription repository provided by proxmox.com, NOT recommended for production use" | sudo tee -a "/etc/apt/sources.list"
-    echo "deb http://download.proxmox.com/debian/pve bullseye pve-no-subscription" | sudo tee -a "/etc/apt/sources.list"
+# Función para recuperar una copia anterior del archivo
+restore_backup() {
+    echo -e "${BLUE}=================================================${NC}"
+    echo -e "${BLUE}| Recuperando una copia anterior de sources.list |${NC}"
+    echo -e "${BLUE}=================================================${NC}"
+    backup_files=("${BACKUP_DIR}/sources.list.bak_"*)
 
-    echo -e "${GREEN}Archivo sources.list modificado.${NC}"
-}
+    if [[ ${#backup_files[@]} -eq 0 ]]; then
+        echo -e "${RED}No hay copias de seguridad disponibles.${NC}"
+        return 1
+    fi
 
-# Ejecutar las funciones
-ask_continue "Hacer una copia de seguridad de tu archivo sources.list." && backup_file
-ask_continue "Modificar el archivo sources.list." && modify_sources_list
+    echo -e "${BLUE}Seleccione una copia de seguridad para restaurar:${NC}"
+    for ((i=0; i<${#backup_files[@]}; i++)); do
+        echo -e "${BLUE} $((i+1)))${NC} ${backup_files[$i]}"
+    done
 
-# Continuar con la instalación de dependencias
-echo -e "${BLUE}===============================================${NC}"
-echo -e "${BLUE}|       Instalación de dependencias           |${NC}"
-echo -e "${BLUE}===============================================${NC}"
-ask_continue "Actualizar el sistema." || exit
+    read -p "$(echo -e ${BLUE}Ingresa el número de la copia de seguridad:${NC} )" backup_number
 
-# Actualizar el sistema
-echo -e "${GREEN}Actualizando el sistema...${NC}"
-sudo apt update && sudo apt -y upgrade
-ask_continue "Instalar herramientas necesarias." || exit
+    # Verificar si el número de backup es válido
+    if ! [[ "$backup_number" =~ ^[1-5]$ ]]; then
+        echo -e "${RED}Opción inválida.${NC}"
+        return 1
+    fi
 
-# Instalar herramientas necesarias
-echo -e "${GREEN}Instalando herramientas necesarias...${NC}"
-sudo apt -y install build-essential dkms
-ask_continue "Clonar repositorios necesarios." || exit
-
-# Clonar repositorios necesarios
-echo -e "${GREEN}Clonando repositorios necesarios...${NC}"
-git clone https://github.com/DualCoder/vgpu_unlock
-git clone https://github.com/mbilker/vgpu_unlock-rs
-ask_continue "Instalar Rust." || exit
-
-# Instalar Rust
-echo -e "${GREEN}Instalando Rust...${NC}"
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-ask_continue "Descargar e instalar los encabezados de Proxmox VE." || exit
-
-# Descargar e instalar los encabezados de Proxmox VE
-echo -e "${GREEN}Descargando e instalar los encabezados de Proxmox VE...${NC}"
-wget http://download.proxmox.com/debian/dists/bullseye/pve-no-subscription/binary-amd64/pve-headers-5.15.30-2-pve_5.15.30-3_amd64.deb
-sudo dpkg -i pve-headers-5.15.30-2-pve_5.15.30-3_amd64.deb
-
-# Informar al usuario sobre la necesidad de descargar manualmente el controlador de nVidia vGPU
-echo -e "${BLUE}=================================================${NC}"
-echo -e "${BLUE}| Siguiente paso:                             |${NC}"
-echo -e "${BLUE}=================================================${NC}"
-echo -e "${GREEN}Descargue el controlador v14.0 nVidia vGPU para Linux KVM desde https://nvid.nvidia.com${NC}"
-echo -e "${GREEN}Necesitará solicitar acceso y registrarse para descargar.${NC}"
-echo -e "${GREEN}Después de descargar el controlador, desempaquete e instálelo manualmente.${NC}"
-echo -e "${GREEN}Por favor, reinicie su sistema después de la instalación.${NC}"
-
-# Función para agregar una entrada a un archivo si no está presente
-add_to_file_if_not_present() {
-    local filename="$1"
-    local entry="$2"
-    if ! grep -Fxq "$entry" "$filename"; then
-        echo "$entry" | sudo tee -a "$filename"
+    backup_file="${backup_files[$((backup_number-1))]}"
+    if [[ -f "$backup_file" ]]; then
+        echo -e "${BLUE}Vista previa del archivo de backup:${NC}"
+        echo "-----------------------------------------"
+        cat "$backup_file"
+        echo "-----------------------------------------"
+        echo -n -e "${BLUE}¿Deseas restaurar esta copia de seguridad?${NC} (y/n): "
+        read answer
+        case $answer in
+            [yY])
+                sudo cp "$backup_file" "/etc/apt/sources.list"
+                echo -e "${GREEN}Copia de seguridad restaurada.${NC}"
+                ;;
+            *)
+                echo -e "${RED}Operación cancelada.${NC}"
+                ;;
+        esac
+    else
+        echo -e "${RED}El archivo de backup no existe.${NC}"
     fi
 }
 
-# Función para buscar el dispositivo GPU
-search_gpu_device() {
-    echo "Por favor, introduce el nombre del dispositivo que estás buscando (ejemplo: GTX 1080):"
-    read dispositivo
-    lspci -v | grep -i "$dispositivo"
+# Función para abrir el archivo sources.list con nano
+open_sources_list() {
+    echo -e "${BLUE}=================================================${NC}"
+    echo -e "${BLUE}| Abriendo el archivo sources.list con nano      |${NC}"
+    echo -e "${BLUE}=================================================${NC}"
+    sudo nano "/etc/apt/sources.list"
 }
 
-# Función para leer el ID del GPU
-read_gpu_id() {
-    echo "Ingrese la ID del dispositivo de video (formato xx:xx.x):"
-    read GPU_ID
-    echo "Obteniendo la ID de su GPU:"
-    GPU_VENDOR_ID=$(lspci -n -s "$GPU_ID" | awk '{print $3}')
-    echo $GPU_VENDOR_ID
+# Función para verificar si una línea existe en el archivo sources.list
+line_exists() {
+    local line="$1"
+    grep -Fxq "$line" "/etc/apt/sources.list"
 }
 
-# Función para verificar si IOMMU está habilitado
-verify_iommu() {
-    echo "Verificando si IOMMU está habilitado..."
-    dmesg | grep -e DMAR -e IOMMU
+# Función para modificar el archivo sources.list
+modify_sources_list() {
+    echo -e "${BLUE}=================================================${NC}"
+    echo -e "${BLUE}| Modificando el archivo sources.list            |${NC}"
+    echo -e "${BLUE}=================================================${NC}"
+
+    # Verificar si las líneas ya existen antes de agregarlas
+    if line_exists "deb http://ftp.debian.org/debian bullseye main contrib" && \
+       line_exists "deb http://ftp.debian.org/debian bullseye-updates main contrib" && \
+       line_exists "deb http://security.debian.org/debian-security bullseye-security main contrib" && \
+       line_exists "# PVE pve-no-subscription repository provided by proxmox.com, NOT recommended for production use" && \
+       line_exists "deb http://download.proxmox.com/debian/pve bullseye pve-no-subscription"
+    then
+        echo -e "${GREEN}El archivo sources.list ya contiene las modificaciones.${NC}"
+    else
+        # Agregar repositorios de Debian
+        echo "deb http://ftp.debian.org/debian bullseye main contrib" | sudo tee -a "/etc/apt/sources.list"
+        echo "deb http://ftp.debian.org/debian bullseye-updates main contrib" | sudo tee -a "/etc/apt/sources.list"
+        echo "deb http://security.debian.org/debian-security bullseye-security main contrib" | sudo tee -a "/etc/apt/sources.list"
+
+        # Agregar repositorio de Proxmox VE
+        echo "# PVE pve-no-subscription repository provided by proxmox.com, NOT recommended for production use" | sudo tee -a "/etc/apt/sources.list"
+        echo "deb http://download.proxmox.com/debian/pve bullseye pve-no-subscription" | sudo tee -a "/etc/apt/sources.list"
+
+        echo -e "${GREEN}Archivo sources.list modificado.${NC}"
+    fi
 }
 
-# Función para agregar opciones de MSI a la configuración de audio
-add_msi_options() {
-    echo "Agregando opciones de MSI para dispositivos de audio..."
-    add_to_file_if_not_present "/etc/modprobe.d/snd-hda-intel.conf" "options snd-hda-intel enable_msi=1"
+# Ejecutar las funciones
+select_option() {
+    while true; do
+        clear
+        echo -e "${BLUE}=================================================${NC}"
+        echo -e "${BLUE}|           Menú de Opciones                    |${NC}"
+        echo -e "${BLUE}=================================================${NC}"
+        echo -e "${BLUE} 1) Instalación de dependencias${NC}"
+        echo -e "${BLUE} 2) Preparación GPU-Pastrought${NC}"
+        echo -e "${BLUE} 5) Salir${NC}"
+        echo -e "${BLUE}=================================================${NC}"
+
+        read -p "$(echo -e ${BLUE}Selecciona una opción:${NC} )" option
+
+        case $option in
+            1)
+                while true; do
+                    clear
+                    echo -e "${BLUE}=================================================${NC}"
+                    echo -e "${BLUE}|           Menú de Opciones (Dependencias)      |${NC}"
+                    echo -e "${BLUE}=================================================${NC}"
+                    echo -e "${BLUE} 1) Hacer una copia de seguridad de sources.list${NC}"
+                    echo -e "${BLUE} 2) Recuperar una copia anterior de sources.list${NC}"
+                    echo -e "${BLUE} 3) Modificar archivo sources.list${NC}"
+                    echo -e "${BLUE} 4) Abrir sources.list con nano${NC}"
+                    echo -e "${BLUE} 5) Volver al menú principal${NC}"
+                    echo -e "${BLUE}=================================================${NC}"
+
+                    read -p "$(echo -e ${BLUE}Selecciona una opción:${NC} )" option_deps
+
+                    case $option_deps in
+                        1)
+                            backup_file
+                            sleep 2
+                            ;;
+                        2)
+                            restore_backup
+                            sleep 2
+                            ;;
+                        3)
+                            modify_sources_list
+                            sleep 2
+                            ;;
+                        4)
+                            open_sources_list
+                            sleep 2
+                            ;;
+                        5)
+                            break
+                            ;;
+                        *)
+                            echo -e "${RED}Opción inválida.${NC}"
+                            ;;
+                    esac
+                done
+                ;;
+            2)
+                # Colocar el código para la opción 2 (Preparación GPU-Pastrought) aquí
+                ;;
+            5)
+                exit
+                ;;
+            *)
+                echo -e "${RED}Opción inválida.${NC}"
+                ;;
+        esac
+    done
 }
 
-# Función para preguntar si se quiere reiniciar
-ask_reboot() {
-    read -p "¿Quieres reiniciar ahora? (s/n) " RESPUESTA
-    case $RESPUESTA in
-        [sS])
-            echo "Reiniciando el sistema..."
-            sudo reboot
-            ;;
-        *)
-            echo "Por favor, recuerda reiniciar el sistema manualmente."
-            ;;
-    esac
-}
-
-# Función para aplicar la configuración del kernel
-apply_kernel_config() {
-    echo "Aplicando configuración del kernel..."
-    sudo update-initramfs -u -k all
-}
-
-# Habilitar IOMMU en GRUB
-echo "Seleccione el tipo de su CPU (1 para Intel, 2 para AMD):"
-select CPU_TYPE in Intel AMD
-do
-    case $CPU_TYPE in
-        Intel)
-            sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="quiet intel_iommu=on iommu=pt"/' /etc/default/grub
-            break
-            ;;
-        AMD)
-            sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="quiet amd_iommu=on iommu=pt"/' /etc/default/grub
-            break
-            ;;
-        *)
-            echo "Por favor, seleccione 1 o 2."
-            ;;
-    esac
-done
-sudo update-grub
-
-# Añadir módulos requeridos
-add_to_file_if_not_present "/etc/modules" "vfio"
-add_to_file_if_not_present "/etc/modules" "vfio_iommu_type1"
-add_to_file_if_not_present "/etc/modules" "vfio_pci"
-add_to_file_if_not_present "/etc/modules" "vfio_virqfd"
-
-# Añadir opciones de VFIO e IOMMU
-add_to_file_if_not_present "/etc/modprobe.d/iommu_unsafe_interrupts.conf" "options vfio_iommu_type1 allow_unsafe_interrupts=1"
-add_to_file_if_not_present "/etc/modprobe.d/kvm.conf" "options kvm ignore_msrs=1"
-
-# Añadir controladores a la lista negra
-add_to_file_if_not_present "/etc/modprobe.d/blacklist.conf" "blacklist radeon"
-add_to_file_if_not_present "/etc/modprobe.d/blacklist.conf" "blacklist nouveau"
-add_to_file_if_not_present "/etc/modprobe.d/blacklist.conf" "blacklist nvidia"
-
-# Buscar GPU y leer su ID
-search_gpu_device
-read_gpu_id
-add_to_file_if_not_present "/etc/modprobe.d/vfio.conf" "options vfio-pci ids=$GPU_VENDOR_ID disable_vga=1"
-
-apply_kernel_config
-
-verify_iommu
-add_msi_options
-
-ask_reboot
+# Ejecutar el menú principal
+select_option
