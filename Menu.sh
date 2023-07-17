@@ -9,13 +9,13 @@ fi
 # Función para ejecutar el script Repositorios-sources_list.sh
 function ejecutar_menu() {
     echo "Ejecutando el script Repositorios-sources_list.sh..."
-    bash /ruta/a/Proxmox-local/Scripts/Repositorios-sources_list.sh
+    bash Proxmox-local/Scripts/Repositorios-sources_list.sh
 }
 
 # Función para ejecutar el script Generico.sh
 function ejecutar_generico() {
     echo "Ejecutando el script Generico.sh..."
-    bash /ruta/a/Proxmox-local/Scripts/GPU-Passthrough/Generico.sh
+    bash Proxmox-local/Scripts/GPU-Passthrough/Generico.sh
 }
 
 # Asignar permisos de ejecución a los scripts necesarios
