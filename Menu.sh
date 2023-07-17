@@ -1,23 +1,23 @@
 #!/bin/bash
 
-# Función para ejecutar el script Menu.sh
+# Función para ejecutar el script Repositorios...sh
 function ejecutar_menu() {
     echo "Ejecutando el script Menu.sh..."
-    bash /ruta/a/Proxmox-local/Scripts/Menu.sh
+    bash /ruta/a/Proxmox-local/Scripts/Repositorios-sources_list.sh
 }
 
 # Función para ejecutar el script Generico.sh
 function ejecutar_generico() {
     echo "Ejecutando el script Generico.sh..."
-    bash /ruta/a/Proxmox-local/Scripts/GPU-Passthrough/Generico.sh
+    bash /Scripts/GPU-Passthrough/Generico.sh
 }
 
 # Mostrar el menú de selección
 function mostrar_menu() {
     clear
     echo "Menú de selección:"
-    echo "1. Ejecutar el script Menu.sh"
-    echo "2. Ejecutar el script Generico.sh"
+    echo "1. Instalar repositorios Proxmox"
+    echo "2. Instalar y configurar GPU-Passthrough"
     echo "0. Salir"
     echo ""
 }
