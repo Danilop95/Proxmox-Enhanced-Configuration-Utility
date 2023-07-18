@@ -130,7 +130,6 @@ linea_existe() {
 
 # Función para modificar el archivo sources.list
 modificar_sources_list() {
-    rm -r /etc/apt/sources.list.d/* &&
     echo -e "${AZUL}=================================================${NC}"
     echo -e "${AZUL}| Modificando el archivo sources.list            |${NC}"
     echo -e "${AZUL}=================================================${NC}"
