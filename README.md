@@ -1,53 +1,56 @@
-# Proxmox Local Configurado
+# Configured Proxmox Local
 
-- [Funcionamiento](#funcionamiento)
-- [Requisitos](#requisitos)
-- [Versiones de Proxmox compatibles](#versiones-de-proxmox-compatibles)
-- [Uso/Instalación](#uso)
-- [Contribución](#contribución)
-- [Licencia](#licencia)
+- [Operation](#operation)
+- [Requirements](#requirements)
+- [Compatible Proxmox Versions](#compatible-proxmox-versions)
+- [Usage/Installation](#usage)
+- [Contribution](#contribution)
+- [License](#license)
 
-Este repositorio contiene un script de Bash llamado `Configurador.sh` que facilita la configuración de Proxmox y la administración de los repositorios de paquetes. Proporciona opciones para respaldar, restaurar y modificar el archivo `sources.list`, así como configurar el passthrough de GPU en Proxmox.
+[🇪🇸 Leer en español](es_es.md)
 
-## Funcionamiento 
+This repository contains a Bash script called `Configurator.sh` that facilitates the configuration of Proxmox and the management of package repositories. It provides options to backup, restore, and modify the `sources.list` file, as well as configure GPU passthrough in Proxmox.
 
-El script `Configurador.sh` ofrece un menú interactivo con las siguientes opciones:
+## Operation
 
-- **Instalación de dependencias**: Permite realizar diversas operaciones relacionadas con el archivo `sources.list`, como hacer una copia de seguridad, restaurar una copia anterior, modificar el archivo o abrirlo con el editor Nano.
-- **Configuración GPU Passthrough**: Permite configurar el passthrough de GPU en Proxmox, lo que es útil para asignar una tarjeta gráfica dedicada a una máquina virtual.
-- **Salir**: Finaliza la ejecución del script.
+The `Configurator.sh` script offers an interactive menu with the following options:
 
-El script también verifica si los repositorios de paquetes de Proxmox están correctamente configurados y muestra información sobre el estado de IOMMU y opciones de MSI.
+- **Dependency Installation**: Allows various operations related to the `sources.list` file, such as creating a backup, restoring a previous backup, modifying the file, or opening it with the Nano editor.
+- **GPU Passthrough Configuration**: Enables GPU passthrough configuration in Proxmox, which is useful for assigning a dedicated graphics card to a virtual machine.
+- **Exit**: Ends the script execution.
 
-## Requisitos
+The script also verifies if the Proxmox package repositories are correctly configured and displays information about the state of IOMMU and MSI options.
 
-El script ha sido diseñado para ser utilizado en sistemas Proxmox y requiere privilegios de root para su ejecución. Además, se recomienda tener conocimientos básicos sobre la configuración de Proxmox y los repositorios de paquetes.
+## Requirements
 
-## Versiones de Proxmox compatibles
+The script has been designed to be used on Proxmox systems and requires root privileges for execution. Additionally, basic knowledge of Proxmox configuration and package repositories is recommended.
 
-El script ha sido probado y es compatible con las siguientes versiones de Proxmox:
+## Compatible Proxmox Versions
+
+The script has been tested and is compatible with the following Proxmox versions:
 
 - Proxmox VE 6.x
 - Proxmox VE 7.x
 - Proxmox VE 8.x
 
-## Uso
+## Usage/Installation
 
-⚙️Para ejecutar el script directamente, puedes utilizar el siguiente comando en tu servidor de Proxmox⚙️
+⚙️To execute the script directly, you can use the following command on your Proxmox server⚙️
 
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/Danilop95/Proxmox-local/main/Configurador.sh)
+bash <(curl -s https://raw.githubusercontent.com/Danilop95/Proxmox-local/main/Configurator.sh)
 ```
-### Tambien puede clonar el repositorio de manera tradicional:
-1. Clona este repositorio en tu máquina Proxmox local.
-2. Asegúrate de que el archivo `Configurador.sh` tiene permisos de ejecución. Si no, puedes otorgar los permisos ejecutando `chmod +x Configurador.sh`.
-3. Ejecuta el script `Configurador.sh` como usuario root utilizando el siguiente comando: `sudo ./Configurador.sh`.
-4. Sigue las instrucciones del menú interactivo para realizar las operaciones deseadas.
+### Alternatively, you can clone the repository in a traditional way:
 
-## Contribución
+1. Clone this repository on your local Proxmox machine.
+2. Ensure that the `Configurator.sh` file has execution permissions. If not, you can grant permissions by running `chmod +x Configurator.sh`.
+3. Run the `Configurator.sh` script as the root user using the following command: `sudo ./Configurator.sh`.
+4. Follow the instructions in the interactive menu to perform desired operations.
 
-Si deseas contribuir a este proyecto, puedes enviar tus sugerencias, mejoras o correcciones a través de los *issues*.
+## Contribution
 
-## Licencia
+If you wish to contribute to this project, you can submit your suggestions, improvements, or corrections through the issues.
 
-Este proyecto está licenciado bajo la [Licencia Pública General de GNU v3.0 (GPL-3.0)](LICENSE). Para obtener más información, consulta el archivo [LICENSE](LICENSE).
+## License
+
+This project is licensed under the [GNU General Public License v3.0 (GPL-3.0)](LICENSE). For more information, see the [LICENSE](LICENSE).
