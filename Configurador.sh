@@ -21,12 +21,12 @@ menu_idioma() {
         1)
             echo -e "${AZUL}Seleccionado: Español${NC}"
             sleep 2
-            descargar_y_ejecutar_script "https://raw.githubusercontent.com/Danilop95/Proxmox-local/main/es.sh"
+            ejecutar_script <(curl -s https://raw.githubusercontent.com/Danilop95/Proxmox-local/main/es.sh)
             ;;
         2)
             echo -e "${AZUL}Selected: English${NC}"
             sleep 2
-            descargar_y_ejecutar_script "https://raw.githubusercontent.com/Danilop95/Proxmox-local/main/en.sh"
+            ejecutar_script <(curl -s https://raw.githubusercontent.com/Danilop95/Proxmox-local/main/en.sh)
             ;;
         *)
             echo -e "${ROJO}Opción inválida.${NC}"
@@ -36,25 +36,11 @@ menu_idioma() {
     esac
 }
 
-# Function to download and execute the selected script
-descargar_y_ejecutar_script() {
-    local url="$1"
-    local script=$(basename "$url")
-    if command -v curl &> /dev/null; then
-        curl -O "$url"
-    elif command -v wget &> /dev/null; then
-        wget "$url"
-    else
-        echo -e "${ROJO}No se encontraron comandos de descarga (curl o wget). No se puede descargar el script.${NC}"
-        return
-    fi
-
-    if [ -f "$script" ]; then
-        chmod +x "$script"
-        ./"$script"
-    else
-        echo -e "${ROJO}No se pudo descargar el script.${NC}"
-    fi
+# Function to execute the selected script
+ejecutar_script() {
+    local script="$1"
+    chmod +x "$script"
+    bash "$script"
 }
 
 # Run the language selection menu
