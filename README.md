@@ -31,7 +31,7 @@ El script ha sido probado y es compatible con las siguientes versiones de Proxmo
 - Proxmox VE 7.x
 - Proxmox VE 8.x
 
-## Uso
+## Uso/Instalación
 
 ⚙️Para ejecutar el script directamente, puedes utilizar el siguiente comando en tu servidor de Proxmox⚙️
 
