@@ -35,6 +35,6 @@ El script ha sido probado y es compatible con las siguientes versiones de Proxmo
 
 Si deseas contribuir a este proyecto, puedes enviar tus sugerencias, mejoras o correcciones a través de los *issues*.
 
-
 ## Licencia
-Este proyecto está licenciado bajo la Licencia Pública General de GNU v3.0 (GPL-3.0). Para obtener más información, consulta el archivo LICENSE.
+
+Este proyecto está licenciado bajo la [Licencia Pública General de GNU v3.0 (GPL-3.0)](LICENSE). Para obtener más información, consulta el archivo [LICENSE](LICENSE).
