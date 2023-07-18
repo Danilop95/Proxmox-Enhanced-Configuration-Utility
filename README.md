@@ -1,8 +1,15 @@
 # Proxmox Local Configurado
 
+- [Funcionamiento](#funcionamiento)
+- [Requisitos](#requisitos)
+- [Versiones de Proxmox compatibles](#versiones-de-proxmox-compatibles)
+- [Uso/Instalación](#uso)
+- [Contribución](#contribución)
+- [Licencia](#licencia)
+
 Este repositorio contiene un script de Bash llamado `Configurador.sh` que facilita la configuración de Proxmox y la administración de los repositorios de paquetes. Proporciona opciones para respaldar, restaurar y modificar el archivo `sources.list`, así como configurar el passthrough de GPU en Proxmox.
 
-## Funcionamiento
+## Funcionamiento 
 
 El script `Configurador.sh` ofrece un menú interactivo con las siguientes opciones:
 
@@ -26,6 +33,12 @@ El script ha sido probado y es compatible con las siguientes versiones de Proxmo
 
 ## Uso
 
+⚙️Para ejecutar el script directamente, puedes utilizar el siguiente comando en tu servidor de Proxmox⚙️
+
+```bash
+bash <(curl -s https://raw.githubusercontent.com/Danilop95/Proxmox-local/main/Configurador.sh)
+```
+### Tambien puede clonar el repositorio de manera tradicional:
 1. Clona este repositorio en tu máquina Proxmox local.
 2. Asegúrate de que el archivo `Configurador.sh` tiene permisos de ejecución. Si no, puedes otorgar los permisos ejecutando `chmod +x Configurador.sh`.
 3. Ejecuta el script `Configurador.sh` como usuario root utilizando el siguiente comando: `sudo ./Configurador.sh`.
