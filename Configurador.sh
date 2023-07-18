@@ -10,10 +10,10 @@ NC='\e[0m' # No Color
 menu_idioma() {
     clear
     echo -e "${AZUL}=================================================${NC}"
-    echo -e "${AZUL}|              Seleccione el Idioma              |${NC}"
+    echo -e "${AZUL}|      Seleccione el Idioma/Select Language      |${NC}"
     echo -e "${AZUL}=================================================${NC}"
-    echo -e "${AZUL} 1) Español${NC}"
-    echo -e "${AZUL} 2) English${NC}"
+    echo -e "${VERDE} 1) Español${NC}"
+    echo -e "${VERDE} 2) English${NC}"
     echo -e "${AZUL}=================================================${NC}"
     read -p "$(echo -e ${AZUL}Seleccione una opción:${NC} )" opcion
 
@@ -21,12 +21,12 @@ menu_idioma() {
         1)
             echo -e "${AZUL}Seleccionado: Español${NC}"
             sleep 2
-            ejecutar_script "es.sh"
+            descargar_y_ejecutar_script "https://raw.githubusercontent.com/Danilop95/Proxmox-local/main/es.sh"
             ;;
         2)
             echo -e "${AZUL}Selected: English${NC}"
             sleep 2
-            ejecutar_script "en.sh"
+            descargar_y_ejecutar_script "https://raw.githubusercontent.com/Danilop95/Proxmox-local/main/en.sh"
             ;;
         *)
             echo -e "${ROJO}Opción inválida.${NC}"
@@ -36,14 +36,24 @@ menu_idioma() {
     esac
 }
 
-# Function to execute the selected script
-ejecutar_script() {
-    local script="$1"
+# Function to download and execute the selected script
+descargar_y_ejecutar_script() {
+    local url="$1"
+    local script=$(basename "$url")
+    if command -v curl &> /dev/null; then
+        curl -O "$url"
+    elif command -v wget &> /dev/null; then
+        wget "$url"
+    else
+        echo -e "${ROJO}No se encontraron comandos de descarga (curl o wget). No se puede descargar el script.${NC}"
+        return
+    fi
+
     if [ -f "$script" ]; then
         chmod +x "$script"
         ./"$script"
     else
-        echo -e "${ROJO}El archivo del script no existe.${NC}"
+        echo -e "${ROJO}No se pudo descargar el script.${NC}"
     fi
 }
 
