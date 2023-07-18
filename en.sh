@@ -5,7 +5,7 @@ RED='\e[0;31m'
 GREEN='\e[0;32m'
 BLUE='\e[0;34m'
 YELLOW='\e[0;33m'
-NC='\e[0m' # No Color
+NC='\e[0m' # No color
 
 # Backup directory path
 BACKUP_DIR="$(dirname "$0")/backup-script"
@@ -24,9 +24,9 @@ if ! command -v sudo &> /dev/null; then
 fi
 
 # Function to ask if the user wants to continue
-ask_continue() {
+ask_to_continue() {
     echo -e "${BLUE}=================================================${NC}"
-    echo -e "${BLUE}| The next step will involve:                   |${NC}"
+    echo -e "${BLUE}| The next step will:${NC}"
     echo -e "${BLUE}=================================================${NC}"
     echo -e "${GREEN}$1${NC}"
     echo -e "${BLUE}-------------------------------------------------${NC}"
@@ -46,7 +46,7 @@ ask_continue() {
 # Function to create a backup of the file
 backup_file() {
     echo -e "${BLUE}=================================================${NC}"
-    echo -e "${BLUE}| Creating a backup of sources.list              |${NC}"
+    echo -e "${BLUE}| Creating a backup of sources.list |${NC}"
     echo -e "${BLUE}=================================================${NC}"
 
     # Check if the backup directory exists
@@ -58,7 +58,7 @@ backup_file() {
     # Limit the maximum number of backups to 5
     backup_files=("${BACKUP_DIR}/sources.list.bak_"*)
     if [[ ${#backup_files[@]} -ge 5 ]]; then
-        echo -e "${BLUE}The maximum number of backups has been reached. Delete some backups to create new ones.${NC}"
+        echo -e "${BLUE}The maximum number of backups has been reached. Delete some backups to make new ones.${NC}"
         return 1
     fi
 
@@ -70,7 +70,7 @@ backup_file() {
 # Function to restore a previous backup of the file
 restore_backup() {
     echo -e "${BLUE}=================================================${NC}"
-    echo -e "${BLUE}| Restoring a previous backup of sources.list     |${NC}"
+    echo -e "${BLUE}| Restoring a previous backup of sources.list |${NC}"
     echo -e "${BLUE}=================================================${NC}"
     backup_files=("${BACKUP_DIR}/sources.list.bak_"*)
 
@@ -84,7 +84,7 @@ restore_backup() {
         echo -e "${BLUE} $((i+1)))${NC} ${backup_files[$i]}"
     done
 
-    read -p "$(echo -e ${BLUE}Enter the number of the backup:${NC} )" backup_number
+    read -p "$(echo -e ${BLUE}Enter the backup number:${NC} )" backup_number
 
     # Check if the backup number is valid
     if ! [[ "$backup_number" =~ ^[1-5]$ ]]; then
@@ -94,7 +94,7 @@ restore_backup() {
 
     backup_file="${backup_files[$((backup_number-1))]}"
     if [[ -f "$backup_file" ]]; then
-        echo -e "${BLUE}Preview of the backup file:${NC}"
+        echo -e "${BLUE}Backup file preview:${NC}"
         echo "-----------------------------------------"
         cat "$backup_file"
         echo "-----------------------------------------"
@@ -106,18 +106,18 @@ restore_backup() {
                 echo -e "${GREEN}Backup restored.${NC}"
                 ;;
             *)
-                echo -e "${RED}Operation cancelled.${NC}"
+                echo -e "${RED}Operation canceled.${NC}"
                 ;;
         esac
     else
-        echo -e "${RED}Backup file does not exist.${NC}"
+        echo -e "${RED}The backup file does not exist.${NC}"
     fi
 }
 
 # Function to open the sources.list file with nano
 open_sources_list() {
     echo -e "${BLUE}=================================================${NC}"
-    echo -e "${BLUE}| Opening sources.list file with nano            |${NC}"
+    echo -e "${BLUE}| Opening sources.list file with nano         |${NC}"
     echo -e "${BLUE}=================================================${NC}"
     sudo nano "/etc/apt/sources.list"
 }
@@ -130,10 +130,10 @@ line_exists() {
 
 # Function to modify the sources.list file
 modify_sources_list() {
-    rm -r /etc/apt/sources.list.d/* &&
     echo -e "${BLUE}=================================================${NC}"
-    echo -e "${BLUE}| Modifying sources.list file                     |${NC}"
+    echo -e "${BLUE}| Modifying sources.list file                  |${NC}"
     echo -e "${BLUE}=================================================${NC}"
+    echo -e "${YELLOW}Add the necessary lines to the sources.list file.${NC}"
 
     # Check if the lines already exist before adding them
     if line_exists "deb http://ftp.debian.org/debian bullseye main contrib" && \
@@ -142,7 +142,7 @@ modify_sources_list() {
        line_exists "# PVE pve-no-subscription repository provided by proxmox.com, NOT recommended for production use" && \
        line_exists "deb http://download.proxmox.com/debian/pve bullseye pve-no-subscription"
     then
-        echo -e "${GREEN}sources.list file already contains the modifications.${NC}"
+        echo -e "${GREEN}The sources.list file already contains the modifications.${NC}"
     else
         # Add Debian repositories
         echo "deb http://ftp.debian.org/debian bullseye main contrib" | sudo tee -a "/etc/apt/sources.list"
@@ -157,10 +157,10 @@ modify_sources_list() {
     fi
 }
 
-# Function to add MSI options to audio configuration file
+# Function to add MSI options to the audio configuration file
 add_msi_options() {
     echo -e "${BLUE}=================================================${NC}"
-    echo -e "${BLUE}| Adding MSI options for audio                    |${NC}"
+    echo -e "${BLUE}| Adding MSI options for audio                  |${NC}"
     echo -e "${BLUE}=================================================${NC}"
     add_to_file_if_not_exists "/etc/modprobe.d/snd-hda-intel.conf" "options snd-hda-intel enable_msi=1"
     echo -e "${GREEN}MSI options added.${NC}"
@@ -169,7 +169,7 @@ add_msi_options() {
 # Function to check if IOMMU is enabled
 check_iommu() {
     echo -e "${BLUE}=================================================${NC}"
-    echo -e "${BLUE}| Checking if IOMMU is enabled                   |${NC}"
+    echo -e "${BLUE}| Checking if IOMMU is enabled                  |${NC}"
     echo -e "${BLUE}=================================================${NC}"
     dmesg | grep -e DMAR -e IOMMU
 }
@@ -177,14 +177,14 @@ check_iommu() {
 # Function to apply kernel configuration
 apply_kernel_configuration() {
     echo -e "${BLUE}=================================================${NC}"
-    echo -e "${BLUE}| Applying kernel configuration                  |${NC}"
+    echo -e "${BLUE}| Applying kernel configuration                 |${NC}"
     echo -e "${BLUE}=================================================${NC}"
     sudo update-initramfs -u -k all
     echo -e "${GREEN}Kernel configuration applied.${NC}"
 }
 
-# Function to ask if the system should be restarted
-ask_restart() {
+# Function to ask if the user wants to restart
+ask_for_reboot() {
     echo -e "${BLUE}=================================================${NC}"
     echo -n -e "${BLUE}Do you want to restart now?${NC} (y/n): "
     read answer
@@ -199,7 +199,7 @@ ask_restart() {
     esac
 }
 
-# Function to add an entry to a file if it doesn't already exist
+# Function to add an entry to a file if it doesn't exist
 add_to_file_if_not_exists() {
     local file="$1"
     local entry="$2"
@@ -210,7 +210,7 @@ add_to_file_if_not_exists() {
 
 # Function to search for the GPU device
 search_gpu_device() {
-    echo -e "${BLUE}Please enter the name of the device you are looking for (e.g., GTX 1080):${NC}"
+    echo -e "${BLUE}Please enter the name of the device you are searching for (e.g., GTX 1080):${NC}"
     read device
     lspci -v | grep -i "$device"
 }
@@ -220,14 +220,14 @@ read_gpu_id() {
     echo -e "${BLUE}Enter the ID of the video device (format xx:xx.x):${NC}"
     read GPU_ID
     echo -e "${BLUE}Getting the ID of your GPU:${NC}"
-    VENDOR_GPU=$(lspci -n -s "$GPU_ID" | awk '{print $3}')
-    echo $VENDOR_GPU
+    GPU_VENDOR_ID=$(lspci -n -s "$GPU_ID" | awk '{print $3}')
+    echo $GPU_VENDOR_ID
 }
 
 # Function to configure GPU passthrough
 configure_gpu_passthrough() {
     echo -e "${BLUE}=================================================${NC}"
-    echo -e "${BLUE}|         GPU Passthrough Configuration          |${NC}"
+    echo -e "${BLUE}|        GPU Passthrough Configuration           |${NC}"
     echo -e "${BLUE}=================================================${NC}"
 
     # Search for GPU and read its ID
@@ -239,11 +239,11 @@ configure_gpu_passthrough() {
     add_to_file_if_not_exists "/etc/modprobe.d/blacklist.conf" "blacklist nvidia"
 
     # Add VFIO and IOMMU options
-    add_to_file_if_not_exists "/etc/modprobe.d/vfio.conf" "options vfio-pci ids=$VENDOR_GPU disable_vga=1"
+    add_to_file_if_not_exists "/etc/modprobe.d/vfio.conf" "options vfio-pci ids=$GPU_VENDOR_ID disable_vga=1"
 
     apply_kernel_configuration
 
-    ask_restart
+    ask_for_reboot
 }
 
 # Main function of the script
@@ -251,10 +251,10 @@ main() {
     while true; do
         clear
         echo -e "${BLUE}=================================================${NC}"
-        echo -e "${BLUE}|               Options Menu                     |${NC}"
+        echo -e "${BLUE}|              Options Menu                      |${NC}"
         echo -e "${BLUE}=================================================${NC}"
         echo -e "${BLUE} 1) Install Dependencies${NC}"
-        echo -e "${BLUE} 2) GPU Passthrough Configuration${NC}"
+        echo -e "${BLUE} 2) Configure GPU Passthrough${NC}"
         echo -e "${BLUE} 3) Exit${NC}"
         echo -e "${BLUE}=================================================${NC}"
         read -p "$(echo -e ${BLUE}Select an option:${NC} )" option
@@ -264,7 +264,7 @@ main() {
                 while true; do
                     clear
                     echo -e "${BLUE}=================================================${NC}"
-                    echo -e "${BLUE}|    Options Menu (Install Dependencies)        |${NC}"
+                    echo -e "${BLUE}|     Options Menu (Install Dependencies)       |${NC}"
                     echo -e "${BLUE}=================================================${NC}"
                     echo -e "${BLUE} 1) Create a backup of sources.list${NC}"
                     echo -e "${BLUE} 2) Restore a previous backup of sources.list${NC}"
@@ -314,5 +314,5 @@ main() {
     done
 }
 
-# Run the script
+# Execute the script
 main
