@@ -3,7 +3,7 @@
 - [Operation](#operation)
 - [Requirements](#requirements)
 - [Compatible Proxmox Versions](#compatible-proxmox-versions)
-- [Usage/Installation](#usage/Installation)
+- [Usage/Installation](#usage)
 - [Contribution](#contribution)
 - [License](#license)
 
@@ -31,7 +31,7 @@ The script has been tested and is compatible with the following Proxmox versions
 - Proxmox VE 7.x
 - Proxmox VE 8.x
 
-## Usage/Installation
+## Usage
 
 ⚙️To execute the script directly, you can use the following command on your Proxmox server⚙️
 
