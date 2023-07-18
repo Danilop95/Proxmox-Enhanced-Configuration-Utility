@@ -7,8 +7,6 @@
 - [Contribution](#contribution)
 - [License](#license)
 
-[🇪🇸 Leer en español](es_es.md)
-
 This repository contains a Bash script called `Configurator.sh` that facilitates the configuration of Proxmox and the management of package repositories. It provides options to backup, restore, and modify the `sources.list` file, as well as configure GPU passthrough in Proxmox.
 
 ## Operation
