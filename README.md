@@ -36,7 +36,7 @@ The script has been tested and is compatible with the following Proxmox versions
 ⚙️To execute the script directly, you can use the following command on your Proxmox server⚙️
 
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/Danilop95/Proxmox-local/main/Configurator.sh)
+bash <(curl -s https://raw.githubusercontent.com/Danilop95/Proxmox-local/main/Configurador.sh)
 ```
 ### Alternatively, you can clone the repository in a traditional way:
 
