@@ -34,6 +34,10 @@ The script has been tested and is compatible with the following Proxmox versions
 ## Usage
 
 ⚙️To execute the script directly, you can use the following command on your Proxmox server⚙️
+> ⚠️**Note**⚠️
+> The command `bash <(curl -s URL-of-script)` relies on features specific to Linux systems and the Bash shell. This command will not work on systems that are not compatible with Bash or Curl.
+>
+> Please be aware that using this command requires an internet connection to download the script from GitHub. If you are working in an offline environment, you will need to download the scripts beforehand and run them directly from your local system.
 
 ```bash
 bash <(curl -s https://raw.githubusercontent.com/Danilop95/Proxmox-local/main/Configurador.sh)
