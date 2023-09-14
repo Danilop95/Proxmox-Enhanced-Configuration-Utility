@@ -51,7 +51,7 @@ bash <(curl -s https://raw.githubusercontent.com/Danilop95/Proxmox-local/main/Co
 
 Comands:
 ```bash
-chmod +x Configurator.sh && chmod +x en.sh && chmod +x es.sh
+chmod +x Configurator.sh en.sh es.sh
 ```
 
 ## Contribution
