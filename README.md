@@ -49,6 +49,11 @@ bash <(curl -s https://raw.githubusercontent.com/Danilop95/Proxmox-local/main/Co
 3. Run the `Configurator.sh` script as the root user using the following command: `sudo ./Configurator.sh`.
 4. Follow the instructions in the interactive menu to perform desired operations.
 
+Comands:
+```bash
+chmod +x Configurator.sh && chmod +x en.sh && chmod +x es.sh
+```
+
 ## Contribution
 
 If you wish to contribute to this project, you can submit your suggestions, improvements, or corrections through the issues.
