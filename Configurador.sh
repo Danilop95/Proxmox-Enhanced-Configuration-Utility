@@ -6,6 +6,15 @@ VERDE='\e[0;32m'
 AZUL='\e[0;34m'
 NC='\e[0m' # No Color
 
+# Determine execution context
+if [[ "${BASH_SOURCE[0]}" =~ /dev/fd/ ]]; then
+    echo "Running remotely."
+    SCRIPT_DIR="https://raw.githubusercontent.com/Danilop95/Proxmox-local/main"
+else
+    echo "Running locally."
+    SCRIPT_DIR=$(dirname "$(realpath "$0")")
+fi
+
 # Function to display language selection menu
 menu_idioma() {
     clear
@@ -22,13 +31,13 @@ menu_idioma() {
             1)
                 echo -e "${AZUL}Seleccionado: Español${NC}"
                 sleep 2
-                ejecutar_script "https://raw.githubusercontent.com/Danilop95/Proxmox-local/main/es.sh"
+                ejecutar_script "es.sh"
                 break
                 ;;
             2)
                 echo -e "${AZUL}Selected: English${NC}"
                 sleep 2
-                ejecutar_script "https://raw.githubusercontent.com/Danilop95/Proxmox-local/main/en.sh"
+                ejecutar_script "en.sh"
                 break
                 ;;
             *)
@@ -41,13 +50,26 @@ menu_idioma() {
 
 # Function to execute the selected script
 ejecutar_script() {
-    local url="$1"
+    local script_name="$1"
+    local script_path="$SCRIPT_DIR/$script_name"
     local script=$(mktemp)
-    if curl -s "$url" -o "$script"; then
-        chmod +x "$script"
-        bash "$script"
+
+    if [[ $SCRIPT_DIR =~ ^https?:// ]]; then
+        # Running remotely, use curl to download the script
+        if curl -s "$script_path" -o "$script"; then
+            chmod +x "$script"
+            bash "$script"
+        else
+            echo -e "${ROJO}Error al descargar el script.${NC}"
+        fi
     else
-        echo -e "${ROJO}Error al descargar el script.${NC}"
+        # Running locally, execute the script directly
+        if [ -f "$script_path" ]; then
+            chmod +x "$script_path"
+            bash "$script_path"
+        else
+            echo -e "${ROJO}Error: El script no se encuentra en la ruta local ${script_path}.${NC}"
+        fi
     fi
 }
 
