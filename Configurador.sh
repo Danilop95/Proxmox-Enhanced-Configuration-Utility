@@ -9,9 +9,11 @@ NC='\e[0m' # No Color
 # Determine execution context
 if [[ "${BASH_SOURCE[0]}" =~ /dev/fd/ ]]; then
     echo "Running remotely."
+    CONTEXT="Remoto"
     SCRIPT_DIR="https://raw.githubusercontent.com/Danilop95/Proxmox-local/main"
 else
     echo "Running locally."
+    CONTEXT="Local"
     SCRIPT_DIR=$(dirname "$(realpath "$0")")
 fi
 
@@ -19,7 +21,7 @@ fi
 menu_idioma() {
     clear
     echo -e "${AZUL}=================================================${NC}"
-    echo -e "${AZUL}|      Seleccione el Idioma/Select Language      |${NC}"
+    echo -e "${AZUL}|  Seleccione el Idioma/Select Language [${CONTEXT}] |${NC}"
     echo -e "${AZUL}=================================================${NC}"
     echo -e "${VERDE} 1) Español${NC}"
     echo -e "${VERDE} 2) English${NC}"
