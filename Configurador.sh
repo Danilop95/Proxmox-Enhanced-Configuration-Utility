@@ -15,32 +15,40 @@ menu_idioma() {
     echo -e "${VERDE} 1) Español${NC}"
     echo -e "${VERDE} 2) English${NC}"
     echo -e "${AZUL}=================================================${NC}"
-    read -p "$(echo -e ${AZUL}Seleccione una opción:${NC} )" opcion
+    while true; do
+        read -p "$(echo -e ${AZUL}Seleccione una opción:${NC} )" opcion
 
-    case $opcion in
-        1)
-            echo -e "${AZUL}Seleccionado: Español${NC}"
-            sleep 2
-            ejecutar_script <(curl -s https://raw.githubusercontent.com/Danilop95/Proxmox-local/main/es.sh)
-            ;;
-        2)
-            echo -e "${AZUL}Selected: English${NC}"
-            sleep 2
-            ejecutar_script <(curl -s https://raw.githubusercontent.com/Danilop95/Proxmox-local/main/en.sh)
-            ;;
-        *)
-            echo -e "${ROJO}Opción inválida.${NC}"
-            sleep 2
-            menu_idioma
-            ;;
-    esac
+        case $opcion in
+            1)
+                echo -e "${AZUL}Seleccionado: Español${NC}"
+                sleep 2
+                ejecutar_script "https://raw.githubusercontent.com/Danilop95/Proxmox-local/main/es.sh"
+                break
+                ;;
+            2)
+                echo -e "${AZUL}Selected: English${NC}"
+                sleep 2
+                ejecutar_script "https://raw.githubusercontent.com/Danilop95/Proxmox-local/main/en.sh"
+                break
+                ;;
+            *)
+                echo -e "${ROJO}Opción inválida.${NC}"
+                sleep 2
+                ;;
+        esac
+    done
 }
 
 # Function to execute the selected script
 ejecutar_script() {
-    local script="$1"
-    chmod +x "$script"
-    bash "$script"
+    local url="$1"
+    local script=$(mktemp)
+    if curl -s "$url" -o "$script"; then
+        chmod +x "$script"
+        bash "$script"
+    else
+        echo -e "${ROJO}Error al descargar el script.${NC}"
+    fi
 }
 
 # Run the language selection menu
