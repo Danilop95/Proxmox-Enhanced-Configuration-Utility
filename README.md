@@ -1,4 +1,4 @@
-# Configured Proxmox Local
+# Configured Proxmox-Enhanced-Configuration-Utility (PECU)
 
 - [Operation](#operation)
 - [Requirements](#requirements)
