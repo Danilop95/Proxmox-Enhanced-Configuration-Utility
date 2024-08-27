@@ -1,63 +1,115 @@
-# Configured Proxmox-Enhanced-Configuration-Utility (PECU)
 
-- [Operation](#operation)
+# Proxmox-Enhanced-Configuration-Utility (PECU)
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Features](#features)
 - [Requirements](#requirements)
 - [Compatible Proxmox Versions](#compatible-proxmox-versions)
-- [Usage/Installation](#usage)
+- [Usage and Installation](#usage-and-installation)
 - [Contribution](#contribution)
 - [License](#license)
 
-This repository contains a Bash script called `Configurator.sh` that facilitates the configuration of Proxmox and the management of package repositories. It provides options to backup, restore, and modify the `sources.list` file, as well as configure GPU passthrough in Proxmox.
+## Overview
 
-## Operation
+The **Proxmox-Enhanced-Configuration-Utility (PECU)** is a powerful Bash script designed to streamline the configuration and management of Proxmox VE environments. This utility provides an interactive menu system for performing key tasks such as managing package repositories and configuring GPU passthrough, making it easier to optimize your Proxmox setup for various use cases.
 
-The `Configurator.sh` script offers an interactive menu with the following options:
+## Features
 
-- **Dependency Installation**: Allows various operations related to the `sources.list` file, such as creating a backup, restoring a previous backup, modifying the file, or opening it with the Nano editor.
-- **GPU Passthrough Configuration**: Enables GPU passthrough configuration in Proxmox, which is useful for assigning a dedicated graphics card to a virtual machine.
-- **Exit**: Ends the script execution.
+The `proxmox-configurator.sh` script includes the following features:
 
-The script also verifies if the Proxmox package repositories are correctly configured and displays information about the state of IOMMU and MSI options.
+- **Dependency Installation**:
+  - **Backup and Restore**: Create and restore backups of the `sources.list` file to ensure you have safe points to revert to.
+  - **Modify `sources.list`**: Edit the `sources.list` file directly within the script interface using Nano or automatically add recommended repositories.
+  
+- **GPU Passthrough Configuration**:
+  - Automatically configure GPU passthrough to assign a dedicated graphics card to virtual machines, optimizing performance for compute-intensive tasks.
+
+- **System Configuration Checks**:
+  - Verifies if the Proxmox package repositories are correctly configured.
+  - Displays the state of IOMMU and MSI options for better hardware optimization.
+
+- **Exit Option**:
+  - Safely exit the script with a clean shutdown of any operations in progress.
 
 ## Requirements
 
-The script has been designed to be used on Proxmox systems and requires root privileges for execution. Additionally, basic knowledge of Proxmox configuration and package repositories is recommended.
+To use this script, the following are required:
+
+- **Proxmox VE**: This script is specifically designed for use on Proxmox VE systems.
+- **Root Privileges**: Must be run with root or sudo privileges to modify system configurations and perform installations.
+- **Basic Proxmox Knowledge**: Familiarity with Proxmox setup and configuration is recommended for optimal use of the script's features.
 
 ## Compatible Proxmox Versions
 
-The script has been tested and is compatible with the following Proxmox versions:
+The `proxmox-configurator.sh` script has been tested and is compatible with the following Proxmox VE versions:
 
 - Proxmox VE 6.x
 - Proxmox VE 7.x
 - Proxmox VE 8.x
 
-## Usage
+## Usage and Installation
 
-⚙️To execute the script directly, you can use the following command on your Proxmox server⚙️
-> [!NOTE]
-> 
-> The command `bash <(curl -s URL-of-script)` relies on features specific to Linux systems and the Bash shell. This command will not work on systems that are not compatible with Bash or Curl.
-> Please be aware that using this command requires an internet connection to download the script from GitHub. If you are working in an offline environment, you will need to download the scripts beforehand and run them directly from your local system.
+You can run the script directly from your Proxmox server or clone the repository and execute it locally. Follow the instructions below for each method.
+
+### Direct Execution
+
+To run the script directly from the internet, use the following command:
 
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/Danilop95/Proxmox-local/main/Configurador.sh)
+bash <(curl -s https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/main/proxmox-configurator.sh)
 ```
-### Alternatively, you can clone the repository in a traditional way:
 
-1. Clone this repository on your local Proxmox machine.
-2. Ensure that the `Configurator.sh` file has execution permissions. If not, you can grant permissions by running `chmod +x Configurator.sh`.
-3. Run the `Configurator.sh` script as the root user using the following command: `sudo ./Configurator.sh`.
-4. Follow the instructions in the interactive menu to perform desired operations.
+> **Note**: This command requires an active internet connection and is specific to Linux systems with Bash and Curl installed.
 
-Commands:
+### Local Installation
+
+Alternatively, you can clone this repository and run the script from your local Proxmox environment:
+
+1. **Clone the Repository**:
+
+   ```bash
+   git clone https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility.git
+   cd Proxmox-Enhanced-Configuration-Utility
+   ```
+
+2. **Set Execution Permissions**:
+
+   Ensure the script has the necessary execution permissions. If not, grant them with:
+
+   ```bash
+   chmod +x proxmox-configurator.sh
+   ```
+
+3. **Run the Script**:
+
+   Execute the script with root privileges:
+
+   ```bash
+   sudo ./proxmox-configurator.sh
+   ```
+
+4. **Follow the Interactive Menu**:
+
+   The script will present an interactive menu. Follow the on-screen instructions to perform the desired operations.
+
+### Common Commands
+
+Here are some common commands to use with this script:
+
 ```bash
-chmod +x Configurator.sh en.sh es.sh
+chmod +x proxmox-configurator.sh
+sudo ./proxmox-configurator.sh
 ```
 
 ## Contribution
 
-If you wish to contribute to this project, you can submit your suggestions, improvements, or corrections through the issues.
+We welcome contributions to enhance the functionality and compatibility of this utility script. You can contribute in several ways:
+
+- **Issues**: Report bugs or suggest new features by opening an issue on our GitHub repository.
+- **Pull Requests**: Submit your improvements through a pull request. Make sure to follow the contribution guidelines in the repository.
 
 ## License
 
-This project is licensed under the [GNU General Public License v3.0 (GPL-3.0)](LICENSE). For more information, see the [LICENSE](LICENSE).
+This project is licensed under the [GNU General Public License v3.0 (GPL-3.0)](LICENSE). For more information, please refer to the [LICENSE](LICENSE) file in the repository.
