@@ -3,54 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Discover the Proxmox Enhanced Configuration Utility (PECU) for streamlined GPU passthrough and repository management in Proxmox VE.">
+    <meta name="description" content="Proxmox-Enhanced-Configuration-Utility (PECU) - Streamline your Proxmox VE environment with automated GPU passthrough and package management.">
+    <meta name="keywords" content="Proxmox, PECU, GPU passthrough, Proxmox VE, virtualization, open source">
     <title>Proxmox Enhanced Configuration Utility (PECU)</title>
-    <link rel="stylesheet" href="styles.css"> <!-- Link to the CSS file -->
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <header>
         <h1>Proxmox Enhanced Configuration Utility (PECU)</h1>
-        <p>Streamline your Proxmox VE environment with ease!</p>
+        <p>Your go-to solution for easy GPU passthrough and Proxmox VE optimization.</p>
+        <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility" class="button primary">Explore on GitHub</a>
     </header>
-    <nav>
-        <a href="#overview">Overview</a>
-        <a href="#features">Features</a>
-        <a href="#installation">Installation</a>
-        <a href="#support">Support</a>
-    </nav>
     <main>
-        <section id="overview">
-            <h2>Overview</h2>
-            <p>The <strong>Proxmox-Enhanced-Configuration-Utility (PECU)</strong> is a powerful Bash script designed to simplify the configuration and management of Proxmox VE environments. This utility helps automate the setup of GPU passthrough and manages package repositories efficiently, allowing you to optimize your Proxmox setup effortlessly.</p>
+        <section>
+            <h2>Why Choose PECU?</h2>
+            <p>The <strong>Proxmox-Enhanced-Configuration-Utility (PECU)</strong> is a comprehensive tool designed to simplify GPU passthrough and the overall management of Proxmox VE. Whether you are setting up GPU passthrough for the first time or managing multiple configurations, PECU provides an intuitive interface that guides you through each step, ensuring a smooth and optimized experience.</p>
+            <a href="#instructions" class="button secondary">Get Started with PECU</a>
         </section>
-        <section id="features">
-            <h2>Features</h2>
-            <ul>
-                <li>Automated GPU passthrough setup for better VM performance.</li>
-                <li>Easy management of Proxmox package repositories.</li>
-                <li>System configuration checks for optimal hardware settings.</li>
-            </ul>
-        </section>
-        <section id="installation">
-            <h2>Installation</h2>
-            <p>To get started with PECU, follow these simple steps:</p>
+        <section id="instructions">
+            <h2>How to Install and Use PECU</h2>
             <ol>
-                <li>Clone the repository from GitHub.</li>
-                <li>Run the script directly or locally on your Proxmox server.</li>
+                <li><strong>Clone the Repository:</strong> Run <code>git clone https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility.git</code>.</li>
+                <li><strong>Set Permissions:</strong> Use <code>chmod +x proxmox-configurator.sh</code> to make the script executable.</li>
+                <li><strong>Run the Script:</strong> Execute <code>sudo ./proxmox-configurator.sh</code> and follow the interactive prompts to configure your Proxmox VE environment.</li>
+                <li><strong>Enjoy a Fully Optimized Setup:</strong> Benefit from automated GPU passthrough configuration and efficient package management.</li>
             </ol>
-            <p>For detailed instructions, visit the <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility" target="_blank" class="button">GitHub Repository</a>.</p>
+            <p>If you find PECU helpful, consider giving it a star on GitHub to support further development!</p>
+            <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility" class="button primary">Star on GitHub</a>
         </section>
-        <section id="support">
-            <h2>Support</h2>
-            <p>If you find this tool useful, please consider supporting its development:</p>
-            <div>
-                <!-- Buy Me a Coffee widget script -->
-                <script data-name="BMC-Widget" data-cfasync="false" src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js" data-id="danilop95ps" data-description="Support me on Buy me a coffee!" data-message="Thank you for your support!" data-color="#FF813F" data-position="Right" data-x_margin="18" data-y_margin="18"></script>
-            </div>
+        <section>
+            <h2>Additional Features</h2>
+            <p>Beyond GPU passthrough, PECU offers features like automated dependency management and system configuration checks, ensuring your Proxmox environment is always at its best. Explore more features on our GitHub page.</p>
+        </section>
+        <section>
+            <h2>Support and Contribution</h2>
+            <p>We are continually improving PECU and welcome any feedback or contributions. Join our community on GitHub to report issues, suggest features, or contribute to the project.</p>
+            <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility" class="button secondary">Contribute on GitHub</a>
+            <div id="bmc-widget"></div>
         </section>
     </main>
     <footer>
-        <p>&copy; 2024 Danilop95. All rights reserved. | <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility" style="color: #FF6F00; text-decoration: none;">GitHub Repository</a></p>
+        <p>&copy; 2024 Danilop95. All rights reserved.</p>
     </footer>
+
+    <!-- Buy Me A Coffee Widget -->
+    <script data-name="BMC-Widget" data-cfasync="false" src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js" data-id="danilop95ps" data-description="Support me on Buy me a coffee!" data-message="If you enjoy PECU, please consider supporting its development!" data-color="#FF813F" data-position="Right" data-x_margin="18" data-y_margin="18"></script>
 </body>
 </html>
