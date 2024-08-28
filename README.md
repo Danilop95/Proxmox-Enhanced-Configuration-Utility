@@ -1,4 +1,3 @@
-
 # Proxmox-Enhanced-Configuration-Utility (PECU)
 
 ## Table of Contents
@@ -45,7 +44,6 @@ To use this script, the following are required:
 
 The `proxmox-configurator.sh` script has been tested and is compatible with the following Proxmox VE versions:
 
-- Proxmox VE 6.x
 - Proxmox VE 7.x
 - Proxmox VE 8.x
 
@@ -109,6 +107,12 @@ We welcome contributions to enhance the functionality and compatibility of this 
 
 - **Issues**: Report bugs or suggest new features by opening an issue on our GitHub repository.
 - **Pull Requests**: Submit your improvements through a pull request. Make sure to follow the contribution guidelines in the repository.
+
+## Support
+
+If you find this project helpful, consider supporting us!
+
+<a href="https://www.buymeacoffee.com/gbraad" target="_blank"><img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" style="height: 37px !important;width: 170px !important;box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;-webkit-box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;" ></a>
 
 ## License
 
