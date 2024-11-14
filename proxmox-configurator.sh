@@ -9,7 +9,9 @@ NC='\e[0m' # No color
 
 # Backup directory path and state file
 BACKUP_DIR="$(dirname "$0")/backup-script"
-STATE_FILE="$(dirname "$0")/script_state.txt"
+mkdir -p "$BACKUP_DIR" || { echo -e "${RED}Failed to create backup directory.${NC}"; exit 1; }
+STATE_FILE="$BACKUP_DIR/script_state.txt"
+touch "$STATE_FILE" || { echo -e "${RED}Failed to create state file.${NC}"; exit 1; }
 
 # Function to initialize the state file
 initialize_state() {
@@ -24,20 +26,13 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-# Check if sudo is installed, if not, install it.
-if ! command -v sudo &> /dev/null; then
-    echo -e "${BLUE}sudo is not installed. Installing...${NC}"
-    apt-get update
-    apt-get install sudo -y
-fi
-
 # Function to detect GPUs and check installation
 check_gpu_installation() {
     echo -e "${BLUE}=================================================${NC}"
     echo -e "${BLUE}| Checking GPU Installation                     |${NC}"
     echo -e "${BLUE}=================================================${NC}"
 
-    # List GPUs and check for NVIDIA or AMD
+    # List GPUs and check for NVIDIA, AMD, Intel iGPU, or AMD APU
     gpu_info=$(lspci | grep -i 'vga\|3d\|2d')
 
     if echo "$gpu_info" | grep -iq 'nvidia'; then
@@ -46,18 +41,28 @@ check_gpu_installation() {
     elif echo "$gpu_info" | grep -iq 'amd'; then
         echo -e "${GREEN}AMD GPU detected.${NC}"
         check_amd_gpu
+    elif echo "$gpu_info" | grep -iq 'intel'; then
+        echo -e "${GREEN}Intel iGPU detected.${NC}"
+        check_intel_gpu
     else
-        echo -e "${RED}No NVIDIA or AMD GPU detected.${NC}"
-        # Wait for user input before returning to the main menu
+        echo -e "${RED}No NVIDIA, AMD, or Intel GPU detected.${NC}"
         echo -e "${BLUE}Press any key to return to the main menu...${NC}"
         read -n 1 -s
         return
     fi
 
-    # Option to return to main menu after checking
     echo -e "${BLUE}Press any key to return to the main menu...${NC}"
     read -n 1 -s
 }
+
+# Function to check Intel iGPU details and status
+check_intel_gpu() {
+    echo -e "${BLUE}Checking Intel iGPU status...${NC}"
+    # Aquí puedes añadir comandos específicos para comprobar el estado de iGPUs Intel
+    intel_gpu_info=$(lspci | grep -i 'vga\|3d\|2d' | grep -i 'intel')
+    echo "$intel_gpu_info"
+}
+
 
 # Function to check NVIDIA GPU details and status
 check_nvidia_gpu() {
@@ -122,10 +127,34 @@ backup_file() {
     fi
 
     backup_filename="${BACKUP_DIR}/sources.list.bak_$(date +%Y%m%d_%H%M%S)"
-    sudo cp "/etc/apt/sources.list" "$backup_filename"
+     cp "/etc/apt/sources.list" "$backup_filename" || { echo -e "${RED}Failed to create backup.${NC}"; exit 1; }
     echo -e "${GREEN}Backup created at $backup_filename.${NC}"
 
     echo "BACKUP_CREATED" >> "$STATE_FILE"
+}
+
+# Function to rollback GPU passthrough configuration
+rollback_gpu_passthrough() {
+    echo -e "${BLUE}=================================================${NC}"
+    echo -e "${BLUE}| Rolling Back GPU Passthrough Configuration    |${NC}"
+    echo -e "${BLUE}=================================================${NC}"
+
+    if grep -Fxq "PASSTHROUGH_CONFIGURED" "$STATE_FILE"; then
+        # Remove passthrough settings
+        sed -i '/blacklist nouveau/d' /etc/modprobe.d/blacklist.conf
+        sed -i '/blacklist nvidia/d' /etc/modprobe.d/blacklist.conf
+        sed -i "/options vfio-pci ids=$(grep 'ids=' /etc/modprobe.d/vfio.conf | awk '{print $3}')/d" /etc/modprobe.d/vfio.conf
+
+        # Update kernel configuration
+         update-initramfs -u -k all || { echo -e "${RED}Failed to update initramfs.${NC}"; exit 1; }
+        sed -i '/PASSTHROUGH_CONFIGURED/d' "$STATE_FILE"
+        echo -e "${GREEN}Rollback completed.${NC}"
+    else
+        echo -e "${YELLOW}No GPU passthrough configuration found to rollback.${NC}"
+    fi
+
+    # Prompt user to reboot
+    ask_for_reboot
 }
 
 # Function to restore a previous backup of the file
@@ -162,7 +191,7 @@ restore_backup() {
         read answer
         case $answer in
             [yY])
-                sudo cp "$backup_file" "/etc/apt/sources.list"
+                 cp "$backup_file" "/etc/apt/sources.list"
                 echo -e "${GREEN}Backup restored.${NC}"
                 ;;
             *)
@@ -179,7 +208,7 @@ open_sources_list() {
     echo -e "${BLUE}=================================================${NC}"
     echo -e "${BLUE}| Opening sources.list file with nano         |${NC}"
     echo -e "${BLUE}=================================================${NC}"
-    sudo nano "/etc/apt/sources.list"
+     nano "/etc/apt/sources.list"
 }
 
 # Function to check if a line exists in the sources.list file
@@ -193,31 +222,23 @@ modify_sources_list() {
     echo -e "${BLUE}=================================================${NC}"
     echo -e "${BLUE}| Modifying sources.list file                  |${NC}"
     echo -e "${BLUE}=================================================${NC}"
-    echo -e "${YELLOW}Add the necessary lines to the sources.list file.${NC}"
+    echo -e "${YELLOW}Adding necessary lines to the sources.list file, if missing.${NC}"
 
     if grep -Fxq "SOURCES_LIST_MODIFIED" "$STATE_FILE"; then
         echo -e "${YELLOW}sources.list already modified. Skipping...${NC}"
         return 0
     fi
 
-    if line_exists "deb http://ftp.debian.org/debian bullseye main contrib" && \
-       line_exists "deb http://ftp.debian.org/debian bullseye-updates main contrib" && \
-       line_exists "deb http://security.debian.org/debian-security bullseye-security main contrib" && \
-       line_exists "# PVE pve-no-subscription repository provided by proxmox.com, NOT recommended for production use" && \
-       line_exists "deb http://download.proxmox.com/debian/pve bullseye pve-no-subscription"
-    then
-        echo -e "${GREEN}The sources.list file already contains the modifications.${NC}"
-    else
-        echo "deb http://ftp.debian.org/debian bullseye main contrib" | sudo tee -a "/etc/apt/sources.list"
-        echo "deb http://ftp.debian.org/debian bullseye-updates main contrib" | sudo tee -a "/etc/apt/sources.list"
-        echo "deb http://security.debian.org/debian-security bullseye-security main contrib" | sudo tee -a "/etc/apt/sources.list"
-        echo "# PVE pve-no-subscription repository provided by proxmox.com, NOT recommended for production use" | sudo tee -a "/etc/apt/sources.list"
-        echo "deb http://download.proxmox.com/debian/pve bullseye pve-no-subscription" | sudo tee -a "/etc/apt/sources.list"
+    add_to_file_if_not_exists "/etc/apt/sources.list" "deb http://ftp.debian.org/debian bullseye main contrib"
+    add_to_file_if_not_exists "/etc/apt/sources.list" "deb http://ftp.debian.org/debian bullseye-updates main contrib"
+    add_to_file_if_not_exists "/etc/apt/sources.list" "deb http://security.debian.org/debian-security bullseye-security main contrib"
+    add_to_file_if_not_exists "/etc/apt/sources.list" "# PVE pve-no-subscription repository provided by proxmox.com, NOT recommended for production use"
+    add_to_file_if_not_exists "/etc/apt/sources.list" "deb http://download.proxmox.com/debian/pve bullseye pve-no-subscription"
 
-        echo -e "${GREEN}sources.list file modified.${NC}"
-        echo "SOURCES_LIST_MODIFIED" >> "$STATE_FILE"
-    fi
+    echo -e "${GREEN}sources.list file modified.${NC}"
+    echo "SOURCES_LIST_MODIFIED" >> "$STATE_FILE"
 }
+
 
 # Function to add MSI options to the audio configuration file if not already added
 add_msi_options() {
@@ -254,7 +275,7 @@ apply_kernel_configuration() {
         return 0
     fi
 
-    sudo update-initramfs -u -k all
+     update-initramfs -u -k all
     echo -e "${GREEN}Kernel configuration applied.${NC}"
     echo "KERNEL_CONFIG_APPLIED" >> "$STATE_FILE"
 }
@@ -267,7 +288,7 @@ ask_for_reboot() {
     case $answer in
         [yY])
             echo -e "${BLUE}Restarting the system...${NC}"
-            sudo reboot
+             reboot
             ;;
         *)
             echo -e "${BLUE}Please remember to restart the system manually.${NC}"
@@ -280,7 +301,7 @@ add_to_file_if_not_exists() {
     local file="$1"
     local entry="$2"
     if ! grep -Fxq "$entry" "$file"; then
-        echo "$entry" | sudo tee -a "$file"
+        echo "$entry" |  tee -a "$file"
     fi
 }
 
@@ -349,7 +370,8 @@ main() {
         echo -e "${BLUE} 1) Install Dependencies${NC}"
         echo -e "${BLUE} 2) Configure GPU Passthrough${NC}"
         echo -e "${BLUE} 3) Check GPU Installation${NC}"
-        echo -e "${BLUE} 4) Exit${NC}"
+        echo -e "${BLUE} 4) Rollback GPU Passthrough Configuration${NC}"
+        echo -e "${BLUE} 5) Exit${NC}"
         echo -e "${BLUE}=================================================${NC}"
         read -p "$(echo -e ${BLUE}Select an option:${NC} )" option
 
@@ -402,6 +424,9 @@ main() {
                 check_gpu_installation
                 ;;
             4)
+                rollback_gpu_passthrough
+                ;;
+            5)
                 exit
                 ;;
             *)
