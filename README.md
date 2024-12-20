@@ -8,35 +8,43 @@
 - [Compatible Proxmox Versions](#compatible-proxmox-versions)
 - [Usage and Installation](#usage-and-installation)
 - [Contribution](#contribution)
+- [Support](#support)
 - [License](#license)
+
+> ⚠️ **Experimental Features Notice**  
+> The latest updates, including Intel iGPU detection, rollback functionality for GPU passthrough, and multi-GPU support, are currently in a testing phase. These features may not be fully stable and could require further adjustments. Use with caution, especially in production environments, and report any issues you encounter to help improve the script’s reliability.
 
 ## Overview
 
-The **Proxmox-Enhanced-Configuration-Utility (PECU)** is a powerful Bash script designed to streamline the configuration and management of Proxmox VE environments. This utility provides an interactive menu system for performing key tasks such as managing package repositories and configuring GPU passthrough, making it easier to optimize your Proxmox setup for various use cases.
+The **Proxmox-Enhanced-Configuration-Utility (PECU)** is a powerful Bash script designed to streamline the configuration and management of Proxmox VE environments. This utility provides an interactive menu system for performing key tasks, such as managing package repositories and configuring GPU passthrough, simplifying Proxmox setup and optimization for diverse use cases.
 
 ## Features
 
 The `proxmox-configurator.sh` script includes the following features:
 
 - **Dependency Installation**:
-  - **Backup and Restore**: Create and restore backups of the `sources.list` file to ensure you have safe points to revert to.
+  - **Backup and Restore**: Create and restore backups of the `sources.list` file, ensuring recovery points for system configurations.
   - **Modify `sources.list`**: Edit the `sources.list` file directly within the script interface using Nano or automatically add recommended repositories.
-  
+
 - **GPU Passthrough Configuration**:
-  - Automatically configure GPU passthrough to assign a dedicated graphics card to virtual machines, optimizing performance for compute-intensive tasks.
+  - Set up GPU passthrough to assign dedicated graphics cards to virtual machines, improving performance for compute-intensive tasks.
+  - Includes rollback functionality to undo passthrough configurations if needed.
 
 - **System Configuration Checks**:
   - Verifies if the Proxmox package repositories are correctly configured.
-  - Displays the state of IOMMU and MSI options for better hardware optimization.
+  - Displays the state of IOMMU and MSI options to optimize hardware settings.
+
+- **Multi-GPU Support**:
+  - Detects and displays details for NVIDIA, AMD, and Intel GPUs, with tailored options for Data Center or Gaming GPUs.
 
 - **Exit Option**:
-  - Safely exit the script with a clean shutdown of any operations in progress.
+  - Safely exits the script, ensuring a clean shutdown of any ongoing operations.
 
 ## Requirements
 
 To use this script, the following are required:
 
-- **Proxmox VE**: This script is specifically designed for use on Proxmox VE systems.
+- **Proxmox VE**: This script is designed specifically for use on Proxmox VE systems.
 - **Root Privileges**: Must be run with root or sudo privileges to modify system configurations and perform installations.
 - **Basic Proxmox Knowledge**: Familiarity with Proxmox setup and configuration is recommended for optimal use of the script's features.
 
@@ -56,7 +64,7 @@ You can run the script directly from your Proxmox server or clone the repository
 To run the script directly from the internet, use the following command:
 
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/main/proxmox-configurator.sh)
+bash <(curl -s [https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/main/proxmox-configurator.sh](https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/refs/heads/Update/proxmox-configurator.sh))
 ```
 
 > **Note**: This command requires an active internet connection and is specific to Linux systems with Bash and Curl installed.
@@ -107,6 +115,7 @@ We welcome contributions to enhance the functionality and compatibility of this 
 
 - **Issues**: Report bugs or suggest new features by opening an issue on our GitHub repository.
 - **Pull Requests**: Submit your improvements through a pull request. Make sure to follow the contribution guidelines in the repository.
+
 ## Support
 
 If you find this project helpful and would like to support its development, consider buying me a coffee!
