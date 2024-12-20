@@ -64,7 +64,7 @@ You can run the script directly from your Proxmox server or clone the repository
 To run the script directly from the internet, use the following command:
 
 ```bash
-bash <(curl -s [https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/main/proxmox-configurator.sh](https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/refs/heads/Update/proxmox-configurator.sh))
+bash <(curl -sL https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/refs/heads/main/proxmox-configurator.sh)
 ```
 
 > **Note**: This command requires an active internet connection and is specific to Linux systems with Bash and Curl installed.
