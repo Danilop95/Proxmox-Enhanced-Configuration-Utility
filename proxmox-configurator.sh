@@ -13,7 +13,7 @@ mkdir -p "$BACKUP_DIR" || { echo -e "${RED}Failed to create backup directory.${N
 STATE_FILE="$BACKUP_DIR/script_state.txt"
 touch "$STATE_FILE" || { echo -e "${RED}Failed to create state file.${NC}"; exit 1; }
 
-# Function to initialize the state file
+#  Initialize the state file
 initialize_state() {
     if [[ ! -f "$STATE_FILE" ]]; then
         echo "INITIALIZED" > "$STATE_FILE"
@@ -26,7 +26,7 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-# Function to detect GPUs and check installation
+#  Detect GPUs and check installation
 check_gpu_installation() {
     echo -e "${BLUE}=================================================${NC}"
     echo -e "${BLUE}| Checking GPU Installation                     |${NC}"
@@ -55,7 +55,7 @@ check_gpu_installation() {
     read -n 1 -s
 }
 
-# Function to check Intel iGPU details and status
+#  Check Intel iGPU details and status
 check_intel_gpu() {
     echo -e "${BLUE}Checking Intel iGPU status...${NC}"
     # Aquí puedes añadir comandos específicos para comprobar el estado de iGPUs Intel
@@ -64,7 +64,7 @@ check_intel_gpu() {
 }
 
 
-# Function to check NVIDIA GPU details and status
+#  Check NVIDIA GPU details and status
 check_nvidia_gpu() {
     if command -v nvidia-smi &> /dev/null; then
         echo -e "${BLUE}nvidia-smi found. Checking NVIDIA GPU status...${NC}"
@@ -82,7 +82,7 @@ check_nvidia_gpu() {
     fi
 }
 
-# Function to check AMD GPU details and status
+#  Check AMD GPU details and status
 check_amd_gpu() {
     echo -e "${BLUE}Listing AMD GPUs...${NC}"
     amd_gpu_info=$(lshw -C display | grep -i 'amd')
@@ -104,7 +104,7 @@ check_amd_gpu() {
     fi
 }
 
-# Function to create a backup of the file only if not already done
+#  Create a backup of the file only if not already done
 backup_file() {
     echo -e "${BLUE}=================================================${NC}"
     echo -e "${BLUE}| Creating a backup of sources.list |${NC}"
@@ -133,7 +133,7 @@ backup_file() {
     echo "BACKUP_CREATED" >> "$STATE_FILE"
 }
 
-# Function to rollback GPU passthrough configuration
+#  Rollback GPU passthrough configuration
 rollback_gpu_passthrough() {
     echo -e "${BLUE}=================================================${NC}"
     echo -e "${BLUE}| Rolling Back GPU Passthrough Configuration    |${NC}"
@@ -145,7 +145,7 @@ rollback_gpu_passthrough() {
         sed -i '/blacklist nvidia/d' /etc/modprobe.d/blacklist.conf
         sed -i "/options vfio-pci ids=$(grep 'ids=' /etc/modprobe.d/vfio.conf | awk '{print $3}')/d" /etc/modprobe.d/vfio.conf
 
-        # Update kernel configuration
+        # Update kernel configuration same like POlloLoco Doc "I'm not sure if this is needed, but it doesn't hurt :)"
          update-initramfs -u -k all || { echo -e "${RED}Failed to update initramfs.${NC}"; exit 1; }
         sed -i '/PASSTHROUGH_CONFIGURED/d' "$STATE_FILE"
         echo -e "${GREEN}Rollback completed.${NC}"
@@ -157,7 +157,7 @@ rollback_gpu_passthrough() {
     ask_for_reboot
 }
 
-# Function to restore a previous backup of the file
+#  Restore a previous backup of the file
 restore_backup() {
     echo -e "${BLUE}=================================================${NC}"
     echo -e "${BLUE}| Restoring a previous backup of sources.list |${NC}"
@@ -203,7 +203,7 @@ restore_backup() {
     fi
 }
 
-# Function to open the sources.list file with nano
+#  Open the sources.list file with nano
 open_sources_list() {
     echo -e "${BLUE}=================================================${NC}"
     echo -e "${BLUE}| Opening sources.list file with nano         |${NC}"
@@ -211,13 +211,13 @@ open_sources_list() {
      nano "/etc/apt/sources.list"
 }
 
-# Function to check if a line exists in the sources.list file
+#  Check if a line exists in the sources.list file
 line_exists() {
     local line="$1"
     grep -Fxq "$line" "/etc/apt/sources.list"
 }
 
-# Function to modify the sources.list file if not already modified
+#  Modify the sources.list file if not already modified
 modify_sources_list() {
     echo -e "${BLUE}=================================================${NC}"
     echo -e "${BLUE}| Modifying sources.list file                  |${NC}"
@@ -240,7 +240,7 @@ modify_sources_list() {
 }
 
 
-# Function to add MSI options to the audio configuration file if not already added
+#  Add MSI options to the audio configuration file if not already added
 add_msi_options() {
     echo -e "${BLUE}=================================================${NC}"
     echo -e "${BLUE}| Adding MSI options for audio                  |${NC}"
@@ -256,7 +256,63 @@ add_msi_options() {
     echo "MSI_OPTIONS_ADDED" >> "$STATE_FILE"
 }
 
-# Function to check if IOMMU is enabled
+# UPDATE REVISION ////////////////////////////////////////////////
+# Enable IOMMU (based on Pollo´s doc)
+
+enable_iommu(){
+    # Check if IOMMU is already enabled
+    if grep -Fxq "IOMMU_ENABLED" "$STATE_FILE"; then
+        echo -e "${YELLOW}IOMMU is already enabled. Skipping...${NC}"
+        return
+    fi
+
+    echo -e "${BLUE}=================================================${NC}"
+    echo -e "${BLUE}| Enabling IOMMU (based on POlloLoco's doc)      |${NC}"
+    echo -e "${BLUE}=================================================${NC}"
+
+    # According to POlloLoco's documentation:
+    # 1) You must enable IOMMU in your BIOS/UEFI manually (cannot be automated).
+    # 2) Append 'intel_iommu=on' or an equivalent parameter to the kernel.
+    # 3) Depending on your setup, you might be using GRUB or systemd-boot.
+
+    # Detect CPU vendor (Intel or AMD)
+    local vendor
+    vendor=$(grep -m1 'vendor_id' /proc/cpuinfo | awk -F':' '{print $2}' | xargs)
+
+    # Check which bootloader is in use
+    if [[ -f "/etc/default/grub" ]]; then
+        echo -e "${BLUE}Detected GRUB...${NC}"
+        if [[ "$vendor" == "GenuineIntel" ]]; then
+            echo -e "${GREEN}Intel CPU detected. Appending 'intel_iommu=on'...${NC}"
+            sed -i 's|\(GRUB_CMDLINE_LINUX_DEFAULT="[^"]*\)|\1 intel_iommu=on|' /etc/default/grub
+        else
+            echo -e "${GREEN}AMD CPU detected. Using 'iommu=pt' for performance.${NC}"
+            sed -i 's|\(GRUB_CMDLINE_LINUX_DEFAULT="[^"]*\)|\1 iommu=pt|' /etc/default/grub
+        fi
+        update-grub
+
+    elif [[ -f "/etc/kernel/cmdline" ]]; then
+        echo -e "${BLUE}Detected systemd-boot...${NC}"
+        if [[ "$vendor" == "GenuineIntel" ]]; then
+            echo -e "${GREEN}Intel CPU detected. Appending 'intel_iommu=on'...${NC}"
+            sed -i 's|$| intel_iommu=on|' /etc/kernel/cmdline
+        else
+            echo -e "${GREEN}AMD CPU detected. Appending 'iommu=pt' for performance.${NC}"
+            sed -i 's|$| iommu=pt|' /etc/kernel/cmdline
+        fi
+        proxmox-boot-tool refresh
+
+    else
+        echo -e "${RED}Could not detect GRUB or systemd-boot. Please enable IOMMU manually.${NC}"
+        return
+    fi
+
+    # Mark IOMMU as enabled in the state file
+    echo "IOMMU_ENABLED" >> "$STATE_FILE"
+    echo -e "${GREEN}IOMMU configuration appended. A reboot is required for changes to take effect.${NC}"
+}
+
+#  Check if IOMMU is enabled
 check_iommu() {
     echo -e "${BLUE}=================================================${NC}"
     echo -e "${BLUE}| Checking if IOMMU is enabled                  |${NC}"
@@ -264,7 +320,7 @@ check_iommu() {
     dmesg | grep -e DMAR -e IOMMU
 }
 
-# Function to apply kernel configuration if not already applied
+#  Apply kernel configuration if not already applied
 apply_kernel_configuration() {
     echo -e "${BLUE}=================================================${NC}"
     echo -e "${BLUE}| Applying kernel configuration                 |${NC}"
@@ -275,12 +331,12 @@ apply_kernel_configuration() {
         return 0
     fi
 
-     update-initramfs -u -k all
+    update-initramfs -u -k all
     echo -e "${GREEN}Kernel configuration applied.${NC}"
     echo "KERNEL_CONFIG_APPLIED" >> "$STATE_FILE"
 }
 
-# Function to ask if the user wants to restart
+# Ask if the user wants to restart
 ask_for_reboot() {
     echo -e "${BLUE}=================================================${NC}"
     echo -n -e "${BLUE}Do you want to restart now?${NC} (y/n): "
@@ -288,7 +344,7 @@ ask_for_reboot() {
     case $answer in
         [yY])
             echo -e "${BLUE}Restarting the system...${NC}"
-             reboot
+            reboot
             ;;
         *)
             echo -e "${BLUE}Please remember to restart the system manually.${NC}"
@@ -296,7 +352,7 @@ ask_for_reboot() {
     esac
 }
 
-# Function to add an entry to a file if it doesn't exist
+# Add an entry to a file if it doesn't exist
 add_to_file_if_not_exists() {
     local file="$1"
     local entry="$2"
@@ -305,7 +361,7 @@ add_to_file_if_not_exists() {
     fi
 }
 
-# Function to search for GPU devices
+# Search for GPU devices
 search_gpu_device() {
     echo -e "${BLUE}=================================================${NC}"
     echo -e "${BLUE}|        Available Graphics Devices             |${NC}"
@@ -320,7 +376,7 @@ search_gpu_device() {
     lspci -v | grep -i "$device"
 }
 
-# Function to read the GPU ID
+#  Read the GPU ID
 read_gpu_id() {
     echo -e "${BLUE}Enter the ID of the video device (format xx:xx.x):${NC}"
     read GPU_ID
@@ -329,7 +385,7 @@ read_gpu_id() {
     echo $GPU_VENDOR_ID
 }
 
-# Function to configure GPU passthrough
+#  Configure GPU passthrough
 configure_gpu_passthrough() {
     echo -e "${BLUE}=================================================${NC}"
     echo -e "${BLUE}|        GPU Passthrough Configuration           |${NC}"
