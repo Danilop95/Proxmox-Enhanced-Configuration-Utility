@@ -8,7 +8,7 @@ YELLOW='\e[0;33m'
 NC='\e[0m' # No color
 
 # Backup directory path and state file
-BACKUP_DIR="$(dirname "$0")/backup-script"
+BACKUP_DIR="/root/backup-script"
 mkdir -p "$BACKUP_DIR" || { echo -e "${RED}Failed to create backup directory.${NC}"; exit 1; }
 STATE_FILE="$BACKUP_DIR/script_state.txt"
 touch "$STATE_FILE" || { echo -e "${RED}Failed to create state file.${NC}"; exit 1; }
