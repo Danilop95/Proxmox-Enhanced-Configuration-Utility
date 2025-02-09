@@ -7,11 +7,19 @@ BLUE='\e[0;34m'
 YELLOW='\e[0;33m'
 NC='\e[0m' # No color
 
-# Backup directory path and state file
+# Define backup directory path and state file
 BACKUP_DIR="/root/backup-script"
-mkdir -p "$BACKUP_DIR" || { echo -e "${RED}Failed to create backup directory.${NC}"; exit 1; }
 STATE_FILE="$BACKUP_DIR/script_state.txt"
-touch "$STATE_FILE" || { echo -e "${RED}Failed to create state file.${NC}"; exit 1; }
+
+# Change ownership and permissions of the backup directory
+sudo chown -R user:user "$BACKUP_DIR"
+sudo chmod -R 755 "$BACKUP_DIR"
+
+# Create the backup directory if it doesn't exist
+mkdir -p "$BACKUP_DIR" || { echo -e "${RED}Error: Failed to create backup directory.${NC}"; exit 1; }
+
+# Create the state file if it doesn't exist
+touch "$STATE_FILE" || { echo -e "${RED}Error: Failed to create state file.${NC}"; exit 1; }
 
 #  Initialize the state file
 initialize_state() {
