@@ -35,11 +35,12 @@ jobs:
           cp proxmox-configurator.sh PECU-${{ env.VERSION }}/
           tar -czvf PECU-${{ env.VERSION }}.tar.gz PECU-${{ env.VERSION }}
 
-      - name: Crear GitHub Release
+      - name: Crear o actualizar GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.VERSION }}
           name: "Release v${{ env.VERSION }}"
+          update: true
           body: |
             ### What's New in This Update
 
@@ -60,15 +61,15 @@ jobs:
             Alternatively, you can download the source code archive (tar.gz) from the release assets and run the script locally:
             1. Download the archive.
             2. Extract the archive:
-            ```bash
-            tar -xzvf PECU-${{ env.VERSION }}.tar.gz
-            ```
+               ```bash
+               tar -xzvf PECU-${{ env.VERSION }}.tar.gz
+               ```
             3. Change to the extracted directory and run the script:
-            ```bash
-            cd PECU-${{ env.VERSION }}
-            chmod +x proxmox-configurator.sh
-            sudo ./proxmox-configurator.sh
-            ```
+               ```bash
+               cd PECU-${{ env.VERSION }}
+               chmod +x proxmox-configurator.sh
+               sudo ./proxmox-configurator.sh
+               ```
 
             ### Important Note
 
