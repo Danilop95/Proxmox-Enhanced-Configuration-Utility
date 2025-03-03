@@ -1,0 +1,57 @@
+name: Auto Release PECU
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y dpkg-dev
+
+      - name: Get version number
+        id: version
+        run: |
+          VERSION=$(date +'%Y.%m.%d')
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "VERSION=$VERSION"  # Debugging
+
+      - name: Package script into tar.gz
+        run: |
+          mkdir PECU-$VERSION
+          cp proxmox-configurator.sh PECU-$VERSION/
+          tar -czvf PECU-$VERSION.tar.gz PECU-$VERSION
+
+      - name: Create Debian package (.deb)
+        run: |
+          mkdir -p pecu-$VERSION/DEBIAN
+          echo "Package: PECU" > pecu-$VERSION/DEBIAN/control
+          echo "Version: $VERSION" >> pecu-$VERSION/DEBIAN/control
+          echo "Architecture: all" >> pecu-$VERSION/DEBIAN/control
+          echo "Maintainer: Danilop95" >> pecu-$VERSION/DEBIAN/control
+          echo "Description: Proxmox Enhanced Configuration Utility" >> pecu-$VERSION/DEBIAN/control
+          mkdir -p pecu-$VERSION/usr/local/bin/
+          cp proxmox-configurator.sh pecu-$VERSION/usr/local/bin/pecu
+          chmod +x pecu-$VERSION/usr/local/bin/pecu
+          dpkg-deb --build pecu-$VERSION pecu-$VERSION.deb
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSION }}
+          name: "Release v${{ env.VERSION }}"
+          body: "Automated release of PECU for Proxmox."
+          draft: false
+          prerelease: false
+          files: |
+            PECU-${{ env.VERSION }}.tar.gz
+            pecu-${{ env.VERSION }}.deb
