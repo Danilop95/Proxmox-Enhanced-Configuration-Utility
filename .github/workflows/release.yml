@@ -1,5 +1,8 @@
 name: Auto Release PECU
 
+permissions:
+  releases: write
+
 on:
   push:
     branches:
