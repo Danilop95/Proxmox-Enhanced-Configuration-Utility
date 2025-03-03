@@ -3,7 +3,7 @@ name: Auto Release PECU
 on:
   push:
     branches:
-      - testing
+      - main
   workflow_dispatch:
 
 jobs:
