@@ -53,7 +53,33 @@ jobs:
         with:
           tag_name: v${{ env.VERSION }}
           name: "Release v${{ env.VERSION }}"
-          body: "Automated release of PECU for Proxmox."
+          body: |
+            ### What's New in This Update
+
+            This update brings several improvements and bug fixes to enhance the performance and reliability of the Proxmox Enhanced Configuration Utility (PECU). Detailed changes include performance optimizations and improved error handling for a smoother experience.
+
+            ### How to Update
+
+            To update your PECU installation, follow one of these methods:
+
+            **Direct Execution:**  
+            Run the latest version of the script directly from GitHub by executing:
+            ```bash
+            bash <(curl -sL https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/refs/heads/main/proxmox-configurator.sh)
+            ```
+
+            **Local Installation:**  
+            Clone the repository, set the proper permissions, and run the script locally:
+            ```bash
+            git clone https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility.git
+            cd Proxmox-Enhanced-Configuration-Utility
+            chmod +x proxmox-configurator.sh
+            sudo ./proxmox-configurator.sh
+            ```
+
+            ### Support the Project
+
+            If you enjoy using PECU and would like to see it continue to improve, consider making a donation. Your support helps maintain and expand this project. Thank you!
           draft: false
           prerelease: false
           files: |
