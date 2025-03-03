@@ -3,7 +3,7 @@ name: Auto Release PECU
 on:
   push:
     branches:
-      - main
+      - testing
   workflow_dispatch:
 
 jobs:
@@ -12,7 +12,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      releases: write
 
     steps:
       - name: Checkout repository
