@@ -48,28 +48,30 @@ jobs:
 
             ### How to Update
 
-            You can update your PECU installation by using the source code provided in this release. There are two ways to run this version:
+            You can update your PECU installation using the source code provided in this release. There are two ways to run this version:
 
             **Direct Execution (Latest Version):**  
-            Run the script directly from GitHub using this command:
+            Run the script directly from GitHub with this command:
             ```bash
             bash <(curl -sL https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/v${{ env.VERSION }}/proxmox-configurator.sh)
             ```
             This command fetches and executes the specific version (v${{ env.VERSION }}) of the script.
 
             **Local Installation:**  
-            Alternatively, you can download the source code archive (tar.gz) from the release assets and run the script locally:
-            1. Download the archive.
-            2. Extract the archive:
-               ```bash
-               tar -xzvf PECU-${{ env.VERSION }}.tar.gz
-               ```
-            3. Change to the extracted directory and run the script:
-               ```bash
-               cd PECU-${{ env.VERSION }}
-               chmod +x proxmox-configurator.sh
-               sudo ./proxmox-configurator.sh
-               ```
+            Alternatively, you can automate the entire process by executing the following command:
+            ```bash
+            wget https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/releases/download/v${{ env.VERSION }}/PECU-${{ env.VERSION }}.tar.gz && \
+            tar -xzvf PECU-${{ env.VERSION }}.tar.gz && \
+            cd PECU-${{ env.VERSION }} && \
+            chmod +x proxmox-configurator.sh && \
+            sudo ./proxmox-configurator.sh
+            ```
+            This single command will:
+            1. Download the source code archive.
+            2. Extract the archive.
+            3. Change to the extracted directory.
+            4. Set executable permissions.
+            5. Execute the script.
 
             ### Important Note
 
