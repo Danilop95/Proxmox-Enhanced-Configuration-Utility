@@ -1,8 +1,5 @@
 name: Auto Release PECU
 
-permissions:
-  releases: write
-
 on:
   push:
     branches:
@@ -13,6 +10,9 @@ jobs:
   release:
     name: Crear GitHub Release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      releases: write
 
     steps:
       - name: Checkout repository
