@@ -35,24 +35,12 @@ jobs:
           cp proxmox-configurator.sh PECU-${{ env.VERSION }}/
           tar -czvf PECU-${{ env.VERSION }}.tar.gz PECU-${{ env.VERSION }}
 
-      - name: Crear paquete Debian (.deb)
-        run: |
-          mkdir -p pecu-${{ env.VERSION }}/DEBIAN
-          echo "Package: PECU" > pecu-${{ env.VERSION }}/DEBIAN/control
-          echo "Version: ${{ env.VERSION }}" >> pecu-${{ env.VERSION }}/DEBIAN/control
-          echo "Architecture: all" >> pecu-${{ env.VERSION }}/DEBIAN/control
-          echo "Maintainer: Danilop95" >> pecu-${{ env.VERSION }}/DEBIAN/control
-          echo "Description: Proxmox Enhanced Configuration Utility" >> pecu-${{ env.VERSION }}/DEBIAN/control
-          mkdir -p pecu-${{ env.VERSION }}/usr/local/bin/
-          cp proxmox-configurator.sh pecu-${{ env.VERSION }}/usr/local/bin/pecu
-          chmod +x pecu-${{ env.VERSION }}/usr/local/bin/pecu
-          dpkg-deb --build pecu-${{ env.VERSION }} pecu-${{ env.VERSION }}.deb
-
-      - name: Crear GitHub Release
+      - name: Crear o actualizar GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.VERSION }}
           name: "Release v${{ env.VERSION }}"
+          update: true
           body: |
             ### What's New in This Update
 
@@ -60,28 +48,42 @@ jobs:
 
             ### How to Update
 
-            To update your PECU installation, follow one of these methods:
+            You can update your PECU installation using the source code provided in this release. There are two ways to run this version:
 
-            **Direct Execution:**  
-            Run the latest version of the script directly from GitHub by executing:
+            **Direct Execution (Latest Version):**  
+            Run the script directly from GitHub with this command:
             ```bash
-            bash <(curl -sL https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/refs/heads/main/proxmox-configurator.sh)
+            bash <(curl -sL https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/v${{ env.VERSION }}/proxmox-configurator.sh)
             ```
+            This command fetches and executes the specific version (v${{ env.VERSION }}) of the script.
 
             **Local Installation:**  
-            Clone the repository, set the proper permissions, and run the script locally:
+            Alternatively, you can automate the entire process by executing the following command:
             ```bash
-            git clone https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility.git
-            cd Proxmox-Enhanced-Configuration-Utility
-            chmod +x proxmox-configurator.sh
+            wget https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/releases/download/v${{ env.VERSION }}/PECU-${{ env.VERSION }}.tar.gz && \
+            tar -xzvf PECU-${{ env.VERSION }}.tar.gz && \
+            cd PECU-${{ env.VERSION }} && \
+            chmod +x proxmox-configurator.sh && \
             sudo ./proxmox-configurator.sh
             ```
+            This single command will:
+            1. Download the source code archive.
+            2. Extract the archive.
+            3. Change to the extracted directory.
+            4. Set executable permissions.
+            5. Execute the script.
+
+            ### Important Note
+
+            This release is a test release — it's the first time we're implementing automated releases. We apologize for any inconvenience caused by this initial notification. We are working to improve the release process for future versions.
 
             ### Support the Project
 
             If you enjoy using PECU and would like to see it continue to improve, consider making a donation. Your support helps maintain and expand this project. Thank you!
+
+            Best regards,  
+            Danilop95
           draft: false
           prerelease: false
           files: |
             PECU-${{ env.VERSION }}.tar.gz
-            pecu-${{ env.VERSION }}.deb
