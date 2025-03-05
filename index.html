@@ -1,52 +1,768 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Proxmox-Enhanced-Configuration-Utility (PECU) - Streamline your Proxmox VE environment with automated GPU passthrough and package management.">
-    <meta name="keywords" content="Proxmox, PECU, GPU passthrough, Proxmox VE, virtualization, open source">
-    <title>Proxmox Enhanced Configuration Utility (PECU)</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <header>
-        <h1>Proxmox Enhanced Configuration Utility (PECU)</h1>
-        <p>Your go-to solution for easy GPU passthrough and Proxmox VE optimization.</p>
-        <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility" class="button primary">Explore on GitHub</a>
-    </header>
-    <main>
-        <section>
-            <h2>Why Choose PECU?</h2>
-            <p>The <strong>Proxmox-Enhanced-Configuration-Utility (PECU)</strong> is a comprehensive tool designed to simplify GPU passthrough and the overall management of Proxmox VE. Whether you are setting up GPU passthrough for the first time or managing multiple configurations, PECU provides an intuitive interface that guides you through each step, ensuring a smooth and optimized experience.</p>
-            <a href="#instructions" class="button secondary">Get Started with PECU</a>
-        </section>
-        <section id="instructions">
-            <h2>How to Install and Use PECU</h2>
-            <ol>
-                <li><strong>Clone the Repository:</strong> Run <code>git clone https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility.git</code>.</li>
-                <li><strong>Set Permissions:</strong> Use <code>chmod +x proxmox-configurator.sh</code> to make the script executable.</li>
-                <li><strong>Run the Script:</strong> Execute <code>sudo ./proxmox-configurator.sh</code> and follow the interactive prompts to configure your Proxmox VE environment.</li>
-                <li><strong>Enjoy a Fully Optimized Setup:</strong> Benefit from automated GPU passthrough configuration and efficient package management.</li>
-            </ol>
-            <p>If you find PECU helpful, consider giving it a star on GitHub to support further development!</p>
-            <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility" class="button primary">Star on GitHub</a>
-        </section>
-        <section>
-            <h2>Additional Features</h2>
-            <p>Beyond GPU passthrough, PECU offers features like automated dependency management and system configuration checks, ensuring your Proxmox environment is always at its best. Explore more features on our GitHub page.</p>
-        </section>
-        <section>
-            <h2>Support and Contribution</h2>
-            <p>We are continually improving PECU and welcome any feedback or contributions. Join our community on GitHub to report issues, suggest features, or contribute to the project.</p>
-            <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility" class="button secondary">Contribute on GitHub</a>
-            <div id="bmc-widget"></div>
-        </section>
-    </main>
-    <footer>
-        <p>&copy; 2024 Danilop95. All rights reserved.</p>
-    </footer>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proxmox-Enhanced-Configuration-Utility (PECU)</title>
+  <meta name="description" content="A comprehensive and versatile Bash script designed to simplify and optimize the configuration and management of Proxmox Virtual Environment (VE) systems.">
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://danilop95.github.io/Proxmox-Enhanced-Configuration-Utility/">
+  <meta property="og:title" content="Proxmox-Enhanced-Configuration-Utility (PECU)">
+  <meta property="og:description" content="Simplify and optimize Proxmox VE configuration and management with this powerful Bash script.">
+  <meta property="og:image" content="https://opengraph.githubassets.com/1/Danilop95/Proxmox-Enhanced-Configuration-Utility">
 
-    <!-- Buy Me A Coffee Widget -->
-    <script data-name="BMC-Widget" data-cfasync="false" src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js" data-id="danilop95ps" data-description="Support me on Buy me a coffee!" data-message="If you enjoy PECU, please consider supporting its development!" data-color="#FF813F" data-position="Right" data-x_margin="18" data-y_margin="18"></script>
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://danilop95.github.io/Proxmox-Enhanced-Configuration-Utility/">
+  <meta property="twitter:title" content="Proxmox-Enhanced-Configuration-Utility (PECU)">
+  <meta property="twitter:description" content="Simplify and optimize Proxmox VE configuration and management with this powerful Bash script.">
+  <meta property="twitter:image" content="https://opengraph.githubassets.com/1/Danilop95/Proxmox-Enhanced-Configuration-Utility">
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --blue-400: #60a5fa;
+      --blue-500: #3b82f6;
+      --blue-600: #2563eb;
+      --blue-700: #1d4ed8;
+      --blue-900: #1e3a8a;
+      --purple-500: #8b5cf6;
+      --gray-300: #d1d5db;
+      --gray-400: #9ca3af;
+      --gray-500: #6b7280;
+      --gray-700: #374151;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+      --yellow-400: #fbbf24;
+      --green-400: #34d399;
+      --yellow-brand: #FFDD00;
+      --patreon-brand: #F96854;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    body.dark {
+      background: linear-gradient(to bottom, var(--gray-900), var(--gray-800));
+      color: white;
+    }
+
+    body.light {
+      background: linear-gradient(to bottom, #f3f4f6, #e5e7eb);
+      color: var(--gray-900);
+    }
+
+    .gradient-text {
+      background: linear-gradient(to right, var(--blue-400), var(--purple-500));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .card {
+      transition: all 0.3s ease;
+    }
+
+    .dark .card {
+      background-color: rgba(31, 41, 55, 0.5);
+      border: 1px solid var(--gray-700);
+    }
+
+    .light .card {
+      background-color: rgba(255, 255, 255, 0.8);
+      border: 1px solid var(--gray-300);
+    }
+
+    .tab {
+      cursor: pointer;
+      padding: 0.5rem 1rem;
+      border-radius: 0.375rem;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+
+    .tab.active {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .light .tab.active {
+      background-color: rgba(0, 0, 0, 0.1);
+    }
+
+    .tab-content {
+      display: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .command-block {
+      position: relative;
+      border-radius: 0.375rem;
+      padding: 1rem;
+      overflow-x: auto;
+      font-family: monospace;
+      margin: 1rem 0;
+      transition: all 0.3s ease;
+    }
+
+    .dark .command-block {
+      background-color: var(--gray-900);
+    }
+
+    .light .command-block {
+      background-color: var(--gray-200);
+    }
+
+    .copy-button {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0.25rem;
+      border-radius: 0.25rem;
+      transition: all 0.3s ease;
+    }
+
+    .dark .copy-button {
+      color: var(--gray-400);
+    }
+
+    .light .copy-button {
+      color: var(--gray-600);
+    }
+
+    .copy-button:hover {
+      background-color: rgba(55, 65, 81, 0.5);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 9999px;
+      padding: 0.25rem 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-right: 0.5rem;
+      margin-bottom: 0.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .badge-blue {
+      background-color: rgba(37, 99, 235, 0.2);
+      color: var(--blue-300);
+      border: 1px solid var(--blue-700);
+    }
+
+    .badge-green {
+      background-color: rgba(5, 150, 105, 0.2);
+      color: #34d399;
+      border: 1px solid #065f46;
+    }
+
+    .github-ribbon {
+      position: fixed;
+      top: 0;
+      right: 0;
+      z-index: 50;
+    }
+
+    .ribbon-content {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 150px;
+      height: 150px;
+      overflow: hidden;
+    }
+
+    .ribbon-text {
+      position: absolute;
+      top: 0;
+      right: 0;
+      transform: translate(50%, -50%) rotate(45deg);
+      transform-origin: bottom left;
+      background-color: var(--blue-600);
+      color: white;
+      font-weight: bold;
+      padding: 0.25rem;
+      width: 200px;
+      text-align: center;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .feature-card {
+      height: 100%;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    .avatar {
+      width: 4rem;
+      height: 4rem;
+      border-radius: 9999px;
+      overflow: hidden;
+      transition: transform 0.3s ease;
+    }
+
+    .avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .contributor {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      transition: opacity 0.3s ease;
+    }
+
+    .contributor:hover {
+      opacity: 0.8;
+    }
+
+    .contributor:hover .avatar {
+      transform: scale(1.1);
+    }
+
+    #back-to-top {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      display: none;
+      background-color: var(--blue-600);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      font-size: 24px;
+      cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.3s ease;
+      z-index: 1000;
+    }
+
+    #back-to-top:hover {
+      background-color: var(--blue-700);
+      transform: translateY(-3px);
+    }
+
+    #theme-toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background-color: transparent;
+      border: none;
+      color: inherit;
+      font-size: 24px;
+      cursor: pointer;
+      z-index: 1000;
+    }
+
+    .loading-indicator {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: rgba(0, 0, 0, 0.5);
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+      z-index: 1000;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @media (max-width: 768px) {
+      .github-ribbon {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body class="dark min-h-screen">
+  <!-- GitHub Ribbon -->
+  <div class="github-ribbon hidden md:block">
+    <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility" target="_blank" rel="noopener noreferrer">
+      <div class="ribbon-content" aria-hidden="true">
+        <div class="ribbon-text">Fork me on GitHub</div>
+      </div>
+      <span class="sr-only">Fork me on GitHub</span>
+    </a>
+  </div>
+
+  <!-- Theme Toggle Button -->
+<!--   <button id="theme-toggle" aria-label="Toggle theme">
+    <i class="fas fa-sun"></i>
+  </button> -->
+
+  <!-- Back to Top Button -->
+  <button id="back-to-top" aria-label="Back to top">
+    <i class="fas fa-chevron-up"></i>
+  </button>
+
+  <!-- Loading Indicator -->
+  <div class="loading-indicator" id="loading-indicator">
+    <i class="fas fa-spinner fa-spin mr-2"></i> Loading...
+  </div>
+
+  <!-- Header -->
+  <header class="container mx-auto pt-16 pb-8 px-4">
+    <div class="flex flex-col items-center text-center">
+      <h1 class="text-4xl md:text-6xl font-bold mb-4 gradient-text">
+        Proxmox-Enhanced-Configuration-Utility
+      </h1>
+      <p class="text-xl md:text-2xl text-gray-300 max-w-3xl">
+        A comprehensive and versatile Bash script designed to simplify and optimize the configuration and management of Proxmox Virtual Environment (VE) systems.
+      </p>
+      
+      <div class="flex flex-wrap gap-4 mt-8 justify-center">
+        <a href="#installation" class="inline-flex items-center justify-center px-8 py-3 text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition duration-300">
+          Get Started
+        </a>
+        <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility" class="inline-flex items-center justify-center px-8 py-3 text-base font-medium rounded-md text-blue-400 border border-blue-600 hover:bg-blue-900/20 transition duration-300" target="_blank" rel="noopener noreferrer">
+          <i class="fab fa-github mr-2"></i>
+          View on GitHub
+        </a>
+      </div>
+      
+      <div class="flex flex-wrap gap-6 mt-8 justify-center github-stats">
+        <div class="flex items-center gap-2">
+          <i class="fas fa-star text-yellow-400"></i>
+          <span class="text-lg"><span id="stars-count">334</span> Stars</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <i class="fas fa-code-branch text-blue-400"></i>
+          <span class="text-lg"><span id="forks-count">19</span> Forks</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <i class="fas fa-eye text-green-400"></i>
+          <span class="text-lg"><span id="watchers-count">12</span> Watchers</span>
+        </div>
+      </div>
+    </div>
+  </header>
+  
+  <!-- Main Content -->
+  <main class="container mx-auto px-4 pb-16">
+    <!-- Overview Section -->
+    <section id="overview" class="mb-16">
+      <h2 class="text-3xl font-bold mb-6 text-center">Overview</h2>
+      <div class="card p-6 rounded-lg shadow-lg">
+        <p class="text-gray-300 dark:text-gray-400">
+          The Proxmox-Enhanced-Configuration-Utility (PECU) is a powerful Bash script designed to streamline the configuration and management of Proxmox VE environments. This utility provides an interactive menu system for performing key tasks, such as managing package repositories and configuring GPU passthrough, simplifying Proxmox setup and optimization for diverse use cases.
+        </p>
+        
+        <div class="mt-4 flex flex-wrap gap-2">
+          <span class="badge badge-blue">Proxmox VE</span>
+          <span class="badge badge-blue">GPU Passthrough</span>
+          <span class="badge badge-blue">System Configuration</span>
+          <span class="badge badge-blue">Automation</span>
+          <span class="badge badge-blue">Homelab</span>
+        </div>
+      </div>
+    </section>
+    
+    <!-- Features Section -->
+    <section id="features" class="mb-16">
+      <h2 class="text-3xl font-bold mb-6 text-center">Features</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Feature 1 -->
+        <div class="card p-6 feature-card rounded-lg shadow-lg">
+          <div class="mb-4">
+            <i class="fas fa-box text-blue-400 text-2xl"></i>
+          </div>
+          <h3 class="text-xl font-semibold mb-2">Dependency Installation</h3>
+          <p class="text-gray-400 dark:text-gray-300">
+            Backup and restore sources.list file, and edit repositories directly within the script interface.
+          </p>
+        </div>
+        
+        <!-- Feature 2 -->
+        <div class="card p-6 feature-card rounded-lg shadow-lg">
+          <div class="mb-4">
+            <i class="fas fa-hdd text-blue-400 text-2xl"></i>
+          </div>
+          <h3 class="text-xl font-semibold mb-2">GPU Passthrough Configuration</h3>
+          <p class="text-gray-400 dark:text-gray-300">
+            Set up GPU passthrough to assign dedicated graphics cards to virtual machines, with rollback functionality.
+          </p>
+        </div>
+        
+        <!-- Feature 3 -->
+        <div class="card p-6 feature-card rounded-lg shadow-lg">
+          <div class="mb-4">
+            <i class="fas fa-shield-alt text-blue-400 text-2xl"></i>
+          </div>
+          <h3 class="text-xl font-semibold mb-2">System Configuration Checks</h3>
+          <p class="text-gray-400 dark:text-gray-300">
+            Verifies if the Proxmox package repositories are correctly configured and displays IOMMU and MSI options.
+          </p>
+        </div>
+        
+        <!-- Feature 4 -->
+        <div class="card p-6 feature-card rounded-lg shadow-lg">
+          <div class="mb-4">
+            <i class="fas fa-microchip text-blue-400 text-2xl"></i>
+          </div>
+          <h3 class="text-xl font-semibold mb-2">Multi-GPU Support</h3>
+          <p class="text-gray-400 dark:text-gray-300">
+            Detects and displays details for NVIDIA, AMD, and Intel GPUs, with tailored options for different GPU types.
+          </p>
+        </div>
+        
+        <!-- Feature 5 -->
+        <div class="card p-6 feature-card rounded-lg shadow-lg">
+          <div class="mb-4">
+            <i class="fas fa-server text-blue-400 text-2xl"></i>
+          </div>
+          <h3 class="text-xl font-semibold mb-2">Proxmox Compatibility</h3>
+          <p class="text-gray-400 dark:text-gray-300">
+            Compatible with Proxmox VE 7.x and 8.x versions, ensuring broad support across environments.
+          </p>
+        </div>
+        
+        <!-- Feature 6 -->
+        <div class="card p-6 feature-card rounded-lg shadow-lg">
+          <div class="mb-4">
+            <i class="fas fa-exchange-alt text-blue-400 text-2xl"></i>
+          </div>
+          <h3 class="text-xl font-semibold mb-2">Rollback Functionality</h3>
+          <p class="text-gray-400 dark:text-gray-300">
+            Safely undo configurations with built-in rollback capabilities to restore previous system states.
+          </p>
+        </div>
+      </div>
+    </section>
+    
+    <!-- Installation Section -->
+    <section id="installation" class="mb-16">
+      <h2 class="text-3xl font-bold mb-6 text-center">Installation</h2>
+      <div class="card rounded-lg shadow-lg">
+        <div class="p-6">
+          <h3 class="text-xl font-semibold mb-2">Choose your installation method</h3>
+          <p class="text-gray-400 dark:text-gray-300 mb-4">
+            You can run the script directly from your Proxmox server or clone the repository
+          </p>
+        </div>
+        
+        <div class="px-6 pb-6">
+          <div class="tabs flex bg-gray-700/50 dark:bg-gray-200/50 rounded-md p-1 mb-4">
+            <div class="tab active flex-1 text-center" data-tab="direct" role="tab" aria-selected="true" tabindex="0">Direct Execution</div>
+            <div class="tab flex-1 text-center" data-tab="local" role="tab" aria-selected="false" tabindex="0">Local Installation</div>
+          </div>
+          
+          <div class="tab-content active" id="direct-tab" role="tabpanel">
+            <div class="space-y-4">
+              <p class="text-gray-300 dark:text-gray-600">
+                To run the script directly from the internet, use the following command:
+              </p>
+              <div class="command-block">
+                <pre><code>bash &lt;(curl -sL https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/refs/heads/main/proxmox-configurator.sh)</code></pre>
+                <button class="copy-button" data-command="bash <(curl -sL https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/refs/heads/main/proxmox-configurator.sh)" aria-label="Copy command">
+                  <i class="fas fa-copy"></i>
+                </button>
+              </div>
+              <p class="text-sm text-gray-400 dark:text-gray-500">
+                Note: This command requires an active internet connection and is specific to Linux systems with Bash and Curl installed.
+              </p>
+            </div>
+          </div>
+          
+          <div class="tab-content" id="local-tab" role="tabpanel">
+            <div class="space-y-4">
+              <p class="text-gray-300 dark:text-gray-600">Clone the Repository:</p>
+              <div class="command-block">
+                <pre><code>git clone https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility.git
+cd Proxmox-Enhanced-Configuration-Utility</code></pre>
+                <button class="copy-button" data-command="git clone https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility.git
+cd Proxmox-Enhanced-Configuration-Utility" aria-label="Copy command">
+                  <i class="fas fa-copy"></i>
+                </button>
+              </div>
+              
+              <p class="text-gray-300 dark:text-gray-600">Set Execution Permissions:</p>
+              <div class="command-block">
+                <pre><code>chmod +x proxmox-configurator.sh</code></pre>
+                <button class="copy-button" data-command="chmod +x proxmox-configurator.sh" aria-label="Copy command">
+                  <i class="fas fa-copy"></i>
+                </button>
+              </div>
+              
+              <p class="text-gray-300 dark:text-gray-600">Run the Script:</p>
+              <div class="command-block">
+                <pre><code>sudo ./proxmox-configurator.sh</code></pre>
+                <button class="copy-button" data-command="sudo ./proxmox-configurator.sh" aria-label="Copy command">
+                  <i class="fas fa-copy"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <!-- GitHub Integration Section -->
+    <section id="github-integration" class="mb-16">
+      <h2 class="text-3xl font-bold mb-6 text-center">GitHub Integration</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Latest Release -->
+        <div class="card rounded-lg shadow-lg">
+          <div class="p-6">
+            <h3 class="text-xl font-semibold mb-2">Latest Release</h3>
+            <p class="text-gray-400 dark:text-gray-300 mb-4">
+              Information about the most recent version
+            </p>
+          </div>
+          <div class="px-6 pb-6" id="latest-release">
+            <div class="flex items-center justify-between mb-4">
+              <h4 class="text-xl font-semibold" id="release-name">v2025.03.03</h4>
+              <span class="badge badge-green">Latest</span>
+            </div>
+            
+            <div class="flex flex-wrap gap-4 text-sm text-gray-400 dark:text-gray-500 mb-4">
+              <div class="flex items-center gap-1">
+                <i class="fas fa-tag"></i>
+                <span id="release-tag">v2025.03.03</span>
+              </div>
+              <div class="flex items-center gap-1">
+                <i class="fas fa-calendar"></i>
+                <span id="release-date">2025-03-03</span>
+              </div>
+            </div>
+            
+            <p class="text-gray-300 dark:text-gray-600 text-sm line-clamp-3" id="release-description">
+              Latest release of Proxmox-Enhanced-Configuration-Utility
+            </p>
+          </div>
+          <div class="px-6 pb-6">
+            <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/releases" class="block w-full py-2 px-4 text-center border border-blue-600 text-blue-400 hover:bg-blue-900/20 dark:hover:bg-blue-100/20 rounded-md transition duration-300" target="_blank" rel="noopener noreferrer">
+              View All Releases
+            </a>
+          </div>
+        </div>
+        
+        <!-- Contributors -->
+        <div class="card rounded-lg shadow-lg">
+          <div class="p-6">
+            <h3 class="text-xl font-semibold mb-2">Contributors</h3>
+            <p class="text-gray-400 dark:text-gray-300 mb-4">
+              People who have contributed to the project
+            </p>
+          </div>
+          <div class="px-6 pb-6">
+            <div class="grid grid-cols-3 gap-4" id="contributors-list">
+              <!-- Contributors will be loaded here -->
+              <a href="https://github.com/Danilop95" class="contributor" target="_blank" rel="noopener noreferrer">
+                <div class="avatar mb-2">
+                  <img src="https://avatars.githubusercontent.com/u/Danilop95" alt="Danilop95" loading="lazy" onerror="this.src='https://github.com/identicons/Danilop95.png'">
+                </div>
+                <span class="text-sm font-medium text-gray-300 dark:text-gray-600">Danilop95</span>
+                <span class="text-xs text-gray-400 dark:text-gray-500">100 commits</span>
+              </a>
+            </div>
+          </div>
+          <div class="px-6 pb-6">
+            <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/graphs/contributors" class="block w-full py-2 px-4 text-center border border-blue-600 text-blue-400 hover:bg-blue-900/20 dark:hover:bg-blue-100/20 rounded-md transition duration-300" target="_blank" rel="noopener noreferrer">
+              View All Contributors
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <!-- Support Section -->
+    <section id="support" class="mb-16">
+      <h2 class="text-3xl font-bold mb-6 text-center">Support the Project</h2>
+      <div class="card p-6 rounded-lg shadow-lg">
+        <div class="flex flex-col md:flex-row items-center justify-center gap-8">
+          <div class="text-center">
+            <h3 class="text-xl font-semibold mb-2">Buy Me A Coffee</h3>
+            <p class="text-gray-400 dark:text-gray-300 mb-4">Support the development with a coffee</p>
+            <a href="https://buymeacoffee.com/danilop95ps" class="inline-block py-2 px-4 bg-yellow-brand text-black font-medium rounded-md hover:bg-opacity-90 transition duration-300" target="_blank" rel="noopener noreferrer">
+              Buy Me A Coffee
+            </a>
+          </div>
+          
+          <div class="hidden md:block h-24 w-px bg-gray-700 dark:bg-gray-300"></div>
+          
+          <div class="text-center">
+            <h3 class="text-xl font-semibold mb-2">Patreon</h3>
+            <p class="text-gray-400 dark:text-gray-300 mb-4">Become a patron and support ongoing development</p>
+            <a href="https://patreon.com/dvnilxp95" class="inline-block py-2 px-4 bg-patreon-brand text-white font-medium rounded-md hover:bg-opacity-90 transition duration-300" target="_blank" rel="noopener noreferrer">
+              Support on Patreon
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  
+  <!-- Footer -->
+  <footer class="bg-gray-900 dark:bg-gray-100 py-8 border-t border-gray-800 dark:border-gray-200">
+    <div class="container mx-auto px-4">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <div class="mb-4 md:mb-0">
+          <p class="text-gray-400 dark:text-gray-600">
+            © <span id="current-year">2025</span> Proxmox-Enhanced-Configuration-Utility
+          </p>
+          <p class="text-gray-500 dark:text-gray-400 text-sm">
+            Licensed under the GNU General Public License v3.0 (GPL-3.0)
+          </p>
+        </div>
+        <div class="flex gap-4">
+          <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility" target="_blank" rel="noopener noreferrer" class="text-gray-400 dark:text-gray-600 hover:text-white dark:hover:text-gray-800 transition duration-300">
+            <i class="fab fa-github text-2xl"></i>
+            <span class="sr-only">GitHub</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Set current year in footer
+    document.getElementById('current-year').textContent = new Date().getFullYear();
+
+    // Tab functionality
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => {
+          t.classList.remove('active');
+          t.setAttribute('aria-selected', 'false');
+        });
+        tab.classList.add('active');
+        tab.setAttribute('aria-selected', 'true');
+        
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
+      });
+    });
+
+    // Copy command functionality
+    document.querySelectorAll('.copy-button').forEach(button => {
+      button.addEventListener('click', () => {
+        const command = button.dataset.command;
+        navigator.clipboard.writeText(command).then(() => {
+          const icon = button.querySelector('i');
+          icon.classList.remove('fa-copy');
+          icon.classList.add('fa-check');
+          
+          setTimeout(() => {
+            icon.classList.remove('fa-check');
+            icon.classList.add('fa-copy');
+          }, 2000);
+        });
+      });
+    });
+
+    // Back to top functionality
+    const backToTopButton = document.getElementById('back-to-top');
+    window.addEventListener('scroll', () => {
+      if (window.pageYOffset > 100) {
+        backToTopButton.style.display = 'block';
+      } else {
+        backToTopButton.style.display = 'none';
+      }
+    });
+
+    backToTopButton.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    // Theme toggle functionality
+    const themeToggle = document.getElementById('theme-toggle');
+    const body = document.body;
+    const icon = themeToggle.querySelector('i');
+
+    themeToggle.addEventListener('click', () => {
+      body.classList.toggle('light');
+      body.classList.toggle('dark');
+      icon.classList.toggle('fa-sun');
+      icon.classList.toggle('fa-moon');
+    });
+
+    // Fetch GitHub data
+    async function fetchGitHubData() {
+      const loadingIndicator = document.getElementById('loading-indicator');
+      loadingIndicator.style.display = 'block';
+
+      try {
+        const [repoResponse, releaseResponse, contributorsResponse] = await Promise.all([
+          fetch('https://api.github.com/repos/Danilop95/Proxmox-Enhanced-Configuration-Utility'),
+          fetch('https://api.github.com/repos/Danilop95/Proxmox-Enhanced-Configuration-Utility/releases/latest'),
+          fetch('https://api.github.com/repos/Danilop95/Proxmox-Enhanced-Configuration-Utility/contributors?per_page=6')
+        ]);
+
+        if (repoResponse.ok) {
+          const repoData = await repoResponse.json();
+          document.getElementById('stars-count').textContent = repoData.stargazers_count;
+          document.getElementById('forks-count').textContent = repoData.forks_count;
+          document.getElementById('watchers-count').textContent = repoData.subscribers_count || repoData.watchers_count;
+        }
+
+        if (releaseResponse.ok) {
+          const releaseData = await releaseResponse.json();
+          document.getElementById('release-name').textContent = releaseData.name;
+          document.getElementById('release-tag').textContent = releaseData.tag_name;
+          document.getElementById('release-date').textContent = new Date(releaseData.published_at).toLocaleDateString();
+          document.getElementById('release-description').textContent = releaseData.body;
+        }
+
+        if (contributorsResponse.ok) {
+          const contributorsData = await contributorsResponse.json();
+          const contributorsList = document.getElementById('contributors-list');
+          contributorsList.innerHTML = '';
+          
+          contributorsData.forEach(contributor => {
+            const contributorElement = document.createElement('a');
+            contributorElement.href = contributor.html_url;
+            contributorElement.className = 'contributor';
+            contributorElement.target = '_blank';
+            contributorElement.rel = 'noopener noreferrer';
+            
+            contributorElement.innerHTML = `
+              <div class="avatar mb-2">
+                <img src="${contributor.avatar_url}" alt="${contributor.login}" loading="lazy" onerror="this.src='https://github.com/identicons/${contributor.login}.png'">
+              </div>
+              <span class="text-sm font-medium text-gray-300 dark:text-gray-600">${contributor.login}</span>
+              <span class="text-xs text-gray-400 dark:text-gray-500">${contributor.contributions} commits</span>
+            `;
+            
+            contributorsList.appendChild(contributorElement);
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching GitHub data:', error);
+      } finally {
+        loadingIndicator.style.display = 'none';
+      }
+    }
+
+    // Call the function to fetch GitHub data
+    fetchGitHubData();
+  </script>
 </body>
-</html>
+</html><!-- Theme Toggle Button -->
