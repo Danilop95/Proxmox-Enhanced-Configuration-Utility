@@ -4,5 +4,5 @@
 !LICENSE
 !README.md
 !proxmox-configurator.sh
-
+!pecu_release_selector.sh
 !.gitignore
