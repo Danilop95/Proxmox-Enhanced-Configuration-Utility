@@ -1,8 +1,7 @@
-
 *
-
 !LICENSE
 !README.md
-!proxmox-configurator.sh
-!pecu_release_selector.sh
+!release-notes/release-notes.md
+!scripts/pecu_release_selector.sh
+!src/proxmox-configurator.sh
 !.gitignore

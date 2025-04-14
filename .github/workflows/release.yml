@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    paths:
+      - src/proxmox-configurator.sh
   workflow_dispatch:
 
 jobs:
@@ -32,7 +34,7 @@ jobs:
       - name: Empaquetar script en tar.gz
         run: |
           mkdir PECU-${{ env.VERSION }}
-          cp proxmox-configurator.sh PECU-${{ env.VERSION }}/
+          cp src/proxmox-configurator.sh PECU-${{ env.VERSION }}/
           tar -czvf PECU-${{ env.VERSION }}.tar.gz PECU-${{ env.VERSION }}
 
       - name: Crear o actualizar GitHub Release
@@ -53,7 +55,7 @@ jobs:
             **Direct Execution (Latest Version):**  
             Run the script directly from GitHub with this command:
             ```bash
-            bash <(curl -sL https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/v${{ env.VERSION }}/proxmox-configurator.sh)
+            bash <(curl -sL https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/v${{ env.VERSION }}/src/proxmox-configurator.sh)
             ```
             This command fetches and executes the specific version (v${{ env.VERSION }}) of the script.
 
