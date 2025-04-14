@@ -64,28 +64,30 @@ You can run the script directly from your Proxmox server or clone the repository
 To run the script directly from the internet, use the following command:
 
 ```bash
-bash <(curl -sL https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/refs/heads/main/proxmox-configurator.sh)
+bash <(curl -sL https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/refs/heads/main/pecu_release_selector.sh)
 ```
 
 > **Note**: This command requires an active internet connection and is specific to Linux systems with Bash and Curl installed.
 
 ### Local Installation
 
-Alternatively, you can clone this repository and run the script from your local Proxmox environment:
+If you prefer to work with the code locally, you can download the stable release archive directly from the [Releases](https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/releases) page. For example, for release `v2025.04.14`, run:
 
 1. **Clone the Repository**:
 
-   ```bash
-   git clone https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility.git
-   cd Proxmox-Enhanced-Configuration-Utility
-   ```
+```bash
+wget https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/releases/download/v2025.04.14/PECU-2025.04.14.tar.gz && \
+tar -xzvf PECU-2025.04.14.tar.gz && \
+cd PECU-2025.04.14
+
+```
 
 2. **Set Execution Permissions**:
 
    Ensure the script has the necessary execution permissions. If not, grant them with:
 
    ```bash
-   chmod +x proxmox-configurator.sh
+   chmod +x proxmox-configurator.sh 
    ```
 
 3. **Run the Script**:
@@ -99,15 +101,6 @@ Alternatively, you can clone this repository and run the script from your local 
 4. **Follow the Interactive Menu**:
 
    The script will present an interactive menu. Follow the on-screen instructions to perform the desired operations.
-
-### Common Commands
-
-Here are some common commands to use with this script:
-
-```bash
-chmod +x proxmox-configurator.sh
-sudo ./proxmox-configurator.sh
-```
 
 ## Contribution
 
