@@ -55,7 +55,7 @@ jobs:
             **Direct Execution (Latest Version):**  
             Run the script directly from GitHub with this command:
             ```bash
-            bash <(curl -sL https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/v${{ env.VERSION }}/src/proxmox-configurator.sh)
+            bash <(curl -sL https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/v${{ env.VERSION }}/proxmox-configurator.sh)
             ```
             This command fetches and executes the specific version (v${{ env.VERSION }}) of the script.
 
