@@ -1,17 +1,14 @@
 #!/bin/bash
 # -----------------------------------------------------------------------------
-# PECU Release Selector
-# By Daniel Puente García (Danielop95/DVNILXP)
-# Version: 0.0 - 14/4/2025
-#
-# This script fetches PECU releases from GitHub and lets you pick one to run.
-# Stable releases are shown in green (with the first stable marked as [RECOMMENDED])
-# and pre-releases in yellow.
-#
-# Before starting, it checks that curl and jq are installed and verifies network
-# connectivity, letting you know what's happening along the way.
-#
-# Usage: Run as root on your Proxmox server.
+#        ██████╗ ███████╗ ██████╗██╗   ██╗
+#        ██╔══██╗██╔════╝██╔════╝██║   ██║
+#        ██████╔╝█████╗  ██║     ██║   ██║
+#        ██╔═══╝ ██╔══╝  ██║     ██║   ██║
+#        ██║     ███████╗╚██████╗╚██████╔╝
+#        ╚═╝     ╚══════╝ ╚═════╝ ╚═════╝ 
+# -----------------------------------------------------------------------------
+# PECU Release Selector - By Daniel Puente García (Danielop95/DVNILXP)
+# Version: 1.0 - 14/04/2025
 # -----------------------------------------------------------------------------
 
 # Color definitions
@@ -90,12 +87,12 @@ show_loading_banner() {
     echo
 
     local banner_lines=(
-"    ____  ______________  __"
-"   / __ \\/ ____/ ____/ / / /"
-"  / /_/ / __/ / /   / / / / "
-" / ____/ /___/ /___/ /_/ /  "
-"/_/   /_____/\____/\____/   "
-"                            "
+    '         ██████╗ ███████╗ ██████╗██╗   ██╗'
+    '         ██╔══██╗██╔════╝██╔════╝██║   ██║'
+    '         ██████╔╝█████╗  ██║     ██║   ██║'
+    '         ██╔═══╝ ██╔══╝  ██║     ██║   ██║'
+    '         ██║     ███████╗╚██████╗╚██████╔╝'
+    '         ╚═╝     ╚══════╝ ╚═════╝ ╚═════╝'
     )
 
     echo -e "${YELLOW}"
