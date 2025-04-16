@@ -47,16 +47,8 @@
     body {
       font-family: 'Inter', sans-serif;
       transition: background-color 0.3s ease, color 0.3s ease;
-    }
-
-    body.dark {
       background: linear-gradient(to bottom, var(--gray-900), var(--gray-800));
       color: white;
-    }
-
-    body.light {
-      background: linear-gradient(to bottom, #f3f4f6, #e5e7eb);
-      color: var(--gray-900);
     }
 
     .gradient-text {
@@ -68,16 +60,8 @@
 
     .card {
       transition: all 0.3s ease;
-    }
-
-    .dark .card {
       background-color: rgba(31, 41, 55, 0.5);
       border: 1px solid var(--gray-700);
-    }
-
-    .light .card {
-      background-color: rgba(255, 255, 255, 0.8);
-      border: 1px solid var(--gray-300);
     }
 
     .tab {
@@ -90,10 +74,6 @@
 
     .tab.active {
       background-color: rgba(255, 255, 255, 0.1);
-    }
-
-    .light .tab.active {
-      background-color: rgba(0, 0, 0, 0.1);
     }
 
     .tab-content {
@@ -114,14 +94,7 @@
       font-family: monospace;
       margin: 1rem 0;
       transition: all 0.3s ease;
-    }
-
-    .dark .command-block {
       background-color: var(--gray-900);
-    }
-
-    .light .command-block {
-      background-color: var(--gray-200);
     }
 
     .copy-button {
@@ -134,14 +107,7 @@
       padding: 0.25rem;
       border-radius: 0.25rem;
       transition: all 0.3s ease;
-    }
-
-    .dark .copy-button {
       color: var(--gray-400);
-    }
-
-    .light .copy-button {
-      color: var(--gray-600);
     }
 
     .copy-button:hover {
@@ -170,6 +136,12 @@
       background-color: rgba(5, 150, 105, 0.2);
       color: #34d399;
       border: 1px solid #065f46;
+    }
+
+    .badge-yellow {
+      background-color: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+      border: 1px solid #92400e;
     }
 
     .github-ribbon {
@@ -265,18 +237,6 @@
       transform: translateY(-3px);
     }
 
-    #theme-toggle {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background-color: transparent;
-      border: none;
-      color: inherit;
-      font-size: 24px;
-      cursor: pointer;
-      z-index: 1000;
-    }
-
     .loading-indicator {
       display: none;
       position: fixed;
@@ -290,6 +250,199 @@
       z-index: 1000;
     }
 
+    .terminal {
+      background-color: #0d1117;
+      border-radius: 8px;
+      padding: 1rem;
+      font-family: 'Courier New', monospace;
+      color: #e6edf3;
+      margin: 1rem 0;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    .terminal-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 0.5rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #30363d;
+    }
+
+    .terminal-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #8b949e;
+      flex-grow: 1;
+      text-align: center;
+    }
+
+    .terminal-dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .dot-red {
+      background-color: #f85149;
+    }
+
+    .dot-yellow {
+      background-color: #f0883e;
+    }
+
+    .dot-green {
+      background-color: #3fb950;
+    }
+
+    .terminal-content {
+      font-size: 0.9rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      overflow-x: auto;
+    }
+
+    .terminal-prompt {
+      color: #7ee787;
+      font-weight: bold;
+    }
+
+    .terminal-command {
+      color: #e6edf3;
+    }
+
+    .terminal-output {
+      color: #a5d6ff;
+    }
+
+    .terminal-warning {
+      color: #f0883e;
+    }
+
+    .terminal-error {
+      color: #f85149;
+    }
+
+    .terminal-success {
+      color: #3fb950;
+    }
+
+    .menu-option {
+      color: #58a6ff;
+    }
+
+    .menu-header {
+      color: #7ee787;
+      font-weight: bold;
+    }
+
+    .menu-divider {
+      color: #30363d;
+    }
+
+    .release-card {
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .release-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    .release-header {
+      padding: 1rem;
+      border-bottom: 1px solid var(--gray-700);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .release-body {
+      padding: 1rem;
+    }
+
+    .release-footer {
+      padding: 1rem;
+      border-top: 1px solid var(--gray-700);
+      background-color: rgba(31, 41, 55, 0.3);
+    }
+
+    .release-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    .release-date {
+      font-size: 0.875rem;
+      color: var(--gray-400);
+    }
+
+    .release-description {
+      margin-bottom: 1rem;
+    }
+
+    .release-section {
+      margin-bottom: 1rem;
+    }
+
+    .release-section-title {
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--blue-400);
+    }
+
+    .release-list {
+      list-style-type: disc;
+      padding-left: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .release-list li {
+      margin-bottom: 0.25rem;
+    }
+
+    .release-command {
+      background-color: rgba(13, 17, 23, 0.8);
+      padding: 0.75rem;
+      border-radius: 6px;
+      font-family: monospace;
+      position: relative;
+      margin-bottom: 0.75rem;
+    }
+
+    .release-assets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .release-asset {
+      display: flex;
+      align-items: center;
+      padding: 0.5rem 0.75rem;
+      background-color: rgba(37, 99, 235, 0.1);
+      border: 1px solid rgba(37, 99, 235, 0.3);
+      border-radius: 6px;
+      font-size: 0.875rem;
+      transition: all 0.2s ease;
+    }
+
+    .release-asset:hover {
+      background-color: rgba(37, 99, 235, 0.2);
+    }
+
+    .release-asset i {
+      margin-right: 0.5rem;
+    }
+
     @keyframes fadeIn {
       from { opacity: 0; }
       to { opacity: 1; }
@@ -300,9 +453,41 @@
         display: none;
       }
     }
+
+    .demo-section {
+      margin-top: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .demo-tabs {
+      display: flex;
+      border-bottom: 1px solid #30363d;
+      margin-bottom: 1rem;
+    }
+
+    .demo-tab {
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.3s ease;
+    }
+
+    .demo-tab.active {
+      border-bottom: 2px solid var(--blue-500);
+      color: var(--blue-400);
+    }
+
+    .demo-content {
+      display: none;
+    }
+
+    .demo-content.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
   </style>
 </head>
-<body class="dark min-h-screen">
+<body>
   <!-- GitHub Ribbon -->
   <div class="github-ribbon hidden md:block">
     <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility" target="_blank" rel="noopener noreferrer">
@@ -312,11 +497,6 @@
       <span class="sr-only">Fork me on GitHub</span>
     </a>
   </div>
-
-  <!-- Theme Toggle Button -->
-<!--   <button id="theme-toggle" aria-label="Toggle theme">
-    <i class="fas fa-sun"></i>
-  </button> -->
 
   <!-- Back to Top Button -->
   <button id="back-to-top" aria-label="Back to top">
@@ -371,7 +551,7 @@
     <section id="overview" class="mb-16">
       <h2 class="text-3xl font-bold mb-6 text-center">Overview</h2>
       <div class="card p-6 rounded-lg shadow-lg">
-        <p class="text-gray-300 dark:text-gray-400">
+        <p class="text-gray-300">
           The Proxmox-Enhanced-Configuration-Utility (PECU) is a powerful Bash script designed to streamline the configuration and management of Proxmox VE environments. This utility provides an interactive menu system for performing key tasks, such as managing package repositories and configuring GPU passthrough, simplifying Proxmox setup and optimization for diverse use cases.
         </p>
         
@@ -381,6 +561,172 @@
           <span class="badge badge-blue">System Configuration</span>
           <span class="badge badge-blue">Automation</span>
           <span class="badge badge-blue">Homelab</span>
+        </div>
+      </div>
+    </section>
+    
+    <!-- Demo Section -->
+    <section id="demo" class="mb-16">
+      <h2 class="text-3xl font-bold mb-6 text-center">Script Demos</h2>
+      
+      <div class="demo-section">
+        <div class="demo-tabs">
+          <div class="demo-tab active" data-tab="release-selector">Release Selector</div>
+          <div class="demo-tab" data-tab="main-menu">Main Menu</div>
+          <div class="demo-tab" data-tab="gpu-passthrough">GPU Passthrough</div>
+        </div>
+        
+        <!-- Release Selector Demo -->
+        <div class="demo-content active" id="release-selector-demo">
+          <div class="card p-6 rounded-lg shadow-lg">
+            <h3 class="text-xl font-semibold mb-4">PECU Release Selector</h3>
+            <p class="text-gray-300 mb-4">
+              The Release Selector allows you to choose which version of PECU to run, including stable releases and pre-releases.
+            </p>
+            
+            <div class="terminal">
+              <div class="terminal-header">
+                <div class="terminal-dots">
+                  <div class="dot dot-red"></div>
+                  <div class="dot dot-yellow"></div>
+                  <div class="dot dot-green"></div>
+                </div>
+                <div class="terminal-title">pecu_release_selector.sh</div>
+              </div>
+              <div class="terminal-content">
+<span class="menu-header">===========================================</span>
+<span class="menu-header">   Proxmox Enhanced Configuration Utility</span>
+<span class="menu-header">           Version Selector</span>
+<span class="menu-header">===========================================</span>
+
+<span class="terminal-output">Select a PECU version to execute:</span>
+<span class="menu-divider">-----------------------------------</span>
+  <span class="menu-option">1) v2025.04.14 (Stable) [RECOMMENDED]</span> - Published: 2025-04-14T10:30:00Z
+  <span class="menu-option">2) v2025.03.03 (Stable)</span> - Published: 2025-03-03T15:45:00Z
+  <span class="menu-option">3) v2025.02.15 (Stable)</span> - Published: 2025-02-15T09:20:00Z
+  <span class="menu-option">4) v2025.01.20-beta (Pre-release)</span> - Published: 2025-01-20T14:10:00Z
+  <span class="menu-option">0) Exit</span>
+<span class="menu-divider">-----------------------------------</span>
+<span class="terminal-prompt">Enter the option number: </span><span class="terminal-command">1</span>
+
+<span class="terminal-output">Selected version: v2025.04.14</span>
+<span class="terminal-warning">Fetching and executing PECU from GitHub...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Main Menu Demo -->
+        <div class="demo-content" id="main-menu-demo">
+          <div class="card p-6 rounded-lg shadow-lg">
+            <h3 class="text-xl font-semibold mb-4">PECU Main Menu</h3>
+            <p class="text-gray-300 mb-4">
+              The main menu provides access to all the key features of PECU, including dependency installation, GPU passthrough configuration, and more.
+            </p>
+            
+            <div class="terminal">
+              <div class="terminal-header">
+                <div class="terminal-dots">
+                  <div class="dot dot-red"></div>
+                  <div class="dot dot-yellow"></div>
+                  <div class="dot dot-green"></div>
+                </div>
+                <div class="terminal-title">proxmox-configurator.sh</div>
+              </div>
+              <div class="terminal-content">
+<span class="menu-header">    ____  ______________  __</span>
+<span class="menu-header">   / __ \/ ____/ ____/ / / /</span>
+<span class="menu-header">  / /_/ / __/ / /   / / / / </span>
+<span class="menu-header"> / ____/ /___/ /___/ /_/ /  </span>
+<span class="menu-header">/_/   /_____/\____/\____/   </span>
+<span class="menu-header">                            </span>
+
+<span class="terminal-warning">Supported Technologies: Intel | AMD | Nvidia | Proxmox | Debian</span>
+
+<span class="menu-header">=================================================</span>
+<span class="menu-header">|              Options Menu                      |</span>
+<span class="menu-header">=================================================</span>
+<span class="menu-option"> 1) Install Dependencies</span>
+<span class="menu-option"> 2) Configure GPU Passthrough</span>
+<span class="menu-option"> 3) Check GPU Installation</span>
+<span class="menu-option"> 4) Rollback GPU Passthrough Configuration</span>
+<span class="menu-option"> 5) Advanced Kernel Tweaks</span>
+<span class="menu-option"> 6) Check for Updates</span>
+<span class="menu-option"> 7) Exit</span>
+<span class="menu-header">=================================================</span>
+<span class="terminal-prompt">Select an option:</span> <span class="terminal-command">6</span>
+
+<span class="menu-header">=================================================</span>
+<span class="menu-header">|              Available Versions                |</span>
+<span class="menu-header">=================================================</span>
+<span class="menu-option"> 1) v2025.04.14 (Latest)</span>
+<span class="menu-option"> 2) v2025.03.03 (Stable)</span>
+<span class="menu-option"> 3) v2025.02.15 (Stable)</span>
+<span class="menu-option"> 4) Back to main menu</span>
+<span class="menu-header">=================================================</span>
+<span class="terminal-prompt">Select a version to install:</span> <span class="terminal-command">1</span>
+
+<span class="terminal-output">You selected: v2025.04.14</span>
+<span class="terminal-warning">Downloading and installing v2025.04.14...</span>
+<span class="terminal-success">Installation complete! Restarting PECU...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- GPU Passthrough Demo -->
+        <div class="demo-content" id="gpu-passthrough-demo">
+          <div class="card p-6 rounded-lg shadow-lg">
+            <h3 class="text-xl font-semibold mb-4">GPU Passthrough Configuration</h3>
+            <p class="text-gray-300 mb-4">
+              PECU simplifies the complex process of setting up GPU passthrough for virtual machines, with support for NVIDIA, AMD, and Intel GPUs.
+            </p>
+            
+            <div class="terminal">
+              <div class="terminal-header">
+                <div class="terminal-dots">
+                  <div class="dot dot-red"></div>
+                  <div class="dot dot-yellow"></div>
+                  <div class="dot dot-green"></div>
+                </div>
+                <div class="terminal-title">GPU Passthrough Configuration</div>
+              </div>
+              <div class="terminal-content">
+<span class="menu-header">=================================================</span>
+<span class="menu-header">|    GPU Passthrough Configuration Options      |</span>
+<span class="menu-header">=================================================</span>
+<span class="terminal-output">Please select a method for GPU passthrough:</span>
+<span class="menu-option"> 1) Classic (edit vfio.conf and blacklists)</span>
+<span class="menu-option"> 2) Driverctl (automatic persistent override)</span>
+<span class="menu-header">-------------------------------------------------</span>
+<span class="terminal-warning">Choose a passthrough method (1 or 2):</span> <span class="terminal-command">2</span>
+
+<span class="terminal-warning">Using Driverctl Method (Automatic Persistent Override)</span>
+
+<span class="menu-header">=================================================</span>
+<span class="menu-header">| Checking and Installing driverctl             |</span>
+<span class="menu-header">=================================================</span>
+<span class="terminal-success">driverctl installed successfully.</span>
+
+<span class="terminal-output">Would you like to select a GPU manually (M) or skip listing (S)?</span>
+<span class="terminal-prompt">[M/S]: </span><span class="terminal-command">M</span>
+
+<span class="menu-header">=================================================</span>
+<span class="menu-header">|        Available Graphics Devices             |</span>
+<span class="menu-header">=================================================</span>
+<span class="terminal-output">01:00.0 VGA compatible controller: NVIDIA Corporation GA104 [GeForce RTX 3070] (rev a1)</span>
+<span class="terminal-output">02:00.0 VGA compatible controller: Advanced Micro Devices, Inc. [AMD/ATI] Navi 21 [Radeon RX 6800/6800 XT / 6900 XT] (rev c1)</span>
+
+<span class="terminal-prompt">Enter the PCI address (e.g., 0000:01:00.0) you want to override:</span> <span class="terminal-command">0000:01:00.0</span>
+
+<span class="terminal-warning">Binding 0000:01:00.0 to vfio-pci via driverctl...</span>
+<span class="terminal-success">Detected NVIDIA GPU. Blacklisting nouveau and nvidia...</span>
+
+<span class="terminal-success">Kernel configuration applied (initramfs updated).</span>
+<span class="terminal-prompt">Do you want to restart now? (y/n): </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -395,7 +741,7 @@
             <i class="fas fa-box text-blue-400 text-2xl"></i>
           </div>
           <h3 class="text-xl font-semibold mb-2">Dependency Installation</h3>
-          <p class="text-gray-400 dark:text-gray-300">
+          <p class="text-gray-400">
             Backup and restore sources.list file, and edit repositories directly within the script interface.
           </p>
         </div>
@@ -406,7 +752,7 @@
             <i class="fas fa-hdd text-blue-400 text-2xl"></i>
           </div>
           <h3 class="text-xl font-semibold mb-2">GPU Passthrough Configuration</h3>
-          <p class="text-gray-400 dark:text-gray-300">
+          <p class="text-gray-400">
             Set up GPU passthrough to assign dedicated graphics cards to virtual machines, with rollback functionality.
           </p>
         </div>
@@ -417,7 +763,7 @@
             <i class="fas fa-shield-alt text-blue-400 text-2xl"></i>
           </div>
           <h3 class="text-xl font-semibold mb-2">System Configuration Checks</h3>
-          <p class="text-gray-400 dark:text-gray-300">
+          <p class="text-gray-400">
             Verifies if the Proxmox package repositories are correctly configured and displays IOMMU and MSI options.
           </p>
         </div>
@@ -428,7 +774,7 @@
             <i class="fas fa-microchip text-blue-400 text-2xl"></i>
           </div>
           <h3 class="text-xl font-semibold mb-2">Multi-GPU Support</h3>
-          <p class="text-gray-400 dark:text-gray-300">
+          <p class="text-gray-400">
             Detects and displays details for NVIDIA, AMD, and Intel GPUs, with tailored options for different GPU types.
           </p>
         </div>
@@ -439,7 +785,7 @@
             <i class="fas fa-server text-blue-400 text-2xl"></i>
           </div>
           <h3 class="text-xl font-semibold mb-2">Proxmox Compatibility</h3>
-          <p class="text-gray-400 dark:text-gray-300">
+          <p class="text-gray-400">
             Compatible with Proxmox VE 7.x and 8.x versions, ensuring broad support across environments.
           </p>
         </div>
@@ -450,7 +796,7 @@
             <i class="fas fa-exchange-alt text-blue-400 text-2xl"></i>
           </div>
           <h3 class="text-xl font-semibold mb-2">Rollback Functionality</h3>
-          <p class="text-gray-400 dark:text-gray-300">
+          <p class="text-gray-400">
             Safely undo configurations with built-in rollback capabilities to restore previous system states.
           </p>
         </div>
@@ -463,29 +809,29 @@
       <div class="card rounded-lg shadow-lg">
         <div class="p-6">
           <h3 class="text-xl font-semibold mb-2">Choose your installation method</h3>
-          <p class="text-gray-400 dark:text-gray-300 mb-4">
+          <p class="text-gray-400 mb-4">
             You can run the script directly from your Proxmox server or clone the repository
           </p>
         </div>
         
         <div class="px-6 pb-6">
-          <div class="tabs flex bg-gray-700/50 dark:bg-gray-200/50 rounded-md p-1 mb-4">
+          <div class="tabs flex bg-gray-700/50 rounded-md p-1 mb-4">
             <div class="tab active flex-1 text-center" data-tab="direct" role="tab" aria-selected="true" tabindex="0">Direct Execution</div>
             <div class="tab flex-1 text-center" data-tab="local" role="tab" aria-selected="false" tabindex="0">Local Installation</div>
           </div>
           
           <div class="tab-content active" id="direct-tab" role="tabpanel">
             <div class="space-y-4">
-              <p class="text-gray-300 dark:text-gray-600">
+              <p class="text-gray-300">
                 To run the script directly from the internet, use the following command:
               </p>
               <div class="command-block">
-                <pre><code>bash &lt;(curl -sL https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/refs/heads/main/proxmox-configurator.sh)</code></pre>
-                <button class="copy-button" data-command="bash <(curl -sL https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/refs/heads/main/proxmox-configurator.sh)" aria-label="Copy command">
+                <pre><code>bash &lt;(curl -sL https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/refs/heads/main/scripts/pecu_release_selector.sh)</code></pre>
+                <button class="copy-button" data-command="bash <(curl -sL https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/refs/heads/main/scripts/pecu_release_selector.sh)" aria-label="Copy command">
                   <i class="fas fa-copy"></i>
                 </button>
               </div>
-              <p class="text-sm text-gray-400 dark:text-gray-500">
+              <p class="text-sm text-gray-400">
                 Note: This command requires an active internet connection and is specific to Linux systems with Bash and Curl installed.
               </p>
             </div>
@@ -493,7 +839,7 @@
           
           <div class="tab-content" id="local-tab" role="tabpanel">
             <div class="space-y-4">
-              <p class="text-gray-300 dark:text-gray-600">Clone the Repository:</p>
+              <p class="text-gray-300">Clone the Repository:</p>
               <div class="command-block">
                 <pre><code>git clone https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility.git
 cd Proxmox-Enhanced-Configuration-Utility</code></pre>
@@ -503,7 +849,7 @@ cd Proxmox-Enhanced-Configuration-Utility" aria-label="Copy command">
                 </button>
               </div>
               
-              <p class="text-gray-300 dark:text-gray-600">Set Execution Permissions:</p>
+              <p class="text-gray-300">Set Execution Permissions:</p>
               <div class="command-block">
                 <pre><code>chmod +x proxmox-configurator.sh</code></pre>
                 <button class="copy-button" data-command="chmod +x proxmox-configurator.sh" aria-label="Copy command">
@@ -511,7 +857,7 @@ cd Proxmox-Enhanced-Configuration-Utility" aria-label="Copy command">
                 </button>
               </div>
               
-              <p class="text-gray-300 dark:text-gray-600">Run the Script:</p>
+              <p class="text-gray-300">Run the Script:</p>
               <div class="command-block">
                 <pre><code>sudo ./proxmox-configurator.sh</code></pre>
                 <button class="copy-button" data-command="sudo ./proxmox-configurator.sh" aria-label="Copy command">
@@ -524,6 +870,156 @@ cd Proxmox-Enhanced-Configuration-Utility" aria-label="Copy command">
       </div>
     </section>
     
+    <!-- Releases Section -->
+    <section id="releases" class="mb-16">
+      <h2 class="text-3xl font-bold mb-6 text-center">Releases</h2>
+      
+      <!-- Latest Release -->
+      <div class="card release-card">
+        <div class="release-header">
+          <div>
+            <h3 class="release-title">v2025.04.14</h3>
+            <p class="release-date">Released 2 days ago</p>
+          </div>
+          <div class="flex items-center">
+            <span class="badge badge-yellow">Pre-release</span>
+          </div>
+        </div>
+        <div class="release-body">
+          <div class="release-section">
+            <h4 class="release-section-title">What's New in This Update:</h4>
+            <p class="release-description">
+              This update brings several improvements and bug fixes to enhance the performance and reliability of the Proxmox Enhanced Configuration Utility (PECU). Key changes include:
+            </p>
+            <ul class="release-list">
+              <li>Performance Optimizations: Overall improvements for faster execution and smoother operation.</li>
+              <li>Enhanced Error Handling: Better diagnostics with detailed log messages to help troubleshoot issues.</li>
+              <li>Driverctl Passthrough Method: New support for GPU passthrough using driverctl, providing an alternative to the classic configuration approach.</li>
+              <li>Advanced Kernel Tweaks: New submenu to easily append kernel parameters for customized system performance and compatibility.</li>
+              <li>User Interface Enhancements: Updated CLI appearance with a loading banner, spinner, and clear prompts.</li>
+            </ul>
+          </div>
+          
+          <div class="release-section">
+            <h4 class="release-section-title">How to Update</h4>
+            <p>You can update your PECU installation using the source code provided in this release. There are two ways to run this version:</p>
+            
+            <p class="mt-2 mb-1 font-medium">Direct Execution (Latest Version):</p>
+            <div class="release-command">
+              <code>bash &lt;(curl -sL https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/v2025.04.14/proxmox-configurator.sh)</code>
+              <button class="copy-button" data-command="bash <(curl -sL https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/v2025.04.14/proxmox-configurator.sh)" aria-label="Copy command">
+                <i class="fas fa-copy"></i>
+              </button>
+            </div>
+            
+            <p class="mt-2 mb-1 font-medium">Local Installation:</p>
+            <div class="release-command">
+              <code>wget https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/releases/download/v2025.04.14/PECU-2025.04.14.tar.gz && \
+tar -xzvf PECU-2025.04.14.tar.gz && \
+cd PECU-2025.04.14 && \
+chmod +x proxmox-configurator.sh && \
+sudo ./proxmox-configurator.sh</code>
+              <button class="copy-button" data-command="wget https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/releases/download/v2025.04.14/PECU-2025.04.14.tar.gz && tar -xzvf PECU-2025.04.14.tar.gz && cd PECU-2025.04.14 && chmod +x proxmox-configurator.sh && sudo ./proxmox-configurator.sh" aria-label="Copy command">
+                <i class="fas fa-copy"></i>
+              </button>
+            </div>
+          </div>
+          
+          <div class="release-section">
+            <h4 class="release-section-title">Important Note</h4>
+            <p>This release is a test release — it's the first time we're implementing automated releases. We apologize for any inconvenience caused by this initial notification. We are working to improve the release process for future versions.</p>
+          </div>
+        </div>
+        <div class="release-footer">
+          <h4 class="text-sm font-medium mb-2">Assets</h4>
+          <div class="release-assets">
+            <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/releases/download/v2025.04.14/PECU-2025.04.14.tar.gz" class="release-asset" target="_blank" rel="noopener noreferrer">
+              <i class="fas fa-file-archive"></i>
+              <span>PECU-2025.04.14.tar.gz</span>
+            </a>
+            <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/archive/refs/tags/v2025.04.14.zip" class="release-asset" target="_blank" rel="noopener noreferrer">
+              <i class="fas fa-file-archive"></i>
+              <span>Source code (zip)</span>
+            </a>
+            <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/archive/refs/tags/v2025.04.14.tar.gz" class="release-asset" target="_blank" rel="noopener noreferrer">
+              <i class="fas fa-file-archive"></i>
+              <span>Source code (tar.gz)</span>
+            </a>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Stable Release -->
+      <div class="card release-card">
+        <div class="release-header">
+          <div>
+            <h3 class="release-title">v2025.03.03</h3>
+            <p class="release-date">Released March 3, 2025</p>
+          </div>
+          <div class="flex items-center">
+            <span class="badge badge-green">Latest Stable</span>
+          </div>
+        </div>
+        <div class="release-body">
+          <div class="release-section">
+            <h4 class="release-section-title">What's New in This Update</h4>
+            <p class="release-description">
+              This update brings several improvements and bug fixes to enhance the performance and reliability of the Proxmox Enhanced Configuration Utility (PECU). Detailed changes include performance optimizations and improved error handling for a smoother experience.
+            </p>
+          </div>
+          
+          <div class="release-section">
+            <h4 class="release-section-title">How to Update</h4>
+            <p>You can update your PECU installation using the source code provided in this release. There are two ways to run this version:</p>
+            
+            <p class="mt-2 mb-1 font-medium">Direct Execution (Latest Version):</p>
+            <div class="release-command">
+              <code>bash &lt;(curl -sL https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/v2025.03.03/proxmox-configurator.sh)</code>
+              <button class="copy-button" data-command="bash <(curl -sL https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/v2025.03.03/proxmox-configurator.sh)" aria-label="Copy command">
+                <i class="fas fa-copy"></i>
+              </button>
+            </div>
+            
+            <p class="mt-2 mb-1 font-medium">Local Installation:</p>
+            <div class="release-command">
+              <code>wget https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/releases/download/v2025.03.03/PECU-2025.03.03.tar.gz && \
+tar -xzvf PECU-2025.03.03.tar.gz && \
+cd PECU-2025.03.03 && \
+chmod +x proxmox-configurator.sh && \
+sudo ./proxmox-configurator.sh</code>
+              <button class="copy-button" data-command="wget https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/releases/download/v2025.03.03/PECU-2025.03.03.tar.gz && tar -xzvf PECU-2025.03.03.tar.gz && cd PECU-2025.03.03 && chmod +x proxmox-configurator.sh && sudo ./proxmox-configurator.sh" aria-label="Copy command">
+                <i class="fas fa-copy"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="release-footer">
+          <h4 class="text-sm font-medium mb-2">Assets</h4>
+          <div class="release-assets">
+            <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/releases/download/v2025.03.03/PECU-2025.03.03.tar.gz" class="release-asset" target="_blank" rel="noopener noreferrer">
+              <i class="fas fa-file-archive"></i>
+              <span>PECU-2025.03.03.tar.gz</span>
+            </a>
+            <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/archive/refs/tags/v2025.03.03.zip" class="release-asset" target="_blank" rel="noopener noreferrer">
+              <i class="fas fa-file-archive"></i>
+              <span>Source code (zip)</span>
+            </a>
+            <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/archive/refs/tags/v2025.03.03.tar.gz" class="release-asset" target="_blank" rel="noopener noreferrer">
+              <i class="fas fa-file-archive"></i>
+              <span>Source code (tar.gz)</span>
+            </a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="mt-6 text-center">
+        <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/releases" class="inline-flex items-center justify-center px-6 py-2 text-base font-medium rounded-md text-blue-400 border border-blue-600 hover:bg-blue-900/20 transition duration-300" target="_blank" rel="noopener noreferrer">
+          <i class="fas fa-tags mr-2"></i>
+          View All Releases
+        </a>
+      </div>
+    </section>
+    
     <!-- GitHub Integration Section -->
     <section id="github-integration" class="mb-16">
       <h2 class="text-3xl font-bold mb-6 text-center">GitHub Integration</h2>
@@ -532,33 +1028,33 @@ cd Proxmox-Enhanced-Configuration-Utility" aria-label="Copy command">
         <div class="card rounded-lg shadow-lg">
           <div class="p-6">
             <h3 class="text-xl font-semibold mb-2">Latest Release</h3>
-            <p class="text-gray-400 dark:text-gray-300 mb-4">
+            <p class="text-gray-400 mb-4">
               Information about the most recent version
             </p>
           </div>
           <div class="px-6 pb-6" id="latest-release">
             <div class="flex items-center justify-between mb-4">
-              <h4 class="text-xl font-semibold" id="release-name">v2025.03.03</h4>
-              <span class="badge badge-green">Latest</span>
+              <h4 class="text-xl font-semibold" id="release-name">v2025.04.14</h4>
+              <span class="badge badge-yellow">Pre-release</span>
             </div>
             
-            <div class="flex flex-wrap gap-4 text-sm text-gray-400 dark:text-gray-500 mb-4">
+            <div class="flex flex-wrap gap-4 text-sm text-gray-400 mb-4">
               <div class="flex items-center gap-1">
                 <i class="fas fa-tag"></i>
-                <span id="release-tag">v2025.03.03</span>
+                <span id="release-tag">v2025.04.14</span>
               </div>
               <div class="flex items-center gap-1">
                 <i class="fas fa-calendar"></i>
-                <span id="release-date">2025-03-03</span>
+                <span id="release-date">2025-04-14</span>
               </div>
             </div>
             
-            <p class="text-gray-300 dark:text-gray-600 text-sm line-clamp-3" id="release-description">
-              Latest release of Proxmox-Enhanced-Configuration-Utility
+            <p class="text-gray-300 text-sm line-clamp-3" id="release-description">
+              Latest release of Proxmox-Enhanced-Configuration-Utility with improved GPU detection and rollback functionality
             </p>
           </div>
           <div class="px-6 pb-6">
-            <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/releases" class="block w-full py-2 px-4 text-center border border-blue-600 text-blue-400 hover:bg-blue-900/20 dark:hover:bg-blue-100/20 rounded-md transition duration-300" target="_blank" rel="noopener noreferrer">
+            <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/releases" class="block w-full py-2 px-4 text-center border border-blue-600 text-blue-400 hover:bg-blue-900/20 rounded-md transition duration-300" target="_blank" rel="noopener noreferrer">
               View All Releases
             </a>
           </div>
@@ -568,7 +1064,7 @@ cd Proxmox-Enhanced-Configuration-Utility" aria-label="Copy command">
         <div class="card rounded-lg shadow-lg">
           <div class="p-6">
             <h3 class="text-xl font-semibold mb-2">Contributors</h3>
-            <p class="text-gray-400 dark:text-gray-300 mb-4">
+            <p class="text-gray-400 mb-4">
               People who have contributed to the project
             </p>
           </div>
@@ -579,13 +1075,13 @@ cd Proxmox-Enhanced-Configuration-Utility" aria-label="Copy command">
                 <div class="avatar mb-2">
                   <img src="https://avatars.githubusercontent.com/u/Danilop95" alt="Danilop95" loading="lazy" onerror="this.src='https://github.com/identicons/Danilop95.png'">
                 </div>
-                <span class="text-sm font-medium text-gray-300 dark:text-gray-600">Danilop95</span>
-                <span class="text-xs text-gray-400 dark:text-gray-500">100 commits</span>
+                <span class="text-sm font-medium text-gray-300">Danilop95</span>
+                <span class="text-xs text-gray-400">100 commits</span>
               </a>
             </div>
           </div>
           <div class="px-6 pb-6">
-            <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/graphs/contributors" class="block w-full py-2 px-4 text-center border border-blue-600 text-blue-400 hover:bg-blue-900/20 dark:hover:bg-blue-100/20 rounded-md transition duration-300" target="_blank" rel="noopener noreferrer">
+            <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/graphs/contributors" class="block w-full py-2 px-4 text-center border border-blue-600 text-blue-400 hover:bg-blue-900/20 rounded-md transition duration-300" target="_blank" rel="noopener noreferrer">
               View All Contributors
             </a>
           </div>
@@ -600,17 +1096,17 @@ cd Proxmox-Enhanced-Configuration-Utility" aria-label="Copy command">
         <div class="flex flex-col md:flex-row items-center justify-center gap-8">
           <div class="text-center">
             <h3 class="text-xl font-semibold mb-2">Buy Me A Coffee</h3>
-            <p class="text-gray-400 dark:text-gray-300 mb-4">Support the development with a coffee</p>
-            <a href="https://buymeacoffee.com/danilop95ps" class="inline-block py-2 px-4 bg-yellow-brand text-black font-medium rounded-md hover:bg-opacity-90 transition duration-300" target="_blank" rel="noopener noreferrer">
+            <p class="text-gray-400 mb-4">Support the development with a coffee</p>
+            <a href="https://buymeacoffee.com/danilop95pS" class="inline-block py-2 px-4 bg-yellow-brand text-black font-medium rounded-md hover:bg-opacity-90 transition duration-300" target="_blank" rel="noopener noreferrer">
               Buy Me A Coffee
             </a>
           </div>
           
-          <div class="hidden md:block h-24 w-px bg-gray-700 dark:bg-gray-300"></div>
+          <div class="hidden md:block h-24 w-px bg-gray-700"></div>
           
           <div class="text-center">
             <h3 class="text-xl font-semibold mb-2">Patreon</h3>
-            <p class="text-gray-400 dark:text-gray-300 mb-4">Become a patron and support ongoing development</p>
+            <p class="text-gray-400 mb-4">Become a patron and support ongoing development</p>
             <a href="https://patreon.com/dvnilxp95" class="inline-block py-2 px-4 bg-patreon-brand text-white font-medium rounded-md hover:bg-opacity-90 transition duration-300" target="_blank" rel="noopener noreferrer">
               Support on Patreon
             </a>
@@ -621,19 +1117,19 @@ cd Proxmox-Enhanced-Configuration-Utility" aria-label="Copy command">
   </main>
   
   <!-- Footer -->
-  <footer class="bg-gray-900 dark:bg-gray-100 py-8 border-t border-gray-800 dark:border-gray-200">
+  <footer class="bg-gray-900 py-8 border-t border-gray-800">
     <div class="container mx-auto px-4">
       <div class="flex flex-col md:flex-row justify-between items-center">
         <div class="mb-4 md:mb-0">
-          <p class="text-gray-400 dark:text-gray-600">
+          <p class="text-gray-400">
             © <span id="current-year">2025</span> Proxmox-Enhanced-Configuration-Utility
           </p>
-          <p class="text-gray-500 dark:text-gray-400 text-sm">
+          <p class="text-gray-500 text-sm">
             Licensed under the GNU General Public License v3.0 (GPL-3.0)
           </p>
         </div>
         <div class="flex gap-4">
-          <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility" target="_blank" rel="noopener noreferrer" class="text-gray-400 dark:text-gray-600 hover:text-white dark:hover:text-gray-800 transition duration-300">
+          <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white transition duration-300">
             <i class="fab fa-github text-2xl"></i>
             <span class="sr-only">GitHub</span>
           </a>
@@ -658,6 +1154,19 @@ cd Proxmox-Enhanced-Configuration-Utility" aria-label="Copy command">
         
         document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
         document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
+      });
+    });
+
+    // Demo tabs functionality
+    document.querySelectorAll('.demo-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.demo-tab').forEach(t => {
+          t.classList.remove('active');
+        });
+        tab.classList.add('active');
+        
+        document.querySelectorAll('.demo-content').forEach(content => content.classList.remove('active'));
+        document.getElementById(`${tab.dataset.tab}-demo`).classList.add('active');
       });
     });
 
@@ -690,18 +1199,6 @@ cd Proxmox-Enhanced-Configuration-Utility" aria-label="Copy command">
 
     backToTopButton.addEventListener('click', () => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-
-    // Theme toggle functionality
-    const themeToggle = document.getElementById('theme-toggle');
-    const body = document.body;
-    const icon = themeToggle.querySelector('i');
-
-    themeToggle.addEventListener('click', () => {
-      body.classList.toggle('light');
-      body.classList.toggle('dark');
-      icon.classList.toggle('fa-sun');
-      icon.classList.toggle('fa-moon');
     });
 
     // Fetch GitHub data
@@ -747,8 +1244,8 @@ cd Proxmox-Enhanced-Configuration-Utility" aria-label="Copy command">
               <div class="avatar mb-2">
                 <img src="${contributor.avatar_url}" alt="${contributor.login}" loading="lazy" onerror="this.src='https://github.com/identicons/${contributor.login}.png'">
               </div>
-              <span class="text-sm font-medium text-gray-300 dark:text-gray-600">${contributor.login}</span>
-              <span class="text-xs text-gray-400 dark:text-gray-500">${contributor.contributions} commits</span>
+              <span class="text-sm font-medium text-gray-300">${contributor.login}</span>
+              <span class="text-xs text-gray-400">${contributor.contributions} commits</span>
             `;
             
             contributorsList.appendChild(contributorElement);
@@ -765,4 +1262,4 @@ cd Proxmox-Enhanced-Configuration-Utility" aria-label="Copy command">
     fetchGitHubData();
   </script>
 </body>
-</html><!-- Theme Toggle Button -->
+</html>
