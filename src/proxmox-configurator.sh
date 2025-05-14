@@ -1,9 +1,18 @@
 #!/bin/bash
 # ---------------------------------------------------------
 # PROXMOX ENHANCED CONFIG UTILITY (PECU)
+# -----------------------------------------------------------------------------
+#        ██████╗ ███████╗ ██████╗██╗   ██╗
+#        ██╔══██╗██╔════╝██╔════╝██║   ██║
+#        ██████╔╝█████╗  ██║     ██║   ██║
+#        ██╔═══╝ ██╔══╝  ██║     ██║   ██║
+#        ██║     ███████╗╚██████╗╚██████╔╝
+#        ╚═╝     ╚══════╝ ╚═════╝ ╚═════╝ 
+# -----------------------------------------------------------------------------
+#
 # By Daniel Puente García (Danielop95/DVNILXP)
 # Version: 2.0
-# Date: 12/4/2025
+# Date: 14/5/2025
 # Description: This script assists in configuring and managing GPU passthrough on Proxmox systems,
 #              including advanced kernel tweaks and AMD detection.
 # ---------------------------------------------------------
@@ -14,6 +23,15 @@ GREEN='\e[0;32m'
 BLUE='\e[0;34m'
 YELLOW='\e[0;33m'
 NC='\e[0m' # No Color
+
+APP_ID="PECU"
+APP_NAME="Proxmox-Enhanced-Configuration-Utility"
+AUTHOR="Daniel Puente Garcia — @Danilop95 "
+BUILD_DATE="2025-05-14"
+BMAC_URL="https://buymeacoffee.com/danilop95ps"
+PATRON_URL="https://patreon.com/dvnilxp95"
+
+
 
 # Global variables
 BACKUP_DIR="/root/backup-script"
@@ -27,6 +45,58 @@ chmod -R 755 "$BACKUP_DIR"
 
 # Create state file if it doesn't exist
 touch "$STATE_FILE" || { echo -e "${RED}Error: Failed to create state file.${NC}"; exit 1; }
+
+
+# ---------------------------------------------------------
+# Function to display a loading banner
+# ---------------------------------------------------------
+show_loading_banner() {
+    clear
+    echo -e "${BLUE}┌───────────────────────────────────────────────────────┐${NC}"
+    echo -e "${BLUE}│   PROXMOX ENHANCED CONFIG UTILITY (PECU)             │${NC}"
+    echo -e "${BLUE}└───────────────────────────────────────────────────────┘${NC}"
+    echo -e "${GREEN}By: $AUTHOR${NC}"
+    echo -e "${GREEN}BuyMeACoffee: $BMAC_URL${NC}\n"
+    local banner_lines=(
+        ' ██████╗ ███████╗ ██████╗██╗   ██╗'
+        ' ██╔══██╗██╔════╝██╔════╝██║   ██║'
+        ' ██████╔╝█████╗  ██║     ██║   ██║'
+        ' ██╔═══╝ ██╔══╝  ██║     ██║   ██║'
+        ' ██║     ███████╗╚██████╗╚██████╔╝'
+        ' ╚═╝     ╚══════╝ ╚═════╝ ╚═════╝'
+    )
+    echo -e "${YELLOW}"
+    for line in "${banner_lines[@]}"; do
+        printf "  %s\n" "$line"
+        sleep 0.04
+    done
+    echo -e "${NC}"
+    sleep 0.25
+    clear
+}
+
+# ──────────────────────────────────────────────────────────────
+# Helpers generales
+# ──────────────────────────────────────────────────────────────
+
+pause() {
+    read -rsp $'\nPulse ENTER go back...\n' -n1
+}
+
+progress() {
+    local msg=$1
+    { for p in 0 25 50 75 100; do
+          echo $p
+          echo -e "XXX\n$p %\n$msg\nXXX"
+          sleep 0.2
+      done
+    } | whiptail --gauge "$msg" 8 60 0
+}
+
+has_gpu() {
+    lspci | grep -qiE 'vga|3d|display'
+}
+
 
 # ---------------------------------------------------------
 # Logging Function: Logs messages with timestamps
@@ -76,79 +146,65 @@ log_message "Starting Proxmox Enhanced Configuration Utility (PECU)..."
 # -------------------------------------------------------------
 check_gpu_installation() {
     log_message "User selected: Check GPU Installation"
-    echo -e "${BLUE}=================================================${NC}"
-    echo -e "${BLUE}| Checking GPU Installation                     |${NC}"
-    echo -e "${BLUE}=================================================${NC}"
-
+    whiptail --title "Check GPU Installation" --msgbox "Checking GPU installation..." 8 50
     local gpu_info
     gpu_info=$(lspci | grep -i 'vga\|3d\|2d')
 
     if echo "$gpu_info" | grep -iq 'nvidia'; then
-        echo -e "${GREEN}NVIDIA GPU detected.${NC}"
+        whiptail --title "GPU Detected" --msgbox "NVIDIA GPU detected." 8 40
         check_nvidia_gpu
     elif echo "$gpu_info" | grep -iq 'amd'; then
-        echo -e "${GREEN}AMD GPU detected.${NC}"
+        whiptail --title "GPU Detected" --msgbox "AMD GPU detected." 8 40
         check_amd_gpu
     elif echo "$gpu_info" | grep -iq 'intel'; then
-        echo -e "${GREEN}Intel iGPU detected.${NC}"
+        whiptail --title "GPU Detected" --msgbox "Intel iGPU detected." 8 40
         check_intel_gpu
     else
-        echo -e "${RED}No NVIDIA, AMD, or Intel GPU detected.${NC}"
-        echo -e "${BLUE}Press any key to return to the main menu...${NC}"
-        read -n 1 -s
+        whiptail --title "No GPU" --msgbox "No NVIDIA, AMD, or Intel GPU detected." 8 50
         return
     fi
-
-    echo -e "${BLUE}Press any key to return to the main menu...${NC}"
-    read -n 1 -s
 }
 
 check_intel_gpu() {
     log_message "Checking Intel iGPU status..."
-    echo -e "${BLUE}Checking Intel iGPU status...${NC}"
     local intel_gpu_info
     intel_gpu_info=$(lspci | grep -i 'vga\|3d\|2d' | grep -i 'intel')
-    echo "$intel_gpu_info"
+    whiptail --title "Intel iGPU Status" --msgbox "$intel_gpu_info" 12 60
 }
 
 check_nvidia_gpu() {
     log_message "Checking NVIDIA GPU status..."
     if command -v nvidia-smi &> /dev/null; then
-        echo -e "${BLUE}nvidia-smi found. Checking NVIDIA GPU status...${NC}"
-        local nvidia_smi_output
-        nvidia_smi_output=$(nvidia-smi)
-        echo "$nvidia_smi_output"
-        
-        if echo "$nvidia_smi_output" | grep -iq 'Tesla\|A100\|V100\|A30\|A40'; then
-            echo -e "${GREEN}Detected NVIDIA Data Center GPU.${NC}"
+        local output
+        output=$(nvidia-smi)
+        whiptail --title "nvidia-smi Output" --msgbox "$output" 20 70
+        if echo "$output" | grep -iq 'Tesla\|A100\|V100\|A30\|A40'; then
+            whiptail --title "GPU Type" --msgbox "Detected NVIDIA Data Center GPU." 8 50
         else
-            echo -e "${GREEN}Detected NVIDIA Gaming GPU.${NC}"
+            whiptail --title "GPU Type" --msgbox "Detected NVIDIA Gaming GPU." 8 50
         fi
     else
-        echo -e "${RED}nvidia-smi not found. Please install NVIDIA drivers.${NC}"
+        whiptail --title "Error" --msgbox "nvidia-smi not found. Please install NVIDIA drivers." 8 60
     fi
 }
 
 check_amd_gpu() {
     log_message "Checking AMD GPU status..."
-    echo -e "${BLUE}Listing AMD GPUs...${NC}"
     local amd_gpu_info
     amd_gpu_info=$(lshw -C display | grep -i 'amd')
-    echo "$amd_gpu_info"
+    whiptail --title "AMD GPUs" --msgbox "$amd_gpu_info" 12 60
 
     if command -v rocm-smi &> /dev/null; then
-        echo -e "${BLUE}rocm-smi found. Checking AMD GPU status...${NC}"
-        local rocm_smi_output
-        rocm_smi_output=$(rocm-smi)
-        echo "$rocm_smi_output"
-
-        if echo "$rocm_smi_output" | grep -iq 'Instinct\|MI50\|MI100\|MI200'; then
-            echo -e "${GREEN}Detected AMD Data Center GPU.${NC}"
+        local rocm_output
+        rocm_output=$(rocm-smi)
+        whiptail --title "rocm-smi Output" --msgbox "$rocm_output" 20 70
+        if echo "$rocm_output" | grep -iq 'Instinct\|MI50\|MI100\|MI200'; then
+            whiptail --title "GPU Type" --msgbox "Detected AMD Data Center GPU." 8 50
         else
-            echo -e "${GREEN}Detected AMD Gaming GPU.${NC}"
+            whiptail --title "GPU Type" --msgbox "Detected AMD Gaming GPU." 8 50
         fi
     else
-        echo -e "${RED}rocm-smi not found. Please install AMD ROCm drivers.${NC}"
+        whiptail --title "Error" --msgbox "rocm-smi not found. Please install AMD ROCm drivers." 8 60
     fi
 }
 
@@ -157,138 +213,60 @@ check_amd_gpu() {
 # -------------------------------------------------------------
 backup_file() {
     log_message "Creating a backup of sources.list"
-    echo -e "${BLUE}=================================================${NC}"
-    echo -e "${BLUE}| Creating a backup of sources.list             |${NC}"
-    echo -e "${BLUE}=================================================${NC}"
-
     if grep -Fxq "BACKUP_CREATED" "$STATE_FILE"; then
-        echo -e "${YELLOW}A backup has already been created. Skipping...${NC}"
-        log_message "Backup already created, skipping."
+        whiptail --title "Backup" --msgbox "A backup has already been created. Skipping..." 8 60
         return
     fi
-
-    if [[ ! -d "$BACKUP_DIR" ]]; then
-        mkdir -p "$BACKUP_DIR"
-        echo -e "${GREEN}Backup directory created at $BACKUP_DIR.${NC}"
-        log_message "Backup directory created at $BACKUP_DIR."
-    fi
-
-    local backup_files
-    backup_files=("${BACKUP_DIR}/sources.list.bak_"*)
+    mkdir -p "$BACKUP_DIR"
+    local backup_files=("${BACKUP_DIR}/sources.list.bak_"*)
     if [[ ${#backup_files[@]} -ge 5 ]]; then
-        echo -e "${BLUE}The maximum number of backups (5) has been reached.${NC}"
-        echo -e "${BLUE}Please remove some old backups before creating a new one.${NC}"
-        log_message "Reached max number of backups, skipping creation."
+        whiptail --title "Backup Limit" --msgbox "Max backups (5) reached. Remove old ones." 8 60
         return 1
     fi
-
-    local backup_filename="${BACKUP_DIR}/sources.list.bak_$(date +%Y%m%d_%H%M%S)"
-    cp "/etc/apt/sources.list" "$backup_filename" || {
-        echo -e "${RED}Failed to create backup.${NC}"
-        log_message "Failed to create backup. Exiting."
-        exit 1
-    }
-
-    echo -e "${GREEN}Backup created successfully at: $backup_filename.${NC}"
-    log_message "Backup created at $backup_filename."
+    local fn="${BACKUP_DIR}/sources.list.bak_$(date +%Y%m%d_%H%M%S)"
+    cp "/etc/apt/sources.list" "$fn" || exit 1
     echo "BACKUP_CREATED" >> "$STATE_FILE"
+    whiptail --title "Backup Created" --msgbox "Backup saved at $fn" 8 60
 }
 
 restore_backup() {
     log_message "Restoring a previous backup of sources.list"
-    echo -e "${BLUE}=================================================${NC}"
-    echo -e "${BLUE}| Restoring a previous backup of sources.list   |${NC}"
-    echo -e "${BLUE}=================================================${NC}"
-
-    local backup_files
-    backup_files=("${BACKUP_DIR}/sources.list.bak_"*)
-
-    if [[ ${#backup_files[@]} -eq 0 ]]; then
-        echo -e "${RED}No backup files available to restore.${NC}"
-        log_message "No backup files found. Cannot restore."
+    local files=("${BACKUP_DIR}/sources.list.bak_"*)
+    if [[ ${#files[@]} -eq 0 ]]; then
+        whiptail --title "Restore" --msgbox "No backups found." 8 40
         return 1
     fi
-
-    echo -e "${BLUE}Select one of the following backups to restore:${NC}"
-    for ((i=0; i<${#backup_files[@]}; i++)); do
-        echo -e "${BLUE}$((i+1)))${NC} ${backup_files[$i]}"
+    local menu_items=()
+    for i in "${!files[@]}"; do
+        menu_items+=("$i" "$(basename "${files[$i]}")")
     done
-
-    echo -ne "${BLUE}Enter the backup number [1-${#backup_files[@]}]: ${NC}"
-    read backup_number
-
-    if ! [[ "$backup_number" =~ ^[0-9]+$ ]]; then
-        echo -e "${RED}Invalid input. Please enter a number only.${NC}"
-        log_message "Invalid input for backup number."
-        return 1
-    fi
-    if (( backup_number < 1 || backup_number > ${#backup_files[@]} )); then
-        echo -e "${RED}Invalid selection. Please choose a valid backup number.${NC}"
-        log_message "User selected an invalid backup number."
-        return 1
-    fi
-
-    local chosen_backup="${backup_files[$((backup_number-1))]}"
-    if [[ -f "$chosen_backup" ]]; then
-        echo -e "${BLUE}Preview of $chosen_backup:${NC}"
-        echo "-----------------------------------------"
-        cat "$chosen_backup"
-        echo "-----------------------------------------"
-
-        echo -ne "${BLUE}Restore this backup? (y/n): ${NC}"
-        read answer
-        case "$answer" in
-            [yY])
-                cp "$chosen_backup" "/etc/apt/sources.list"
-                echo -e "${GREEN}Backup has been successfully restored.${NC}"
-                log_message "Restored backup from $chosen_backup."
-                ;;
-            *)
-                echo -e "${RED}Restore operation canceled.${NC}"
-                log_message "Restore canceled by user."
-                ;;
-        esac
-    else
-        echo -e "${RED}The selected backup file does not exist.${NC}"
-        log_message "Backup file does not exist: $chosen_backup."
-    fi
+    local choice=$(whiptail --title "Restore Backup" --menu "Select a backup:" 15 60 "${#files[@]}" "${menu_items[@]}" 3>&1 1>&2 2>&3)
+    cp "${files[$choice]}" /etc/apt/sources.list
+    whiptail --title "Restored" --msgbox "Restored ${files[$choice]}" 8 60
 }
 
 open_sources_list() {
     log_message "User opening /etc/apt/sources.list with nano."
-    echo -e "${BLUE}=================================================${NC}"
-    echo -e "${BLUE}| Opening sources.list file with nano           |${NC}"
-    echo -e "${BLUE}=================================================${NC}"
     nano "/etc/apt/sources.list"
 }
 
 line_exists() {
-    local line="$1"
-    grep -Fxq "$line" "/etc/apt/sources.list"
+    grep -Fxq "$1" "/etc/apt/sources.list"
 }
 
 modify_sources_list() {
     log_message "Modifying sources.list with recommended lines..."
-    echo -e "${BLUE}=================================================${NC}"
-    echo -e "${BLUE}| Modifying sources.list file                  |${NC}"
-    echo -e "${BLUE}=================================================${NC}"
-    echo -e "${YELLOW}Adding necessary lines to sources.list if they are missing.${NC}"
-
     if grep -Fxq "SOURCES_LIST_MODIFIED" "$STATE_FILE"; then
-        echo -e "${YELLOW}sources.list is already modified. Skipping...${NC}"
-        log_message "sources.list already modified previously. Skipping."
+        whiptail --title "Modify Sources" --msgbox "sources.list already modified." 8 50
         return
     fi
-
     add_to_file_if_not_exists "/etc/apt/sources.list" "deb http://ftp.debian.org/debian bullseye main contrib"
     add_to_file_if_not_exists "/etc/apt/sources.list" "deb http://ftp.debian.org/debian bullseye-updates main contrib"
     add_to_file_if_not_exists "/etc/apt/sources.list" "deb http://security.debian.org/debian-security bullseye-security main contrib"
     add_to_file_if_not_exists "/etc/apt/sources.list" "# PVE pve-no-subscription repository provided by proxmox.com, NOT recommended for production use"
     add_to_file_if_not_exists "/etc/apt/sources.list" "deb http://download.proxmox.com/debian/pve bullseye pve-no-subscription"
-
-    echo -e "${GREEN}sources.list has been successfully updated.${NC}"
-    log_message "sources.list updated with recommended lines."
     echo "SOURCES_LIST_MODIFIED" >> "$STATE_FILE"
+    whiptail --title "Modified" --msgbox "sources.list updated." 8 50
 }
 
 # -------------------------------------------------------------
@@ -296,610 +274,455 @@ modify_sources_list() {
 # -------------------------------------------------------------
 add_msi_options() {
     log_message "Adding MSI options for audio..."
-    echo -e "${BLUE}=================================================${NC}"
-    echo -e "${BLUE}| Adding MSI options for audio                  |${NC}"
-    echo -e "${BLUE}=================================================${NC}"
-
     if grep -Fxq "MSI_OPTIONS_ADDED" "$STATE_FILE"; then
-        echo -e "${YELLOW}MSI options have already been added. Skipping...${NC}"
-        log_message "MSI options already added, skipping."
+        whiptail --title "MSI Options" --msgbox "Already added." 8 40
         return
     fi
-
     add_to_file_if_not_exists "/etc/modprobe.d/snd-hda-intel.conf" "options snd-hda-intel enable_msi=1"
-    echo -e "${GREEN}MSI options for audio have been successfully added.${NC}"
-    log_message "MSI options appended to snd-hda-intel.conf."
-
     echo "MSI_OPTIONS_ADDED" >> "$STATE_FILE"
+    whiptail --title "MSI Options" --msgbox "MSI enabled for audio." 8 50
 }
 
 enable_iommu() {
     log_message "Enabling IOMMU..."
     if grep -Fxq "IOMMU_ENABLED" "$STATE_FILE"; then
-        echo -e "${YELLOW}IOMMU is already enabled. Skipping...${NC}"
-        log_message "IOMMU already enabled, skipping."
+        whiptail --title "IOMMU" --msgbox "Already enabled." 8 40
         return
     fi
-
-    echo -e "${BLUE}=================================================${NC}"
-    echo -e "${BLUE}| Enabling IOMMU (based on PolloLoco's documentation) |${NC}"
-    echo -e "${BLUE}=================================================${NC}"
-
-    local vendor
-    vendor=$(grep -m1 'vendor_id' /proc/cpuinfo | awk -F':' '{print $2}' | xargs)
-
+    local vendor=$(grep -m1 'vendor_id' /proc/cpuinfo | awk -F':' '{print $2}' | xargs)
     if [[ -f "/etc/default/grub" ]]; then
-        log_message "Detected GRUB bootloader..."
-        echo -e "${BLUE}Detected GRUB as bootloader...${NC}"
-
         if [[ "$vendor" == "GenuineIntel" ]]; then
-            echo -e "${GREEN}Intel CPU detected. Appending 'intel_iommu=on'...${NC}"
-            log_message "Appending intel_iommu=on to GRUB_CMDLINE_LINUX_DEFAULT"
-            sed -i 's|\(GRUB_CMDLINE_LINUX_DEFAULT="[^"]*)|\1 intel_iommu=on|' /etc/default/grub
+            sed -i 's|\(GRUB_CMDLINE_LINUX_DEFAULT="[^"]*)|\1 intel_iommu=on iommu=pt|' /etc/default/grub
         else
-            echo -e "${GREEN}AMD CPU detected. Using 'iommu=pt' for better performance.${NC}"
-            log_message "Appending iommu=pt to GRUB_CMDLINE_LINUX_DEFAULT"
-            sed -i 's|\(GRUB_CMDLINE_LINUX_DEFAULT="[^"]*)|\1 iommu=pt|' /etc/default/grub
+            sed -i 's|\(GRUB_CMDLINE_LINUX_DEFAULT="[^"]*)|\1 amd_iommu=on iommu=pt|' /etc/default/grub
         fi
-
-        if command -v update-grub &> /dev/null; then
-            update-grub
-            log_message "update-grub executed successfully."
-        else
-            echo -e "${RED}Warning: 'update-grub' command not found. Please update GRUB manually.${NC}"
-            log_message "Could not run update-grub, command not found."
-        fi
-
+        update-grub &>/dev/null
     elif [[ -f "/etc/kernel/cmdline" ]]; then
-        log_message "Detected systemd-boot environment..."
-        echo -e "${BLUE}Detected systemd-boot (Proxmox-boot-tool)...${NC}"
-
         if [[ "$vendor" == "GenuineIntel" ]]; then
-            echo -e "${GREEN}Intel CPU detected. Appending 'intel_iommu=on'...${NC}"
-            sed -i 's|$| intel_iommu=on|' /etc/kernel/cmdline
+            sed -i 's|$| intel_iommu=on iommu=pt|' /etc/kernel/cmdline
         else
-            echo -e "${GREEN}AMD CPU detected. Appending 'iommu=pt' for better performance.${NC}"
-            sed -i 's|$| iommu=pt|' /etc/kernel/cmdline
+            sed -i 's|$| amd_iommu=on iommu=pt|' /etc/kernel/cmdline
         fi
-
-        if command -v proxmox-boot-tool &> /dev/null; then
-            proxmox-boot-tool refresh
-            log_message "proxmox-boot-tool refresh executed."
-        else
-            echo -e "${RED}Warning: 'proxmox-boot-tool' command not found. Please refresh systemd-boot manually.${NC}"
-            log_message "Could not run proxmox-boot-tool refresh."
-        fi
-    else
-        echo -e "${RED}Could not detect GRUB or systemd-boot. Please enable IOMMU manually.${NC}"
-        log_message "Failed to detect bootloader for IOMMU."
-        return
+        proxmox-boot-tool refresh &>/dev/null
     fi
-
     echo "IOMMU_ENABLED" >> "$STATE_FILE"
-    echo -e "${GREEN}IOMMU parameters have been appended. A reboot is required for changes to take effect.${NC}"
-    log_message "IOMMU enabled. Marked in state file."
+    whiptail --title "IOMMU" --msgbox "IOMMU enabled. Reboot required." 8 50
 }
 
 check_iommu() {
     log_message "Checking if IOMMU is enabled"
-    echo -e "${BLUE}=================================================${NC}"
-    echo -e "${BLUE}| Checking if IOMMU is enabled                  |${NC}"
-    echo -e "${BLUE}=================================================${NC}"
-
-    dmesg | grep -e DMAR -e IOMMU
+    local out=$(dmesg | grep -e DMAR -e IOMMU)
+    whiptail --title "IOMMU Check" --msgbox "$out" 12 60
 }
 
 apply_kernel_configuration() {
     log_message "Applying kernel configuration..."
-    echo -e "${BLUE}=================================================${NC}"
-    echo -e "${BLUE}| Applying kernel configuration                 |${NC}"
-    echo -e "${BLUE}=================================================${NC}"
-
     if grep -Fxq "KERNEL_CONFIG_APPLIED" "$STATE_FILE"; then
-        echo -e "${YELLOW}Kernel configuration already applied once. Skipping...${NC}"
-        log_message "Kernel config was already applied, skipping."
         return
     fi
-
-    if ! command -v update-initramfs &> /dev/null; then
-        echo -e "${RED}Warning: 'update-initramfs' command not found. Please update initramfs manually.${NC}"
-        log_message "update-initramfs missing, user must do it manually."
-    else
-        update-initramfs -u -k all
-        echo -e "${GREEN}Kernel configuration applied (initramfs updated).${NC}"
-        log_message "initramfs updated successfully."
-    fi
-
+    update-initramfs -u -k all &>/dev/null
     echo "KERNEL_CONFIG_APPLIED" >> "$STATE_FILE"
-}
-
-ask_for_reboot() {
-    log_message "Prompting user for reboot..."
-    echo -e "${BLUE}=================================================${NC}"
-    echo -ne "${BLUE}Do you want to restart now? (y/n): ${NC}"
-    read answer
-    case $answer in
-        [yY])
-            log_message "User chose to reboot the system..."
-            echo -e "${BLUE}Restarting the system...${NC}"
-            reboot
-            ;;
-        *)
-            echo -e "${BLUE}Please remember to restart the system manually later if required.${NC}"
-            log_message "User postponed reboot."
-            ;;
-    esac
-}
-
-# -------------------------------------------------------------
-# Helper Function: Append an Entry to a File Only if It Does Not Already Exist
-# -------------------------------------------------------------
-add_to_file_if_not_exists() {
-    local file="$1"
-    local entry="$2"
-
-    if ! grep -Fxq "$entry" "$file"; then
-        echo "$entry" | tee -a "$file"
-        log_message "Added line '$entry' to $file"
-    fi
-}
-
-# -------------------------------------------------------------
-# Display and Search GPU Devices by Keyword
-# -------------------------------------------------------------
-search_gpu_device() {
-    log_message "Searching GPU device by user input..."
-    echo -e "${BLUE}=================================================${NC}"
-    echo -e "${BLUE}|        Available Graphics Devices             |${NC}"
-    echo -e "${BLUE}=================================================${NC}"
-
-    lspci | grep -i 'vga\|3d\|2d'
-
-    echo -e "${BLUE}=================================================${NC}"
-    echo -e "${BLUE}Please enter the name of the device you are searching for (e.g., GTX 1080):${NC}"
-    read device
-
-    echo -e "${BLUE}Searching for '$device' in PCI devices...${NC}"
-    log_message "User searching for device: $device"
-    lspci -v | grep -i "$device"
-}
-
-# -------------------------------------------------------------
-# Prompt User for GPU ID (xx:xx.x) and Retrieve Vendor/Device ID
-# -------------------------------------------------------------
-read_gpu_id() {
-    log_message "Prompting user for GPU ID..."
-    echo -e "${BLUE}Enter the GPU device ID (format xx:xx.x):${NC}"
-    read GPU_ID
-
-    if ! [[ "$GPU_ID" =~ ^[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}\.[0-9A-Fa-f]$ ]]; then
-        echo -e "${RED}Invalid format. Please use the format xx:xx.x (e.g., 01:00.0).${NC}"
-        log_message "Invalid GPU ID format: $GPU_ID"
-        return 1
-    fi
-
-    echo -e "${BLUE}Retrieving Vendor/Device ID for: $GPU_ID${NC}"
-    log_message "Retrieving vendor/device ID for $GPU_ID"
-    GPU_VENDOR_ID=$(lspci -n -s "$GPU_ID" | awk '{print $3}')
-
-    if [[ -z "$GPU_VENDOR_ID" ]]; then
-        echo -e "${RED}Could not retrieve vendor/device ID. Check your GPU ID input.${NC}"
-        log_message "Failed to retrieve vendor/device ID for $GPU_ID"
-        return 1
-    fi
-
-    echo -e "${GREEN}Detected PCI vendor/device: $GPU_VENDOR_ID${NC}"
-    log_message "Detected GPU_VENDOR_ID=$GPU_VENDOR_ID"
-}
-
-# -------------------------------------------------------------
-# Classic or Driverctl GPU Passthrough Methods
-# -------------------------------------------------------------
-classic_passthrough() {
-    log_message "User selected: Classic GPU Passthrough method"
-    echo -e "${YELLOW}Using Classic Method (Manual edit of vfio.conf and blacklists)${NC}"
-    
-    search_gpu_device
-    read_gpu_id || return 1
-
-    if [[ "$GPU_VENDOR_ID" =~ 10de ]]; then
-        log_message "NVIDIA GPU detected. Blacklisting nouveau and nvidia..."
-        add_to_file_if_not_exists "/etc/modprobe.d/blacklist.conf" "blacklist nouveau"
-        add_to_file_if_not_exists "/etc/modprobe.d/blacklist.conf" "blacklist nvidia"
-    elif [[ "$GPU_VENDOR_ID" =~ 1002 ]]; then
-        log_message "AMD GPU detected. Blacklisting radeon and amdgpu..."
-        add_to_file_if_not_exists "/etc/modprobe.d/blacklist.conf" "blacklist radeon"
-        add_to_file_if_not_exists "/etc/modprobe.d/blacklist.conf" "blacklist amdgpu"
-    else
-        log_message "GPU vendor not recognized for automatic blacklisting."
-    fi
-
-    add_to_file_if_not_exists "/etc/modprobe.d/vfio.conf" "options vfio-pci ids=$GPU_VENDOR_ID disable_vga=1"
-
-    apply_kernel_configuration
-    echo "PASSTHROUGH_CONFIGURED" >> "$STATE_FILE"
-    ask_for_reboot
-}
-
-driverctl_passthrough() {
-    log_message "User selected: Driverctl GPU Passthrough method"
-    echo -e "${YELLOW}Using Driverctl Method (Automatic Persistent Override)${NC}"
-    
-    install_driverctl
-
-    echo -e "${BLUE}Would you like to select a GPU manually (M) or skip listing (S)?${NC}"
-    echo -ne "[M/S]: "
-    read user_choice
-
-    local pci_id
-    if [[ "$user_choice" =~ ^[Mm]$ ]]; then
-        search_gpu_device
-        echo -e "${BLUE}Enter the PCI address (e.g., 0000:01:00.0) you want to override:${NC}"
-        read pci_id
-        log_message "User manually selected PCI address: $pci_id"
-    else
-        echo -e "${BLUE}Skipping listing. Please enter the PCI address directly (e.g., 0000:01:00.0):${NC}"
-        read pci_id
-        log_message "User skipped listing. Entered PCI address: $pci_id"
-    fi
-
-    echo -e "${YELLOW}Binding $pci_id to vfio-pci via driverctl...${NC}"
-    log_message "Attempting 'driverctl set-override $pci_id vfio-pci'..."
-    driverctl set-override "$pci_id" vfio-pci || {
-        echo -e "${RED}Error: Failed to set driver override via driverctl.${NC}"
-        log_message "Failed to override driver for $pci_id"
-        return 1
-    }
-
-    echo -e "${BLUE}Current driver assignments (overrides):${NC}"
-    driverctl list-overrides | tee -a "$LOG_FILE"
-
-    if lspci -n -s "$pci_id" | grep -qi '10de'; then
-        echo -e "${GREEN}Detected NVIDIA GPU. Blacklisting nouveau and nvidia...${NC}"
-        log_message "Blacklisting nouveau and nvidia for $pci_id"
-        add_to_file_if_not_exists "/etc/modprobe.d/blacklist.conf" "blacklist nouveau"
-        add_to_file_if_not_exists "/etc/modprobe.d/blacklist.conf" "blacklist nvidia"
-    elif lspci -n -s "$pci_id" | grep -qi '1002'; then
-        echo -e "${GREEN}Detected AMD GPU. Blacklisting radeon and amdgpu...${NC}"
-        log_message "Blacklisting radeon and amdgpu for $pci_id"
-        add_to_file_if_not_exists "/etc/modprobe.d/blacklist.conf" "blacklist radeon"
-        add_to_file_if_not_exists "/etc/modprobe.d/blacklist.conf" "blacklist amdgpu"
-    fi
-
-    apply_kernel_configuration
-    echo "PASSTHROUGH_CONFIGURED" >> "$STATE_FILE"
-    ask_for_reboot
-}
-
-# -------------------------------------------------------------
-# GPU Passthrough Configuration Menu
-# -------------------------------------------------------------
-configure_gpu_passthrough() {
-    log_message "User entered GPU Passthrough configuration menu."
-    echo -e "${BLUE}=================================================${NC}"
-    echo -e "${BLUE}|    GPU Passthrough Configuration Options      |${NC}"
-    echo -e "${BLUE}=================================================${NC}"
-
-    if grep -Fxq "PASSTHROUGH_CONFIGURED" "$STATE_FILE"; then
-        echo -e "${YELLOW}GPU passthrough already configured. Skipping...${NC}"
-        log_message "PASSTHROUGH_CONFIGURED found in $STATE_FILE. Skipping."
-        return
-    fi
-
-    echo -e "${BLUE}Please select a method for GPU passthrough:${NC}"
-    echo -e "${BLUE} 1) Classic (edit vfio.conf and blacklists)${NC}"
-    echo -e "${BLUE} 2) Driverctl (automatic persistent override)${NC}"
-    echo -e "${BLUE}-------------------------------------------------${NC}"
-
-    echo -e "${YELLOW}Choose a passthrough method (1 or 2):${NC}"
-    read method
-
-    case $method in
-        1)
-            classic_passthrough
-            ;;
-        2)
-            driverctl_passthrough
-            ;;
-        *)
-            echo -e "${RED}Invalid option. Returning to main menu...${NC}"
-            log_message "Invalid passthrough method selected."
-            sleep 2
-            ;;
-    esac
-}
-
-# -------------------------------------------------------------
-# Unset Driverctl Override Hook
-# -------------------------------------------------------------
-unset_driverctl_override() {
-    echo -e "${BLUE}Enter the PCI address you want to unset (e.g., 0000:01:00.0):${NC}"
-    read pci_unset
-
-    if driverctl list-overrides | grep -q "$pci_unset"; then
-        log_message "Unsetting driverctl override for $pci_unset"
-        driverctl unset-override "$pci_unset"
-        echo -e "${GREEN}Driverctl override for $pci_unset has been removed.${NC}"
-    else
-        echo -e "${RED}No override found for $pci_unset.${NC}"
-        log_message "No override found for $pci_unset. Skipping."
-    fi
-}
-
-# -------------------------------------------------------------
-# Rollback GPU Passthrough Configuration
-# -------------------------------------------------------------
-rollback_gpu_passthrough() {
-    log_message "User selected: Rollback GPU passthrough"
-    echo -e "${BLUE}=================================================${NC}"
-    echo -e "${BLUE}| Rolling Back GPU Passthrough Configuration    |${NC}"
-    echo -e "${BLUE}=================================================${NC}"
-
-    if grep -Fxq "PASSTHROUGH_CONFIGURED" "$STATE_FILE"; then
-        echo -e "${BLUE}Would you like to unset any existing driverctl overrides? (y/n)${NC}"
-        read ans
-        if [[ "$ans" =~ ^[yY]$ ]]; then
-            unset_driverctl_override
-        fi
-
-        log_message "Removing lines from blacklist.conf and vfio.conf..."
-        sed -i '/blacklist nouveau/d' /etc/modprobe.d/blacklist.conf
-        sed -i '/blacklist nvidia/d' /etc/modprobe.d/blacklist.conf
-        sed -i '/blacklist radeon/d' /etc/modprobe.d/blacklist.conf
-        sed -i '/blacklist amdgpu/d' /etc/modprobe.d/blacklist.conf
-
-        gpu_ids=$(grep 'ids=' /etc/modprobe.d/vfio.conf | awk '{print $3}' | sed 's/ids=//; s/disable_vga.*//')
-        if [[ -n "$gpu_ids" ]]; then
-            sed -i "/options vfio-pci ids=$gpu_ids/d" /etc/modprobe.d/vfio.conf
-        fi
-
-        if command -v update-initramfs &> /dev/null; then
-            update-initramfs -u -k all
-        else
-            echo -e "${YELLOW}update-initramfs not found. Skipping initramfs update...${NC}"
-            log_message "Skipping initramfs update because it's not found."
-        fi
-
-        sed -i '/PASSTHROUGH_CONFIGURED/d' "$STATE_FILE"
-        echo -e "${GREEN}Rollback completed.${NC}"
-        log_message "GPU passthrough rollback completed."
-    else
-        echo -e "${YELLOW}No GPU passthrough configuration found to rollback.${NC}"
-        log_message "No existing passthrough config found."
-    fi
-
-    ask_for_reboot
-}
-
-# -------------------------------------------------------------
-# Driverctl Installer
-# -------------------------------------------------------------
-install_driverctl() {
-    log_message "Checking/Installing driverctl..."
-    echo -e "${BLUE}=================================================${NC}"
-    echo -e "${BLUE}| Checking and Installing driverctl             |${NC}"
-    echo -e "${BLUE}=================================================${NC}"
-
-    if ! command -v driverctl &> /dev/null; then
-        echo -e "${GREEN}driverctl not found. Installing now...${NC}"
-        log_message "Installing driverctl package..."
-        apt-get update && apt-get install -y driverctl || {
-            echo -e "${RED}Error: Failed to install driverctl.${NC}"
-            log_message "Error installing driverctl."
-            return 1
-        }
-        echo -e "${GREEN}driverctl installed successfully.${NC}"
-        log_message "driverctl installed."
-    else
-        echo -e "${YELLOW}driverctl is already installed. Skipping...${NC}"
-        log_message "driverctl already installed."
-    fi
-    sleep 2
-}
-
-# -------------------------------------------------------------
-# Loading Screen (Banner and Spinner)
-# -------------------------------------------------------------
-show_loading_banner() {
-    clear
-    echo -e "${BLUE}=================================================${NC}"
-    echo -e "${BLUE}  PROXMOX ENHANCED CONFIG UTILITY (PECU)        ${NC}"
-    echo -e "${BLUE}=================================================${NC}"
-    echo -e "${GREEN}      By Daniel Puente García (Danielop95/DVNILXP)${NC}"
-    echo
-
-    local banner_lines=(
-"    ____  ______________  __"
-"   / __ \\/ ____/ ____/ / / /"
-"  / /_/ / __/ / /   / / / / "
-" / ____/ /___/ /___/ /_/ /  "
-"/_/   /_____/\____/\____/   "
-"                            "
-    )
-
-    echo -e "${YELLOW}"
-    for line in "${banner_lines[@]}"; do
-        echo "$line"
-        sleep 0.07
-    done
-    echo -e "${NC}"
-    sleep 0.5
-}
-
-show_technologies_and_spinner() {
-    local techs=(
-        "Intel"
-        "Intel | AMD"
-        "Intel | AMD | Nvidia"
-        "Intel | AMD | Nvidia | Proxmox"
-        "Intel | AMD | Nvidia | Proxmox | Debian"
-    )
-
-    echo -ne "${YELLOW}Supported Technologies: ${NC}"
-    for t in "${techs[@]}"; do
-        printf "\r${YELLOW}Supported Technologies: %s${NC}" "$t"
-        sleep 0.7
-    done
-    echo
-    sleep 1
-}
-
-# -------------------------------------------------------------
-# Advanced Kernel Tweaks Sub-menu
-# -------------------------------------------------------------
-advanced_kernel_tweaks_menu() {
-    while true; do
-        clear
-        echo -e "${BLUE}=================================================${NC}"
-        echo -e "${BLUE}|    Advanced Kernel Tweaks Menu                |${NC}"
-        echo -e "${BLUE}=================================================${NC}"
-        echo -e "${BLUE} 1) Enable pcie_acs_override=downstream,multifunction${NC}"
-        echo -e "${BLUE} 2) Disable efifb (video=efifb:off)              ${NC}"
-        echo -e "${BLUE} 3) Return to main menu                         ${NC}"
-        echo -e "${BLUE}=================================================${NC}"
-        echo -ne "${BLUE}Select an option: ${NC}"
-        read tweak_opt
-
-        case $tweak_opt in
-            1)
-                append_kernel_param "pcie_acs_override=downstream,multifunction"
-                ;;
-            2)
-                append_kernel_param "video=efifb:off"
-                ;;
-            3)
-                break
-                ;;
-            *)
-                echo -e "${RED}Invalid option.${NC}"
-                sleep 1
-                ;;
-        esac
-    done
 }
 
 append_kernel_param() {
     local param="$1"
-    if [[ -f "/etc/default/grub" ]]; then
-        echo -e "${YELLOW}Appending '$param' to GRUB_CMDLINE_LINUX_DEFAULT...${NC}"
-        log_message "Appending '$param' to GRUB_CMDLINE_LINUX_DEFAULT"
-        sed -i "s|\(GRUB_CMDLINE_LINUX_DEFAULT=\"[^\"]*)|\1 $param|" /etc/default/grub
-        if command -v update-grub &> /dev/null; then
-            update-grub
+
+    # GRUB-based systems
+    if [[ -f /etc/default/grub ]]; then
+        # only if not yet present
+        if ! grep -q "$param" /etc/default/grub; then
+            # insert just before the trailing quote
+            sed -i '/^GRUB_CMDLINE_LINUX_DEFAULT=/ s/"$/ '"$param"'"/' /etc/default/grub
+            update-grub &>/dev/null
+            whiptail --title "$APP_ID — Kernel Tweaks" --msgbox \
+                "Added \`$param\` to GRUB_CMDLINE. Please reboot to apply." 8 60
+        else
+            whiptail --title "$APP_ID — Kernel Tweaks" --msgbox \
+                "Parameter \`$param\` is already set in GRUB_CMDLINE." 8 60
         fi
-        echo -e "${GREEN}Appended $param to GRUB cmdline and updated GRUB.${NC}"
-        ask_for_reboot
-    elif [[ -f "/etc/kernel/cmdline" ]]; then
-        echo -e "${YELLOW}Appending '$param' to /etc/kernel/cmdline...${NC}"
-        log_message "Appending '$param' to /etc/kernel/cmdline"
-        sed -i "s|\$| $param|" /etc/kernel/cmdline
-        if command -v proxmox-boot-tool &> /dev/null; then
-            proxmox-boot-tool refresh
+
+    # systemd-boot (proxmox-boot-tool) systems
+    elif [[ -f /etc/kernel/cmdline ]]; then
+        if ! grep -q "$param" /etc/kernel/cmdline; then
+            sed -i 's|"$||; s|$| '"$param"'"|' /etc/kernel/cmdline
+            proxmox-boot-tool refresh &>/dev/null
+            whiptail --title "$APP_ID — Kernel Tweaks" --msgbox \
+                "Added \`$param\` to kernel cmdline. Please reboot to apply." 8 60
+        else
+            whiptail --title "$APP_ID — Kernel Tweaks" --msgbox \
+                "Parameter \`$param\` is already set in kernel cmdline." 8 60
         fi
-        echo -e "${GREEN}Appended $param to /etc/kernel/cmdline and refreshed systemd-boot.${NC}"
-        ask_for_reboot
+    fi
+
+    ask_for_reboot
+}
+# Continuación de PECU con menús Whiptail
+
+ask_for_reboot() {
+    log_message "Prompting user for reboot..."
+    if whiptail --title "Reboot" --yesno "Reboot now?" 8 40; then
+        log_message "User chose to reboot."
+        reboot
     else
-        echo -e "${RED}Could not detect GRUB or systemd-boot. Cannot append kernel parameter automatically.${NC}"
-        log_message "Failed to detect bootloader for kernel parameter $param"
+        log_message "Reboot postponed."
     fi
 }
 
-# -------------------------------------------------------------
-# Main menu
-# -------------------------------------------------------------
-main() {
-    initialize_state
+add_to_file_if_not_exists() {
+    local file="$1"
+    local entry="$2"
+    if ! grep -Fxq "$entry" "$file"; then
+        echo "$entry" >> "$file"
+        log_message "Added '$entry' to $file"
+    fi
+}
 
-    # Loading screen
-    show_loading_banner
-    show_technologies_and_spinner
+search_gpu_device() {
+    log_message "Listing PCI devices"
+    local gpu_list
+    gpu_list=$(lspci | grep -iE 'vga|3d|display')
 
+    # Use --scrollbox so users can page through long lists.
+    whiptail --title "Available GPUs" --scrollbox "$gpu_list" 20 70
+}
+
+# Prompt for PCI ID of the GPU, showing a list of available devices above the input field.
+read_gpu_id() {
+    log_message "Prompting for GPU ID"
+
+    # Gather the list once for embedding in the prompt.
+    local gpu_list
+    gpu_list=$(lspci | grep -iE 'vga|3d|display')
+
+    local prompt=$'Available GPU devices:\n'"$gpu_list"$'\n\nEnter PCI ID (0000:xx:xx.x):'
+
+    # Big input box to display list + input field; handle Cancel properly.
+    GPU_ID=$(whiptail --title "GPU Device ID" --inputbox "$prompt" 20 80 \
+        3>&1 1>&2 2>&3) || return 1
+
+    # Validate PCI syntax: domain:bus.device.function
+    if ! [[ "$GPU_ID" =~ ^[0-9A-Fa-f]{4}:[0-9A-Fa-f]{2}\.[0-9A-Fa-f]$ ]]; then
+        whiptail --title "Error" --msgbox "Invalid PCI ID format: $GPU_ID" 8 60
+        return 1
+    fi
+
+    # Lookup vendor/device code; abort if lookup fails.
+    GPU_VENDOR_ID=$(lspci -n -s "$GPU_ID" | awk '{print $3}') || {
+        whiptail --title "Error" --msgbox "PCI ID not found: $GPU_ID" 8 60
+        return 1
+    }
+
+    # Let the user confirm the vendor/device ID.
+    whiptail --title "Vendor/Device" \
+            --msgbox "Vendor/Device ID: $GPU_VENDOR_ID" 8 60
+}
+
+
+classic_passthrough() {
+    log_message "Classic passthrough"
+    search_gpu_device
+    read_gpu_id || return
+
+    # Map vendor to blacklist entries
+    case "$GPU_VENDOR_ID" in
+        10de)  # NVIDIA
+            add_to_file_if_not_exists "/etc/modprobe.d/blacklist.conf" "blacklist nouveau"
+            add_to_file_if_not_exists "/etc/modprobe.d/blacklist.conf" "blacklist nvidia"
+            ;;
+        1002)  # AMD
+            add_to_file_if_not_exists "/etc/modprobe.d/blacklist.conf" "blacklist radeon"
+            add_to_file_if_not_exists "/etc/modprobe.d/blacklist.conf" "blacklist amdgpu"
+            ;;
+        *)     # Unknown vendor
+            whiptail --title "Warning" \
+                --msgbox "Unrecognized vendor ID: $GPU_VENDOR_ID\nProceeding without driver blacklisting." 10 60
+            ;;
+    esac
+
+    # Always add vfio config, even if blacklist was skipped.
+    add_to_file_if_not_exists "/etc/modprobe.d/vfio.conf" \
+        "options vfio-pci ids=$GPU_VENDOR_ID disable_vga=1"
+
+    apply_kernel_configuration
+    echo "PASSTHROUGH_CONFIGURED" >> "$STATE_FILE"
+
+    whiptail --title "Done" --msgbox "Classic passthrough configured." 8 50
+    ask_for_reboot
+}
+
+driverctl_passthrough() {
+    log_message "Driverctl passthrough"
+    install_driverctl
+
+    # Prompt method selector
+    local choice
+    choice=$(whiptail --title "Passthrough Method" --menu "Select:" 10 50 2 \
+        M "Manual select (show list first)" \
+        S "Skip listing" \
+        3>&1 1>&2 2>&3) || return
+
+    # If user wants manual list, show devices again
+    [[ $choice == M ]] && search_gpu_device
+
+    # Reuse read_gpu_id() to get PCI_ID
+    read_gpu_id || return
+
+    # Attempt to bind via driverctl
+    if ! driverctl set-override "$GPU_ID" vfio-pci; then
+        whiptail --title "Error" --msgbox "driverctl failed for $GPU_ID" 8 50
+        return 1
+    fi
+
+    # Blacklist based on vendor, same as classic pathway
+    case "$GPU_VENDOR_ID" in
+        10de) add_to_file_if_not_exists "/etc/modprobe.d/blacklist.conf" "blacklist nouveau" ;;
+        1002) add_to_file_if_not_exists "/etc/modprobe.d/blacklist.conf" "blacklist radeon" ;;
+    esac
+
+    apply_kernel_configuration
+    echo "PASSTHROUGH_CONFIGURED" >> "$STATE_FILE"
+
+    whiptail --title "Done" --msgbox "Driverctl passthrough configured." 8 50
+    ask_for_reboot
+}
+
+configure_gpu_passthrough() {
+    log_message "GPU Passthrough menu"
+
+    if grep -Fxq "PASSTHROUGH_CONFIGURED" "$STATE_FILE"; then
+        whiptail --title "Info" --msgbox "Passthrough already configured.✅" 8 50
+        return
+    fi
+
+    local method
+    method=$(whiptail --title "Passthrough Method" --menu "Choose method:" 12 60 2 \
+        1 "Classic" \
+        2 "Driverctl" \
+        3>&1 1>&2 2>&3) || return
+
+    case "$method" in
+        1) classic_passthrough    ;;
+        2) driverctl_passthrough ;;
+    esac
+}
+
+unset_driverctl_override() {
+    log_message "Prompting to unset driverctl overrides"
+
+    # Gather current overrides
+    local overrides
+    overrides=$(driverctl list-override | awk '/vfio-pci/ {print $1}')
+    if [[ -z "$overrides" ]]; then
+        whiptail --title "No Overrides" --msgbox "No driverctl overrides found." 8 50
+        return
+    fi
+
+    # Build menu items dynamically
+    local menu_items=()
+    local i=1
+    while IFS= read -r pci; do
+        menu_items+=("$i" "$pci")
+        ((i++))
+    done <<< "$overrides"
+
+    # Let the user pick one override to remove
+    local choice
+    choice=$(whiptail --title "Unset Override" \
+        --menu "Select override to unset:" 15 60 "${#menu_items[@]}" \
+        "${menu_items[@]}" 3>&1 1>&2 2>&3) || return
+
+    # Map choice back to PCI address
+    local idx=$((choice - 1))
+    local pci_to_unset=${menu_items[$((idx*2+1))]}
+
+    log_message "Unsetting override for $pci_to_unset"
+    if driverctl unset-override "$pci_to_unset"; then
+        whiptail --title "Success" --msgbox "Override for $pci_to_unset removed." 8 60
+    else
+        whiptail --title "Error" --msgbox "Failed to remove override for $pci_to_unset." 8 60
+    fi
+}
+
+rollback_gpu_passthrough() {
+    log_message "Starting full passthrough rollback"
+
+    if ! grep -Fxq "PASSTHROUGH_CONFIGURED" "$STATE_FILE"; then
+        whiptail --title "Nothing to Rollback" --msgbox "No passthrough configuration detected." 8 50
+        return
+    fi
+
+    # Confirm full rollback
+    if ! whiptail --title "Confirm Rollback" --yesno \
+         "This will remove all VFIO settings, unblacklist drivers,\nand revert initramfs.\nContinue?" 10 60; then
+        return
+    fi
+
+    # Optionally remove driverctl overrides
+    if whiptail --title "Remove driverctl Overrides?" --yesno \
+         "Would you like to unset any driverctl overrides?" 8 60; then
+        unset_driverctl_override
+    fi
+
+    # Clean blacklist.conf
+    sed -i '/blacklist \(nouveau\|nvidia\|radeon\|amdgpu\)/d' /etc/modprobe.d/blacklist.conf
+
+    # Extract and remove vfio.conf lines
+    local ids
+    ids=$(grep -Po '(?<=ids=)[0-9A-Fa-f:,]+' /etc/modprobe.d/vfio.conf || true)
+    [[ -n "$ids" ]] && sed -i "/options vfio-pci ids=$ids/d" /etc/modprobe.d/vfio.conf
+
+    # Update initramfs
+    if update-initramfs -u -k all &>/dev/null; then
+        log_message "initramfs updated successfully"
+    else
+        log_message "initramfs update failed"
+    fi
+
+    # Clear state flag
+    sed -i '/PASSTHROUGH_CONFIGURED/d' "$STATE_FILE"
+
+    whiptail --title "Rollback Complete" --msgbox "Passthrough settings reverted." 8 60
+    ask_for_reboot
+}
+
+
+install_driverctl() {
+    log_message "Ensuring driverctl is installed"
+
+    if command -v driverctl &>/dev/null; then
+        whiptail --title "Driverctl" --msgbox "driverctl is already installed." 8 60
+        return
+    fi
+
+    progress "Installing driverctl..."
+    if apt-get update -qq && apt-get install -y driverctl &>/dev/null; then
+        whiptail --title "Success" --msgbox "driverctl installed successfully." 8 60
+        log_message "driverctl installation succeeded"
+    else
+        whiptail --title "Error" --msgbox "Failed to install driverctl." 8 60
+        log_message "driverctl installation failed"
+    fi
+}
+
+advanced_kernel_tweaks_menu() {
     while true; do
-        clear
-        echo -e "${BLUE}=================================================${NC}"
-        echo -e "${BLUE}|              Options Menu                      |${NC}"
-        echo -e "${BLUE}=================================================${NC}"
-        echo -e "${BLUE} 1) Install Dependencies${NC}"
-        echo -e "${BLUE} 2) Configure GPU Passthrough${NC}"
-        echo -e "${BLUE} 3) Check GPU Installation${NC}"
-        echo -e "${BLUE} 4) Rollback GPU Passthrough Configuration${NC}"
-        echo -e "${BLUE} 5) Advanced Kernel Tweaks${NC}"
-        echo -e "${BLUE} 6) Exit${NC}"
-        echo -e "${BLUE}=================================================${NC}"
+        local k=$(whiptail --title "⚠ Advanced Kernel Tweaks ⚠" \
+            --menu "WARNING: These kernel parameters are EXPERIMENTAL and may cause system instability or boot issues.\n\nProceed only if you fully understand the risks.\n\nSelect a parameter to apply:" \
+            20 80 4 \
+            1 "pcie_acs_override=downstream,multifunction  [⚠ EXPERIMENTAL]" \
+            2 "video=efifb:off  [Disable EFI Framebuffer]" \
+            3 "Return to Main Menu" 3>&1 1>&2 2>&3)
 
-        echo -ne "${BLUE}Select an option:${NC} "
-        read option
-        case $option in
-            1)
-                while true; do
-                    clear
-                    echo -e "${BLUE}=================================================${NC}"
-                    echo -e "${BLUE}|     Options Menu \(Install Dependencies)       |${NC}"
-                    echo -e "${BLUE}=================================================${NC}"
-                    echo -e "${BLUE} 1) Create a backup of sources.list${NC}"
-                    echo -e "${BLUE} 2) Restore a previous backup of sources.list${NC}"
-                    echo -e "${BLUE} 3) Modify sources.list file${NC}"
-                    echo -e "${BLUE} 4) Open sources.list with nano${NC}"
-                    echo -e "${BLUE} 5) Back to main menu${NC}"
-                    echo -e "${BLUE} 6) Install driverctl \(recommended for PCIe passthrough)${NC}"
-                    echo -e "${BLUE}=================================================${NC}"
-
-                    echo -ne "${BLUE}Select an option:${NC} "
-                    read option_deps
-                    case $option_deps in
-                        1)
-                            backup_file
-                            sleep 2
-                            ;;
-                        2)
-                            restore_backup
-                            sleep 2
-                            ;;
-                        3)
-                            modify_sources_list
-                            sleep 2
-                            ;;
-                        4)
-                            open_sources_list
-                            sleep 2
-                            ;;
-                        5)
-                            break
-                            ;;
-                        6)
-                            install_driverctl
-                            ;;
-                        *)
-                            echo -e "${RED}Invalid option.${NC}"
-                            sleep 2
-                            ;;
-                    esac
-                done
+        case $k in
+            1) 
+                whiptail --title "⚠ WARNING ⚠" --msgbox "\
+You have selected an EXPERIMENTAL parameter:\n\n\
+'pcie_acs_override=downstream,multifunction'\n\n\
+This may cause system instability, incorrect IOMMU grouping, or boot failures.\n\
+Apply this ONLY if you know what you're doing.\n\n\
+Press OK to proceed." 15 70
+                append_kernel_param "pcie_acs_override=downstream,multifunction" 
                 ;;
-            2)
-                configure_gpu_passthrough
+            2) 
+                append_kernel_param "video=efifb:off" 
                 ;;
-            3)
-                check_gpu_installation
-                ;;
-            4)
-                rollback_gpu_passthrough
-                ;;
-            5)
-                advanced_kernel_tweaks_menu
-                ;;
-            6)
-                log_message "User chose to exit PECU. Goodbye!"
-                exit
-                ;;
-            *)
-                echo -e "${RED}Invalid option.${NC}"
-                sleep 1
+            3) 
+                break 
                 ;;
         esac
     done
 }
 
-# Ejecutamos el script
-main
 
+
+# New test
+
+
+show_help() {
+    whiptail --title "$APP_ID — Help / Credits" --msgbox "\
+$APP_NAME ($APP_ID)
+
+Author  : $AUTHOR
+Version : $BUILD_DATE
+License : MIT
+
+GitHub  : https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility
+
+Sponsors:
+  • BuyMeACoffee: $BMAC_URL
+  • Patreon     : $PATRON_URL
+" 15 70
+    pause
+}
+
+
+sponsor_info() {
+    whiptail --title "$APP_ID — Sponsorship" --msgbox "\
+This tool is created and maintained by:
+
+  $AUTHOR
+
+If you find PECU useful, please consider supporting:
+
+  • BuyMeACoffee : $BMAC_URL
+  • Patreon      : $PATRON_URL
+
+Thank you for your support!
+" 15 70
+    pause
+}
+
+
+
+# ──────────────────────────────────────────────────────────────
+# Main Menu
+# ──────────────────────────────────────────────────────────────
+main() {
+    initialize_state
+    show_loading_banner
+
+    # Dynamic terminal size adjustment
+    local cols=$(tput cols 2>/dev/null || echo 80)
+    local lines=$(tput lines 2>/dev/null || echo 24)
+    local menu_w=$(( cols > 80 ? 80 : cols - 4 ))
+    local menu_h=$(( lines > 20 ? 18 : lines - 4 ))
+
+    while true; do
+        choice=$(whiptail \
+          --backtitle "$APP_NAME | Author: $AUTHOR | BuyMeACoffee: $BMAC_URL" \
+          --title "MAIN MENU" \
+          --menu "Please select an option:" \
+          "$menu_h" "$menu_w" 8 \
+            1 "Install Dependencies" \
+            2 "Configure GPU Passthrough" \
+            3 "Check GPU Installation" \
+            4 "Rollback GPU Passthrough" \
+            5 "Advanced Kernel Tweaks [⚠ EXPERIMENTAL]" \
+            6 "Help / Credits" \
+            7 "Sponsorship" \
+            8 "Exit" \
+          3>&1 1>&2 2>&3) || choice=8
+
+        case "$choice" in
+            1) initialize_state             ;;
+            2) configure_gpu_passthrough    ;;
+            3) check_gpu_installation       ;;
+            4) rollback_gpu_passthrough     ;;
+            5) advanced_kernel_tweaks_menu  ;;
+            6) show_help                    ;;
+            7) sponsor_info                 ;;
+            8)
+                if whiptail --title "$APP_ID" --yesno "Are you sure you want to exit?" 8 50; then
+                    break
+                fi
+                ;;
+        esac
+    done
+
+    show_loading_banner
+    echo -e "${GREEN}Thank you for using $APP_ID!${NC}"
+}
+
+# Launch the menu
+main
+exit 0
