@@ -1,7 +1,7 @@
-# Ignore all files
 *
-
-# Whitelist essential project files and directories
+!scripts/
+!release-notes/
+!src/
 !LICENSE
 !README.md
 !release-notes/release-notes.md
