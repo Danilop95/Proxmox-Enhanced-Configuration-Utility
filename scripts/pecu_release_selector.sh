@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # -----------------------------------------------------------------------------
 #        ██████╗ ███████╗ ██████╗██╗   ██╗
 #        ██╔══██╗██╔════╝██╔════╝██║   ██║
@@ -7,257 +7,169 @@
 #        ██║     ███████╗╚██████╗╚██████╔╝
 #        ╚═╝     ╚══════╝ ╚═════╝ ╚═════╝ 
 # -----------------------------------------------------------------------------
-# PECU Release Selector - By Daniel Puente García (Danielop95/DVNILXP)
-# Version: 1.0 - 14/04/2025
+# PECU Release Selector — Whiptail + Fancy ASCII Fallback (v2.0)
+# By Daniel Puente García — BuyMeACoffee: https://buymeacoffee.com/danilop95ps
+# Version: 2.0 — 2025-05-14
 # -----------------------------------------------------------------------------
 
-# Color definitions
-RED='\e[0;31m'
-GREEN='\e[0;32m'
-BLUE='\e[0;34m'
-YELLOW='\e[0;33m'
-NC='\e[0m'  # No color
+set -euo pipefail
 
-# GitHub repository information
+### === CONFIGURATION ===
+# Repo info
 GITHUB_REPO="Danilop95/Proxmox-Enhanced-Configuration-Utility"
+RAW_BASE="https://raw.githubusercontent.com/${GITHUB_REPO}"
 API_URL="https://api.github.com/repos/${GITHUB_REPO}/releases"
 
-# -----------------------------------------------------------------------------
-# Function: Check network connectivity
-# -----------------------------------------------------------------------------
-check_network() {
-    echo -ne "${YELLOW}Checking network connectivity...${NC} "
-    if ping -c 1 -W 2 google.com &> /dev/null; then
-        echo -e "${GREEN}OK${NC}"
+# Paths
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+CONF_FILE="${SCRIPT_DIR}/versions.conf"
+FALLBACK_SCRIPT="${SCRIPT_DIR}/pecu_release_selector_old.sh"
+
+# Default colors (ANSI escapes)
+RED='\e[0;31m'; GREEN='\e[0;32m'; BLUE='\e[0;34m'; YELLOW='\e[0;33m'; NC='\e[0m'
+
+# Whiptail menu sizing (override by exporting these env vars if desired)
+: "${MENU_HEIGHT:=18}"
+: "${MENU_WIDTH:=70}"
+: "${MENU_CHOICE_HEIGHT:=10}"
+
+### === DEPENDENCY CHECK ===
+for cmd in whiptail curl jq; do
+  if ! command -v "$cmd" &>/dev/null; then
+    echo -e "${RED}Warning:${NC} '$cmd' not found. Falling back to classic ASCII menu."
+    bash "$FALLBACK_SCRIPT"
+    exit 0
+  fi
+done
+
+### === SPINNER GAUGE ===
+launch_spinner() {
+  {
+    for i in {0..100..10}; do
+      echo "$i"
+      echo "XXX"
+      echo "Initializing PECU Selector…"
+      echo "XXX"
+      sleep 0.1
+    done
+  } | whiptail --gauge "Please wait…" 6 60 0
+}
+
+### === READ VERSIONS.CONF ===
+# Format per line:
+# tag|channel|label|description|published_date|[optional]tag_color|[optional]label_color
+read_versions() {
+  mapfile -t raw_lines < <(grep -Ev '^\s*#|^\s*$' "$CONF_FILE" 2>/dev/null || true)
+  [[ ${#raw_lines[@]} -gt 0 ]]
+}
+
+### === BUILD WHIPTAIL MENU ===
+build_menu() {
+  TAGS=(); MENU_ITEMS=()
+  for idx in "${!raw_lines[@]}"; do
+    IFS='|' read -r tag chan lab desc pub tcol lcol <<<"${raw_lines[idx]}"
+    # fallback to defaults if colors not specified
+    tag_color="${tcol:-$BLUE}"
+    lab_color="${lcol:-$GREEN}"
+    TAGS+=("$tag")
+    # Build menu entry string (colors only show if terminal supports ANSI in whiptail)
+    entry="$tag_color$tag${NC}\n[$chan] ${lab_color}${lab^^}${NC}\n$desc\nPublished: $pub"
+    MENU_ITEMS+=("$((idx+1))" "$entry")
+  done
+  MENU_ITEMS+=("0" "Exit")
+}
+
+### === FALLBACK ASCII MENU ===
+old_menu() {
+  clear
+  echo -e "${BLUE}===============================================${NC}"
+  echo -e "${BLUE}  PROXMOX ENHANCED CONFIG UTILITY (PECU)       ${NC}"
+  echo -e "${BLUE}===============================================${NC}"
+  echo -e "${GREEN}          Classic Release Selector             ${NC}"
+  echo -e "${YELLOW}By Daniel Puente García — BuyMeACoffee: https://buymeacoffee.com/danilop95ps${NC}"
+  echo
+  echo -e "${YELLOW}Fetching releases via GitHub API...${NC}"
+  mapfile -t releases < <(curl -sL "$API_URL" \
+    | jq -r '.[] | "\(.tag_name) | \(.prerelease) | \(.published_at)"')
+  if [[ ${#releases[@]} -eq 0 ]]; then
+    echo -e "${RED}Error:${NC} No releases found."; exit 1
+  fi
+
+  echo -e "\n${GREEN}Choose a PECU version:${NC}"
+  echo "-----------------------------------"
+  local idx=1 rec=-1
+  for rel in "${releases[@]}"; do
+    IFS='|' read -r tag pre pub <<<"$rel"; pub="${pub//\"/}"
+    if [[ "$pre" == "false" && rec -eq -1 ]]; then rec=$idx; fi
+    if [[ "$pre" == "true" ]]; then
+      echo -e "  ${YELLOW}${idx}) ${tag} (Pre-release)${NC} - $pub"
     else
-        echo -e "${RED}FAILED${NC}"
-        echo -e "${RED}Network connectivity appears to be unavailable or DNS resolution is failing."
-        echo -e "Please check your network and DNS settings before running this script.${NC}"
-        exit 1
+      if [[ $idx -eq $rec ]]; then
+        echo -e "  ${GREEN}${idx}) ${tag} (Stable) [RECOMMENDED]${NC} - $pub"
+      else
+        echo -e "  ${GREEN}${idx}) ${tag} (Stable)${NC} - $pub"
+      fi
     fi
+    ((idx++))
+  done
+  echo -e "  ${YELLOW}0) Exit${NC}"
+  echo "-----------------------------------"
+  read -rp $'\nEnter choice [0-'$((idx-1))']: ' choice
+  if [[ "$choice" == "0" ]]; then
+    echo -e "${YELLOW}Exiting.${NC}"; exit 0
+  fi
+  if ! [[ "$choice" =~ ^[0-9]+$ ]] || (( choice < 1 || choice >= idx )); then
+    echo -e "${RED}Invalid selection.${NC}"; exit 1
+  fi
+  sel="${releases[$((choice-1))]}"
+  tag="$(echo "$sel" | cut -d'|' -f1 | xargs)"
+  echo -e "\nSelected: ${BLUE}${tag}${NC}"
+  read -rp "Proceed to execute? (y/N): " yn
+  if [[ "$yn" =~ ^[Yy]$ ]]; then
+    bash <(curl -sL "${RAW_BASE}/${tag}/src/proxmox-configurator.sh")
+    exit $?
+  fi
+  exit 0
 }
 
-# -----------------------------------------------------------------------------
-# Function: Check and install dependencies interactively
-# -----------------------------------------------------------------------------
-check_dependencies() {
-    check_network
-
-    local deps=(curl jq)
-    for dep in "${deps[@]}"; do
-        if ! command -v "$dep" >/dev/null 2>&1; then
-            echo -e "${RED}Dependency '$dep' is not installed.${NC}"
-            read -rp "Would you like to install '$dep'? (y/N): " answer
-            case "$answer" in
-                [yY]|[yY][eE][sS])
-                    echo -e "${YELLOW}Updating package lists...${NC}"
-                    if ! apt-get update; then
-                        echo -e "${RED}Failed to update package lists. This may be due to a temporary "
-                        echo -e "failure in DNS resolution or network issues. Please try running:"
-                        echo -e "    apt-get update --fix-missing"
-                        echo -e "or check your network settings before continuing.${NC}"
-                        exit 1
-                    fi
-                    echo -e "${YELLOW}Installing $dep...${NC}"
-                    if ! apt-get install -y "$dep"; then
-                        echo -e "${RED}Error: Failed to install $dep. Exiting.${NC}"
-                        exit 1
-                    fi
-                    ;;
-                *)
-                    echo -e "${RED}Cannot proceed without $dep. Exiting.${NC}"
-                    exit 1
-                    ;;
-            esac
-        else
-            echo -e "${GREEN}Dependency '$dep' is already installed.${NC}"
-        fi
-    done
-}
-
-# -----------------------------------------------------------------------------
-# Loading Screen (Banner and Spinner)
-# -----------------------------------------------------------------------------
-show_loading_banner() {
-    clear
-    echo -e "${BLUE}=================================================${NC}"
-    echo -e "${BLUE}  PROXMOX ENHANCED CONFIG UTILITY (PECU)        ${NC}"
-    echo -e "${BLUE}=================================================${NC}"
-    echo -e "${GREEN}      By Daniel Puente García (Danielop95/DVNILXP)${NC}"
-    echo
-
-    local banner_lines=(
-    '         ██████╗ ███████╗ ██████╗██╗   ██╗'
-    '         ██╔══██╗██╔════╝██╔════╝██║   ██║'
-    '         ██████╔╝█████╗  ██║     ██║   ██║'
-    '         ██╔═══╝ ██╔══╝  ██║     ██║   ██║'
-    '         ██║     ███████╗╚██████╗╚██████╔╝'
-    '         ╚═╝     ╚══════╝ ╚═════╝ ╚═════╝'
-    )
-
-    echo -e "${YELLOW}"
-    for line in "${banner_lines[@]}"; do
-        echo "$line"
-        sleep 0.07
-    done
-    echo -e "${NC}"
-    sleep 0.5
-}
-
-show_release_spinner() {
-    local messages=(
-        "Fetching Stable Releases..."
-        "Fetching Pre-release Versions..."
-        "Preparing Version Selector..."
-        "Recommended: Use Stable Release!"
-        "Proxmox Enhanced Utility"
-    )
-
-    echo -ne "${YELLOW}Initializing Release Selector: ${NC}"
-    for msg in "${messages[@]}"; do
-        printf "\r${YELLOW}%-50s${NC}" "$msg"
-        sleep 0.7
-    done
-    echo
-    sleep 1
-}
-
-print_banner() {
-    clear
-    cat << 'EOF'
-===========================================
-   Proxmox Enhanced Configuration Utility
-           Version Selector
-===========================================
-EOF
-}
-
-# -----------------------------------------------------------------------------
-# Fetch releases from GitHub API
-# -----------------------------------------------------------------------------
-fetch_releases() {
-    local json
-    echo -e "${BLUE}Fetching release information from GitHub...${NC}"
-    json=$(curl -sL "$API_URL")
-    if [[ -z "$json" ]]; then
-        echo -e "${RED}Error: Failed to fetch release information from GitHub.${NC}"
-        exit 1
-    fi
-
-    # Format: tag_name | prerelease | published_at
-    echo "$json" | jq -r '.[] | "\(.tag_name) | \(.prerelease) | \(.published_at)"'
-}
-
-# -----------------------------------------------------------------------------
-# Display the release selection menu with color differentiation
-# -----------------------------------------------------------------------------
-display_menu() {
-    local releases=("$@")
-    local recommended_index=-1
-
-    # First pass: determine the recommended (first stable release) index
-    for i in "${!releases[@]}"; do
-        local pre
-        pre=$(echo "${releases[$i]}" | cut -d'|' -f2 | xargs)
-        if [[ "$pre" == "false" ]] && [[ $recommended_index -eq -1 ]]; then
-            recommended_index=$i
-            break
-        fi
-    done
-
-    echo -e "\nSelect a PECU version to execute:"
-    echo "-----------------------------------"
-    local index=1
-    for rel in "${releases[@]}"; do
-        local tag pre published
-        tag=$(echo "$rel" | cut -d'|' -f1 | xargs)
-        pre=$(echo "$rel" | cut -d'|' -f2 | xargs)
-        published=$(echo "$rel" | cut -d'|' -f3 | xargs)
-
-        if [[ "$pre" == "true" ]]; then
-            # Pre-release: show in yellow
-            echo -e "  ${index}) ${YELLOW}${tag} (Pre-release)${NC} - Published: ${published}"
-        else
-            # Stable release: show in green; mark as RECOMMENDED if first stable
-            if [[ $((index-1)) -eq $recommended_index ]]; then
-                echo -e "  ${index}) ${GREEN}${tag} (Stable) [RECOMMENDED]${NC} - Published: ${published}"
-            else
-                echo -e "  ${index}) ${GREEN}${tag} (Stable)${NC} - Published: ${published}"
-            fi
-        fi
-        ((index++))
-    done
-    echo "  0) Exit"
-    echo "-----------------------------------"
-}
-
-# -----------------------------------------------------------------------------
-# Prompt the user to select a release and return its tag
-# -----------------------------------------------------------------------------
-select_release() {
-    local releases=("$@")
-    local choice
-    read -rp "Enter the option number: " choice
-    if [[ "$choice" =~ ^[0-9]+$ ]]; then
-        if [ "$choice" -eq 0 ]; then
-            echo -e "${YELLOW}Exiting.${NC}"
-            exit 0
-        elif [ "$choice" -ge 1 ] && [ "$choice" -le "${#releases[@]}" ]; then
-            local selected
-            selected="${releases[$((choice-1))]}"
-            local tag
-            tag=$(echo "$selected" | cut -d'|' -f1 | xargs)
-            echo "$tag"
-        else
-            echo -e "${RED}Invalid selection. Please try again.${NC}" >&2
-            select_release "${releases[@]}"
-        fi
-    else
-        echo -e "${RED}Invalid input. Please enter a number.${NC}" >&2
-        select_release "${releases[@]}"
-    fi
-}
-
-# -----------------------------------------------------------------------------
-# Execute the selected version of the PECU script
-# -----------------------------------------------------------------------------
-execute_release() {
-    local tag="$1"
-    echo -e "\nSelected version: ${BLUE}${tag}${NC}"
-    echo -e "${YELLOW}Fetching and executing PECU from GitHub...${NC}"
-    # Download and execute the script directly from GitHub using the selected tag.
-    bash <(curl -sL "https://raw.githubusercontent.com/${GITHUB_REPO}/${tag}/proxmox-configurator.sh")
-}
-
-# -----------------------------------------------------------------------------
-# Main Execution Flow
-# -----------------------------------------------------------------------------
+### === MAIN FLOW ===
 main() {
-    # Check and, if necessary, install required dependencies.
-    check_dependencies
+  launch_spinner
 
-    show_loading_banner
-    show_release_spinner
-    print_banner
-
-    # Fetch release information.
-    mapfile -t releases_array < <(fetch_releases)
-    if [ "${#releases_array[@]}" -eq 0 ]; then
-        echo -e "${RED}No releases found for repository ${GITHUB_REPO}.${NC}"
-        exit 1
-    fi
-
-    display_menu "${releases_array[@]}"
-
-    selected_tag=$(select_release "${releases_array[@]}")
-    read -rp "Proceed to execute version ${selected_tag}? (y/N): " confirm
-    if [[ "$confirm" =~ ^[Yy] ]]; then
-        execute_release "$selected_tag"
-    else
-        echo -e "${YELLOW}Operation cancelled.${NC}"
+  if read_versions; then
+    build_menu
+    CHOICE=$(whiptail \
+      --backtitle "PECU Release Selector — By Danilop95" \
+      --title "Select a PECU Version" \
+      --menu "Use ↑/↓ to navigate, Enter to select.  ESC to fallback." \
+      "${MENU_HEIGHT}" "${MENU_WIDTH}" "${MENU_CHOICE_HEIGHT}" \
+      "${MENU_ITEMS[@]}" \
+      3>&1 1>&2 2>&3) || {
+        echo -e "${YELLOW}Falling back to classic menu...${NC}"
+        old_menu
         exit 0
+      }
+
+    if [[ "$CHOICE" == "0" ]]; then
+      exit 0
     fi
+
+    index=$((CHOICE-1))
+    tag="${TAGS[index]}"
+
+    whiptail --backtitle "Confirm Run" \
+      --title "PECU ${tag}" \
+      --msgbox "You selected:\n\n  Tag: ${tag}\n\nProceed to execute?" 10 50
+
+    if whiptail --yesno "Run PECU ${tag} now?" 8 50; then
+      bash <(curl -fsL "${RAW_BASE}/${tag}/src/proxmox-configurator.sh")
+      exit $?
+    fi
+    exit 0
+  else
+    echo -e "${YELLOW}No versions.conf found. Using classic menu.${NC}"
+    old_menu
+  fi
 }
 
-# Execute the script
 main
