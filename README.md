@@ -1,122 +1,185 @@
-# Proxmox-Enhanced-Configuration-Utility (PECU)
+<h1 align="center">
+  <img src="doc/img/Logo-PECU.png" width="150" alt="PECU logo"/>
+  <br>
+  Proxmox-Enhanced-Configuration-Utility<br><sub>( PECU )</sub>
+</h1>
+
+
+<p align="center">
+  <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/actions">
+    <img src="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/actions/workflows/release.yml/badge.svg" alt="CI Status"></a>
+  <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/wiki">
+    <img src="https://img.shields.io/badge/wiki-up%20to%20date-blue?logo=read-the-docs" alt="Wiki"></a>
+  <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/releases">
+    <img src="https://img.shields.io/github/v/release/Danilop95/Proxmox-Enhanced-Configuration-Utility?include_prereleases" alt="Latest release"></a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/github/license/Danilop95/Proxmox-Enhanced-Configuration-Utility" alt="License"></a>
+</p>
+
+---
 
 ## Table of Contents
-
 - [Overview](#overview)
+- [Requirements & Compatibility](#requirements--compatibility)
+- [Quick Start](#quick-start)
+  - [Direct execution (recommended)](#direct-execution-recommended)
+  - [Offline / local install](#offline--local-install)
+- [What Is the Release Selector?](#what-is-the-release-selector)
 - [Features](#features)
-- [Requirements](#requirements)
-- [Compatible Proxmox Versions](#compatible-proxmox-versions)
-- [Usage and Installation](#usage-and-installation)
-- [Contribution](#contribution)
-- [Support](#support)
+- [Community & Contribution](#community--contribution)
+- [Support the Project](#support-the-project)
 - [License](#license)
 
-> ⚠️ **Experimental Features Notice**  
-> The latest updates, including Intel iGPU detection, rollback functionality for GPU passthrough, and multi-GPU support, are currently in a testing phase. These features may not be fully stable and could require further adjustments. Use with caution, especially in production environments, and report any issues you encounter to help improve the script’s reliability.
+---
 
 ## Overview
+**PECU** is a single-shell utility that makes day-to-day Proxmox VE management
+as painless as possible:
 
-The **Proxmox-Enhanced-Configuration-Utility (PECU)** is a powerful Bash script designed to streamline the configuration and management of Proxmox VE environments. This utility provides an interactive menu system for performing key tasks, such as managing package repositories and configuring GPU passthrough, simplifying Proxmox setup and optimization for diverse use cases.
+* one-line installer  
+* interactive menus for repositories, kernel flags, GPU passthrough, etc.  
+* reversible operations (backup / rollback built-in)  
+* auto-detects NVIDIA, AMD **and** Intel iGPUs out of the box  
+
+---
+
+### Requirements & Compatibility
+
+> The selector and the underlying scripts are designed for a **typical, up-to-date Proxmox host**.
+> If your stack falls outside the matrix below, use at your own risk.
+
+|                              |                                                                                                                                                                                                                                           |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Platform**                 | <img src="https://img.shields.io/badge/Proxmox VE-7.x %2F 8.x-000000?style=for-the-badge&logo=proxmox&logoColor=white" alt="Proxmox 7 / 8 badge"> *(tested weekly on the latest ISO)*                                                     |
+| **CPU arch**                 | <img src="https://img.shields.io/badge/x86--64-required-6A737D?style=for-the-badge">                                                                                                                                                      |
+| **Privileges**               | <img src="https://img.shields.io/badge/root_or_sudo-required-E74C3C?style=for-the-badge" alt="root badge">                                                                                                                               
+
+> **Heads-up** PECU does **not** support ARM / Raspberry Pi builds of Proxmox at this time.
+> Community ports are welcome, but official testing is x86-64 only.
+
+---
+
+
+## Quick Start
+
+### Direct execution (recommended)
+
+> **New in 2025-05** – a tiny selector script fetches **all** tagged releases and  
+> lets you launch whichever version (Stable, Beta, Experimental…) you want.
+
+```bash
+# run the selector straight from GitHub
+bash <(curl -sL \
+  https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/refs/heads/main/scripts/pecu_release_selector.sh)
+```
+
+<details>
+<summary>Live preview&nbsp;—&nbsp;choose <code>Stable</code>, <code>Beta</code>, or <code>⚠ Experimental</code></summary>
+
+#### Screenshot (Real)
+
+<p align="center">
+  <img src="doc/img/pecu_release_selector.png" width="90%" alt="PECU selector in action">
+</p>
+
+#### ANSI-mock-up
+
+<pre><samp><span style="color:#3fb950">Stable</span>        Production ready
+<span style="color:#ff7b72">Beta</span>          Release candidate
+<span style="color:#a5d6ff">Preview</span>       Feature preview
+<span style="color:#ffa657">Experimental</span>  High-risk build
+<span style="color:#1f6feb">Nightly</span>       Un-tested daily build
+
+<span style="color:#8b949e">#   TAG            TITLE                         DATE       [CHANNEL]</span>
+ <span style="color:#ff7b72">1   v2025.06.17    Intel iGPU support            2025-06-17 [beta   ] ★LATEST
+ <span style="color:#a5d6ff">2   v2025.05.14    Whiptail UI overhaul          2025-05-14 [preview]
+ <span style="color:#3fb950">3   v2025.04.14    Performance & bug-fix roll-up 2025-04-14 [stable ]
+ <span style="color:#ffa657">4   v2025.03.03    Initial automated release     2025-03-03 [⚠ exp ]
+
+Select #release: <span style="color:#3fb950">3</span>
+──────────────────────────────────────────────────────────────────────────────
+TAG: v2025.04.14
+TITLE: Performance & bug-fix roll-up
+NOTE: Safe for production
+──────────────────────────────────────────────────────────────────────────────
+Press Y to run | any other key to cancel:</samp></pre>
+
+</details>
+
+---
+
+
+
+### Offline / local install
+
+All releases ship a `.tar.gz` bundle:
+
+```bash
+VERSION="v2025.04.14"                     # pick any tag
+wget https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/releases/download/$VERSION/PECU-${VERSION#v}.tar.gz
+tar -xzf PECU-${VERSION#v}.tar.gz
+cd PECU-${VERSION#v}/src
+chmod +x proxmox-configurator.sh
+sudo ./proxmox-configurator.sh
+```
+
+---
+
+## What Is the Release Selector?
+
+* `pecu_release_selector.sh` is a **new ASCII-driven menu** I built over the last few months.
+  It talks directly to the GitHub API, parses every tag, and sorts them by the
+  custom **`PECU-Channel`** labels I introduced (Stable, Beta, Preview, Experimental, Nightly).
+  The channels keep the list tidy and make it obvious which way the project is heading.
+* Marking a build as **Experimental** instantly flags it orange in the menu,
+  so I can ship rough prototypes or quick-fix versions without confusing people who only want Stable releases.
+lector.
+* `pecu_release_selector_old.sh` still exists **only as a shim** that `exec`s the new script — **it will be removed on _05 July 2025_**.
+
+---
 
 ## Features
 
-The `proxmox-configurator.sh` script includes the following features:
+| Category              | Highlights                                                                               |
+| --------------------- | ---------------------------------------------------------------------------------------- |
+| **Repositories**      | Backup / restore `sources.list`, add “non-subscription” repo, edit with Nano.            |
+| **GPU Passthrough**   | Wizard-style setup for NVIDIA, AMD, Intel; supports driverctl override; rollback option. |
+| **Kernel Tweaks**     | Add `pcie_acs_override`, `video=efifb:off`, or custom flags with risk prompts.           |
+| **Multi-GPU**         | Detects multiple GPUs and lets you choose the one to passthrough.                        |
+| **Intel iGPU (test)** | Experimental automatic isolation of iGPU functions.                                      |
+| **Logging**           | Detailed `/var/log/pecu.log` with timestamps.                                            |
 
-- **Dependency Installation**:
-  - **Backup and Restore**: Create and restore backups of the `sources.list` file, ensuring recovery points for system configurations.
-  - **Modify `sources.list`**: Edit the `sources.list` file directly within the script interface using Nano or automatically add recommended repositories.
+---
 
-- **GPU Passthrough Configuration**:
-  - Set up GPU passthrough to assign dedicated graphics cards to virtual machines, improving performance for compute-intensive tasks.
-  - Includes rollback functionality to undo passthrough configurations if needed.
+## Community & Contribution
 
-- **System Configuration Checks**:
-  - Verifies if the Proxmox package repositories are correctly configured.
-  - Displays the state of IOMMU and MSI options to optimize hardware settings.
+PECU grows through clear bug reports, well-scoped ideas, and peer-reviewed code.  
+If you would like to get involved, choose the channel that best suits your needs:
 
-- **Multi-GPU Support**:
-  - Detects and displays details for NVIDIA, AMD, and Intel GPUs, with tailored options for Data Center or Gaming GPUs.
+| Purpose | Channel |
+|---------|---------|
+| **Bug reports / feature requests** | Use the GitHub [Issue tracker](../../issues). Please include the tag you were running, a concise description, and any relevant console output. |
+| **Code contributions** | Fork the repository, branch from `main`, run `shellcheck`, keep commits focused, then open a Pull Request. |
+| **Technical discussion and quick feedback** | Join the PECU Discord server: <https://discord.gg/euQTVNc2xg>. The server is used for informal Q&A, brainstorming future features, and sharing configuration tips. |
+| **Sustained support and early-access builds** | Patreon memberships are available at <https://www.patreon.com/c/DVNILXP95>. Patrons receive preview builds, detailed implementation notes, and can vote on the development roadmap. |
 
-- **Exit Option**:
-  - Safely exits the script, ensuring a clean shutdown of any ongoing operations.
+---
 
-## Requirements
+### Support the Project
 
-To use this script, the following are required:
+If PECU saves you time in daily operations and you wish to accelerate its development, consider a one-off donation:
 
-- **Proxmox VE**: This script is designed specifically for use on Proxmox VE systems.
-- **Root Privileges**: Must be run with root or sudo privileges to modify system configurations and perform installations.
-- **Basic Proxmox Knowledge**: Familiarity with Proxmox setup and configuration is recommended for optimal use of the script's features.
+<p align="center">
+  <a href="https://buymeacoffee.com/danilop95ps" target="_blank">
+    <img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png"
+         alt="Buy Me a Coffee" height="37">
+  </a>
+</p>
 
-## Compatible Proxmox Versions
+Your support funds additional test hardware.
 
-The `proxmox-configurator.sh` script has been tested and is compatible with the following Proxmox VE versions:
-
-- Proxmox VE 7.x
-- Proxmox VE 8.x
-
-## Usage and Installation
-
-You can run the script directly from your Proxmox server or clone the repository and execute it locally. Follow the instructions below for each method.
-
-### Direct Execution
-
-To run the script directly from the internet, use the following command:
-
-```bash
-bash <(curl -sL https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/refs/heads/main/scripts/pecu_release_selector_old.sh)
-```
-
-> **Note**: This command requires an active internet connection and is specific to Linux systems with Bash and Curl installed.
-
-### Local Installation
-
-If you prefer to work with the code locally, you can download the stable release archive directly from the [Releases](https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/releases) page. For example, for release `v2025.04.14`, run:
-
-1. **Clone the Repository**:
-
-```bash
-wget https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/releases/download/v2025.04.14/PECU-2025.04.14.tar.gz && \
-tar -xzvf PECU-2025.04.14.tar.gz && \
-cd PECU-2025.04.14
-
-```
-
-2. **Set Execution Permissions**:
-
-   Ensure the script has the necessary execution permissions. If not, grant them with:
-
-   ```bash
-   chmod +x proxmox-configurator.sh 
-   ```
-
-3. **Run the Script**:
-
-   Execute the script with root privileges:
-
-   ```bash
-   sudo ./proxmox-configurator.sh
-   ```
-
-4. **Follow the Interactive Menu**:
-
-   The script will present an interactive menu. Follow the on-screen instructions to perform the desired operations.
-
-## Contribution
-
-We welcome contributions to enhance the functionality and compatibility of this utility script. You can contribute in several ways:
-
-- **Issues**: Report bugs or suggest new features by opening an issue on our GitHub repository.
-- **Pull Requests**: Submit your improvements through a pull request. Make sure to follow the contribution guidelines in the repository.
-
-## Support
-
-If you find this project helpful and would like to support its development, consider buying me a coffee!
-
-<a href="https://buymeacoffee.com/danilop95pS" target="_blank">
-<img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" style="height: 37px !important;width: 170px !important;box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;-webkit-box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;">
-</a>
 
 ## License
 
-This project is licensed under the [GNU General Public License v3.0 (GPL-3.0)](LICENSE). For more information, please refer to the [LICENSE](LICENSE) file in the repository.
+**GPL-3.0** – see [LICENSE](LICENSE).
+Feel free to fork, adapt, and share under the same terms.

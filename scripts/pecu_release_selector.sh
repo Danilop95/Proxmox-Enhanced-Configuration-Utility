@@ -7,169 +7,129 @@
 #        ██║     ███████╗╚██████╗╚██████╔╝
 #        ╚═╝     ╚══════╝ ╚═════╝ ╚═════╝ 
 # -----------------------------------------------------------------------------
-# PECU Release Selector — Whiptail + Fancy ASCII Fallback (v2.0)
-# By Daniel Puente García — BuyMeACoffee: https://buymeacoffee.com/danilop95ps
-# Version: 2.0 — 2025-05-14
+#  PECU ASCII-only Release Selector · 2025-06-17
+#  Author  : Daniel Puente García — https://github.com/Danilop95
 # -----------------------------------------------------------------------------
 
 set -euo pipefail
 
-### === CONFIGURATION ===
-# Repo info
-GITHUB_REPO="Danilop95/Proxmox-Enhanced-Configuration-Utility"
-RAW_BASE="https://raw.githubusercontent.com/${GITHUB_REPO}"
-API_URL="https://api.github.com/repos/${GITHUB_REPO}/releases"
+# ── colours ──────────────────────────────────────────────────────────────────
+if [[ -t 1 ]] && tput setaf 1 &>/dev/null; then
+  NC=$(tput sgr0); B=$(tput bold)
+  R=$(tput setaf 1); G=$(tput setaf 2); Y=$(tput setaf 3)
+  O=$(tput setaf 208); L=$(tput setaf 4); M=$(tput setaf 5); C=$(tput setaf 6)
+else NC=''; B=''; R=''; G=''; Y=''; O=''; L=''; M=''; C=''; fi
 
-# Paths
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
-CONF_FILE="${SCRIPT_DIR}/versions.conf"
-FALLBACK_SCRIPT="${SCRIPT_DIR}/pecu_release_selector_old.sh"
+declare -A COL=([stable]=$G [beta]=$M [preview]=$C
+                [experimental]=$O [nightly]=$L [other]=$NC)
+declare -A ICO=([stable]="✔" [beta]="β" [preview]="℗"
+                [experimental]="⚠" [nightly]="☾" [other]="?" )
 
-# Default colors (ANSI escapes)
-RED='\e[0;31m'; GREEN='\e[0;32m'; BLUE='\e[0;34m'; YELLOW='\e[0;33m'; NC='\e[0m'
+REPO="Danilop95/Proxmox-Enhanced-Configuration-Utility"
+API="https://api.github.com/repos/$REPO/releases"
+RAW="https://raw.githubusercontent.com/$REPO"
 
-# Whiptail menu sizing (override by exporting these env vars if desired)
-: "${MENU_HEIGHT:=18}"
-: "${MENU_WIDTH:=70}"
-: "${MENU_CHOICE_HEIGHT:=10}"
+# ── dependencies ─────────────────────────────────────────────────────────────
+need(){ command -v "$1" &>/dev/null || { echo -e "${Y}Missing '$1'…${NC}"; sudo apt-get update -qq && sudo apt-get install -y "$1"; }; }
+for b in curl jq tar find; do need "$b"; done
 
-### === DEPENDENCY CHECK ===
-for cmd in whiptail curl jq; do
-  if ! command -v "$cmd" &>/dev/null; then
-    echo -e "${RED}Warning:${NC} '$cmd' not found. Falling back to classic ASCII menu."
-    bash "$FALLBACK_SCRIPT"
-    exit 0
-  fi
-done
-
-### === SPINNER GAUGE ===
-launch_spinner() {
-  {
-    for i in {0..100..10}; do
-      echo "$i"
-      echo "XXX"
-      echo "Initializing PECU Selector…"
-      echo "XXX"
-      sleep 0.1
-    done
-  } | whiptail --gauge "Please wait…" 6 60 0
-}
-
-### === READ VERSIONS.CONF ===
-# Format per line:
-# tag|channel|label|description|published_date|[optional]tag_color|[optional]label_color
-read_versions() {
-  mapfile -t raw_lines < <(grep -Ev '^\s*#|^\s*$' "$CONF_FILE" 2>/dev/null || true)
-  [[ ${#raw_lines[@]} -gt 0 ]]
-}
-
-### === BUILD WHIPTAIL MENU ===
-build_menu() {
-  TAGS=(); MENU_ITEMS=()
-  for idx in "${!raw_lines[@]}"; do
-    IFS='|' read -r tag chan lab desc pub tcol lcol <<<"${raw_lines[idx]}"
-    # fallback to defaults if colors not specified
-    tag_color="${tcol:-$BLUE}"
-    lab_color="${lcol:-$GREEN}"
-    TAGS+=("$tag")
-    # Build menu entry string (colors only show if terminal supports ANSI in whiptail)
-    entry="$tag_color$tag${NC}\n[$chan] ${lab_color}${lab^^}${NC}\n$desc\nPublished: $pub"
-    MENU_ITEMS+=("$((idx+1))" "$entry")
-  done
-  MENU_ITEMS+=("0" "Exit")
-}
-
-### === FALLBACK ASCII MENU ===
-old_menu() {
-  clear
-  echo -e "${BLUE}===============================================${NC}"
-  echo -e "${BLUE}  PROXMOX ENHANCED CONFIG UTILITY (PECU)       ${NC}"
-  echo -e "${BLUE}===============================================${NC}"
-  echo -e "${GREEN}          Classic Release Selector             ${NC}"
-  echo -e "${YELLOW}By Daniel Puente García — BuyMeACoffee: https://buymeacoffee.com/danilop95ps${NC}"
-  echo
-  echo -e "${YELLOW}Fetching releases via GitHub API...${NC}"
-  mapfile -t releases < <(curl -sL "$API_URL" \
-    | jq -r '.[] | "\(.tag_name) | \(.prerelease) | \(.published_at)"')
-  if [[ ${#releases[@]} -eq 0 ]]; then
-    echo -e "${RED}Error:${NC} No releases found."; exit 1
-  fi
-
-  echo -e "\n${GREEN}Choose a PECU version:${NC}"
-  echo "-----------------------------------"
-  local idx=1 rec=-1
-  for rel in "${releases[@]}"; do
-    IFS='|' read -r tag pre pub <<<"$rel"; pub="${pub//\"/}"
-    if [[ "$pre" == "false" && rec -eq -1 ]]; then rec=$idx; fi
-    if [[ "$pre" == "true" ]]; then
-      echo -e "  ${YELLOW}${idx}) ${tag} (Pre-release)${NC} - $pub"
-    else
-      if [[ $idx -eq $rec ]]; then
-        echo -e "  ${GREEN}${idx}) ${tag} (Stable) [RECOMMENDED]${NC} - $pub"
-      else
-        echo -e "  ${GREEN}${idx}) ${tag} (Stable)${NC} - $pub"
-      fi
-    fi
-    ((idx++))
-  done
-  echo -e "  ${YELLOW}0) Exit${NC}"
-  echo "-----------------------------------"
-  read -rp $'\nEnter choice [0-'$((idx-1))']: ' choice
-  if [[ "$choice" == "0" ]]; then
-    echo -e "${YELLOW}Exiting.${NC}"; exit 0
-  fi
-  if ! [[ "$choice" =~ ^[0-9]+$ ]] || (( choice < 1 || choice >= idx )); then
-    echo -e "${RED}Invalid selection.${NC}"; exit 1
-  fi
-  sel="${releases[$((choice-1))]}"
-  tag="$(echo "$sel" | cut -d'|' -f1 | xargs)"
-  echo -e "\nSelected: ${BLUE}${tag}${NC}"
-  read -rp "Proceed to execute? (y/N): " yn
-  if [[ "$yn" =~ ^[Yy]$ ]]; then
-    bash <(curl -sL "${RAW_BASE}/${tag}/src/proxmox-configurator.sh")
-    exit $?
-  fi
-  exit 0
-}
-
-### === MAIN FLOW ===
-main() {
-  launch_spinner
-
-  if read_versions; then
-    build_menu
-    CHOICE=$(whiptail \
-      --backtitle "PECU Release Selector — By Danilop95" \
-      --title "Select a PECU Version" \
-      --menu "Use ↑/↓ to navigate, Enter to select.  ESC to fallback." \
-      "${MENU_HEIGHT}" "${MENU_WIDTH}" "${MENU_CHOICE_HEIGHT}" \
-      "${MENU_ITEMS[@]}" \
-      3>&1 1>&2 2>&3) || {
-        echo -e "${YELLOW}Falling back to classic menu...${NC}"
-        old_menu
-        exit 0
+# ── fetch metadata (date|channel|tag|title|desc|assetURL) ────────────────────
+mapfile -t META < <(
+  curl -fsSL "$API" | jq -r '
+    .[]
+    | select(.body|test("PECU-Channel:"))
+    | .asset = (
+        (.assets[]? | select(.name|test("\\.tar\\.gz$")) | .browser_download_url) // ""
+      )
+    | select(.body|test("Deprecated|Obsolete|Retired";"i")|not)
+    | {
+        tag:.tag_name,
+        date:(.published_at|split("T")[0]),
+        chan:(.body|capture("PECU-Channel:\\s*(?<x>[^\r\n]+)") .x),
+        title:(.body|capture("PECU-Title:\\s*(?<x>[^\r\n]+)") .x),
+        desc:(.body|capture("PECU-Desc:\\s*(?<x>[^\r\n]+)") .x),
+        asset:.asset
       }
+    | "\(.date)|\(.chan)|\(.tag)|\(.title)|\(.desc)|\(.asset)"' )
 
-    if [[ "$CHOICE" == "0" ]]; then
-      exit 0
-    fi
+(( ${#META[@]} )) || { echo -e "${R}No valid releases found.${NC}"; exit 1; }
+IFS=$'\n' META=($(sort -r <<<"${META[*]}"))
 
-    index=$((CHOICE-1))
-    tag="${TAGS[index]}"
+LATEST=$(printf '%s\n' "${META[@]}" | grep -m1 '|[Ss]table|' || true)
 
-    whiptail --backtitle "Confirm Run" \
-      --title "PECU ${tag}" \
-      --msgbox "You selected:\n\n  Tag: ${tag}\n\nProceed to execute?" 10 50
+# ── table widths ─────────────────────────────────────────────────────────────
+TW=$(tput cols 2>/dev/null || echo 80)
+ID_W=3 TAG_W=14 DATE_W=10
+MAX_CH=$(printf '%s\n' "${META[@]}" | cut -d'|' -f2 | awk '{print length}' | sort -nr | head -1)
+CH_W=$(( MAX_CH + 2 ))
+TITLE_W=$(( TW - ID_W - TAG_W - DATE_W - CH_W - 4 ))
+(( TITLE_W>30 )) && TITLE_W=30
+(( TITLE_W<12 )) && TITLE_W=12
 
-    if whiptail --yesno "Run PECU ${tag} now?" 8 50; then
-      bash <(curl -fsL "${RAW_BASE}/${tag}/src/proxmox-configurator.sh")
-      exit $?
-    fi
-    exit 0
-  else
-    echo -e "${YELLOW}No versions.conf found. Using classic menu.${NC}"
-    old_menu
-  fi
-}
+# ── screen & legend ──────────────────────────────────────────────────────────
+clear
+echo -e "${B}PECU Channel Legend${NC}"
+printf "  ${G}Stable${NC}        Production ready\n"
+printf "  ${M}Beta${NC}          Release candidate\n"
+printf "  ${C}Preview${NC}       Feature preview\n"
+printf "  ${O}Experimental${NC}  High-risk build\n"
+printf "  ${L}Nightly${NC}       Un-tested daily build\n\n"
 
-main
+printf "${B}%-${ID_W}s %-${TAG_W}s %-${TITLE_W}s %-${DATE_W}s [%-${MAX_CH}s]${NC}\n" \
+       "#" "TAG" "TITLE" "DATE" "CHANNEL"
+printf '%*s\n' "$TW" '' | tr ' ' '─'
+
+# ── list ─────────────────────────────────────────────────────────────────────
+declare -A IDX; n=1
+for rec in "${META[@]}"; do
+  IFS='|' read -r d ch tag ttl desc asset <<<"$rec"
+  lc=${ch,,}; [[ $lc =~ ^(stable|beta|preview|experimental|nightly)$ ]] || lc=other
+  cut=$ttl; (( ${#cut}>TITLE_W )) && cut="${cut:0:$((TITLE_W-2))}…"
+  flag=''; [[ $rec == "$LATEST" ]] && flag=' ★LATEST'
+  printf "${COL[$lc]} %-${ID_W}d %-${TAG_W}s %-${TITLE_W}s %-${DATE_W}s [%-${MAX_CH}s]%s${NC}\n" \
+         "$n" "$tag" "$cut" "$d" "$lc" "$flag"
+  IDX[$n]="$tag|$ttl|$desc|$lc|$asset"
+  ((n++))
+done
+printf "\n %-${ID_W}d Exit\n" 0
+
+# ── selection ────────────────────────────────────────────────────────────────
+while :; do
+  read -rp $'\nSelect #release: ' id
+  [[ $id =~ ^[0-9]+$ ]] || { echo "Digits only."; continue; }
+  (( id==0 )) && exit 0
+  [[ ${IDX[$id]-} ]] && break || echo "Invalid ID."
+done
+IFS='|' read -r TAG TTL DSC CHN ASSET <<<"${IDX[$id]}"
+
+# ── confirmation banner ─────────────────────────────────────────────────────
+case $CHN in
+  stable)        clr=$G; note="Safe for production";;
+  beta|preview)  clr=$Y; note="May contain bugs";;
+  experimental)  clr=$O; note="⚠ High-risk build";;
+  nightly)       clr=$L; note="Un-tested nightly";;
+  *)             clr=$C; note="Uncategorised";;
+esac
+bar=$(printf '%*s' "$TW" '' | tr ' ' '─')
+clear; echo -e "${clr}${bar}\nTAG: $TAG\nTITLE: $TTL\nNOTE: $note\n${bar}${NC}"
+read -rp "Press Y to run | any other key to cancel: " ok
+[[ $ok =~ ^[Yy]$ ]] || { echo "Cancelled."; exit 0; }
+
+# ── execution helpers ───────────────────────────────────────────────────────
+run_raw(){ path="$1"; url="$RAW/$TAG/$path"
+  curl -sfI "$url" &>/dev/null && exec bash <(curl -fsSL "$url"); }
+
+run_asset(){ [[ -z $ASSET ]] && return
+  tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
+  curl -fsSL "$ASSET" -o "$tmp/pecu.tgz" || return
+  tar -xzf "$tmp/pecu.tgz" -C "$tmp"
+  sh=$(find "$tmp" -name proxmox-configurator.sh -type f | head -n1)
+  [[ -f $sh ]] && chmod +x "$sh" && exec "$sh"; }
+
+echo -e "${G}→ Executing $TAG …${NC}"
+run_raw "src/proxmox-configurator.sh"
+run_raw "proxmox-configurator.sh"
+run_asset
+
+echo -e "${R}Error:${NC} No runnable script found for $TAG."
+exit 1

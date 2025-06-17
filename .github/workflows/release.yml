@@ -44,6 +44,12 @@ jobs:
           name: "Release v${{ env.VERSION }}"
           update: true
           body: |
+          <!--
+            PECU-Channel: Stable
+            PECU-Title:   EDIT TITLE HERE
+            PECU-Desc:    EDIT SHORT DESCRIPTION HERE
+            -->
+
             ### What's New in This Update
 
             This update brings several improvements and bug fixes to enhance the performance and reliability of the Proxmox Enhanced Configuration Utility (PECU). Detailed changes include performance optimizations and improved error handling for a smoother experience.
