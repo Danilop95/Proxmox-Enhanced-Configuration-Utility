@@ -401,10 +401,23 @@ read_gpu_id() {
         3>&1 1>&2 2>&3) || return 1
 
     # Validate PCI syntax: domain:bus.device.function
-    if ! [[ "$GPU_ID" =~ ^[0-9A-Fa-f]{4}:[0-9A-Fa-f]{2}\.[0-9A-Fa-f]$ ]]; then
+    if ! [[ "$GPU_ID" =~ ^([0-9A-Fa-f]{4}:)?[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}\.[0-9A-Fa-f]$ ]]; then
         whiptail --title "Error" --msgbox "Invalid PCI ID format: $GPU_ID" 8 60
         return 1
     fi
+
+    # If the user omitted the domain, prepend the default 0000:
+    [[ "$GPU_ID" =~ ^[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}\.[0-9A-Fa-f]$ ]] && GPU_ID="0000:$GPU_ID"
+
+    # ── Lookup vendor/device; show error only if ID truly does not exist ──
+    GPU_VENDOR_ID=$(lspci -n -s "$GPU_ID" | awk '{print $3}')
+    if [[ -z "$GPU_VENDOR_ID" ]]; then
+        whiptail --title "Error" --msgbox "PCI ID not found: $GPU_ID" 8 60
+        return 1
+    fi
+
+    whiptail --title "Vendor/Device" \
+             --msgbox "Vendor/Device ID: $GPU_VENDOR_ID" 8 60
 
     # Lookup vendor/device code; abort if lookup fails.
     GPU_VENDOR_ID=$(lspci -n -s "$GPU_ID" | awk '{print $3}') || {
