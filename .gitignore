@@ -5,7 +5,7 @@
 !LICENSE
 !README.md
 !release-notes/release-notes.md
-!doc/*
+!doc/**
 !scripts/pecu_release_selector.sh
 !scripts/pecu_release_selector_old.sh
 !scripts/versions.conf
