@@ -20,14 +20,50 @@ if [[ -t 1 ]] && tput setaf 1 &>/dev/null; then
   O=$(tput setaf 208); L=$(tput setaf 4); M=$(tput setaf 5); C=$(tput setaf 6)
 else NC=''; B=''; R=''; G=''; Y=''; O=''; L=''; M=''; C=''; fi
 
-declare -A COL=([stable]=$G [beta]=$M [preview]=$C
-                [experimental]=$O [nightly]=$L [other]=$NC)
-declare -A ICO=([stable]="✔" [beta]="β" [preview]="℗"
-                [experimental]="⚠" [nightly]="☾" [other]="?" )
+# Named colours for banner convenience
+BLUE=$L; GREEN=$G; YELLOW=$Y
+
+declare -A COL=([stable]=$G       [beta]=$M      [preview]=$C \
+                [experimental]=$O [nightly]=$L   [legacy]=$Y \
+                [other]=$NC)
+declare -A ICO=([stable]="✔"   [beta]="β"   [preview]="℗" \
+                [experimental]="⚠" [nightly]="☾" [legacy]="✝" \
+                [other]="?" )
 
 REPO="Danilop95/Proxmox-Enhanced-Configuration-Utility"
 API="https://api.github.com/repos/$REPO/releases"
 RAW="https://raw.githubusercontent.com/$REPO"
+
+AUTHOR="Daniel Puente García — https://github.com/Danilop95"
+BMAC_URL="https://www.buymeacoffee.com/danilop95"
+
+# ── banner animation ─────────────────────────────────────────────────────────
+show_loading_banner() {
+  clear
+  echo -e "${BLUE}┌───────────────────────────────────────────────────────┐${NC}"
+  echo -e "${BLUE}│   PROXMOX ENHANCED CONFIG UTILITY (PECU)             │${NC}"
+  echo -e "${BLUE}└───────────────────────────────────────────────────────┘${NC}"
+  echo -e "${GREEN}By: $AUTHOR${NC}"
+  echo -e "${GREEN}BuyMeACoffee: $BMAC_URL${NC}\n"
+  local banner_lines=(
+      ' ██████╗ ███████╗ ██████╗██╗   ██╗'
+      ' ██╔══██╗██╔════╝██╔════╝██║   ██║'
+      ' ██████╔╝█████╗  ██║     ██║   ██║'
+      ' ██╔═══╝ ██╔══╝  ██║     ██║   ██║'
+      ' ██║     ███████╗╚██████╗╚██████╔╝'
+      ' ╚═╝     ╚══════╝ ╚═════╝ ╚═════╝'
+  )
+  echo -e "${YELLOW}"
+  for line in "${banner_lines[@]}"; do
+      printf "  %s\n" "$line"
+      sleep 0.04
+  done
+  echo -e "${NC}"
+  sleep 0.25
+  clear
+}
+
+show_loading_banner
 
 # ── dependencies ─────────────────────────────────────────────────────────────
 need(){ command -v "$1" &>/dev/null || { echo -e "${Y}Missing '$1'…${NC}"; sudo apt-get update -qq && sudo apt-get install -y "$1"; }; }
@@ -73,7 +109,8 @@ printf "  ${G}Stable${NC}        Production ready\n"
 printf "  ${M}Beta${NC}          Release candidate\n"
 printf "  ${C}Preview${NC}       Feature preview\n"
 printf "  ${O}Experimental${NC}  High-risk build\n"
-printf "  ${L}Nightly${NC}       Un-tested daily build\n\n"
+printf "  ${L}Nightly${NC}       Un-tested daily build\n"
+printf "  ${Y}Legacy${NC}        Older long-term build\n\n"
 
 printf "${B}%-${ID_W}s %-${TAG_W}s %-${TITLE_W}s %-${DATE_W}s [%-${MAX_CH}s]${NC}\n" \
        "#" "TAG" "TITLE" "DATE" "CHANNEL"
@@ -83,7 +120,7 @@ printf '%*s\n' "$TW" '' | tr ' ' '─'
 declare -A IDX; n=1
 for rec in "${META[@]}"; do
   IFS='|' read -r d ch tag ttl desc asset <<<"$rec"
-  lc=${ch,,}; [[ $lc =~ ^(stable|beta|preview|experimental|nightly)$ ]] || lc=other
+  lc=${ch,,}; [[ $lc =~ ^(stable|beta|preview|experimental|nightly|legacy)$ ]] || lc=other
   cut=$ttl; (( ${#cut}>TITLE_W )) && cut="${cut:0:$((TITLE_W-2))}…"
   flag=''; [[ $rec == "$LATEST" ]] && flag=' ★LATEST'
   printf "${COL[$lc]} %-${ID_W}d %-${TAG_W}s %-${TITLE_W}s %-${DATE_W}s [%-${MAX_CH}s]%s${NC}\n" \
@@ -108,6 +145,7 @@ case $CHN in
   beta|preview)  clr=$Y; note="May contain bugs";;
   experimental)  clr=$O; note="⚠ High-risk build";;
   nightly)       clr=$L; note="Un-tested nightly";;
+  legacy)        clr=$Y; note="Legacy (older stable)";;
   *)             clr=$C; note="Uncategorised";;
 esac
 bar=$(printf '%*s' "$TW" '' | tr ' ' '─')
