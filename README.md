@@ -68,43 +68,21 @@ as painless as possible:
 > lets you launch whichever version (Stable, Beta, Experimental…) you want.
 
 ```bash
-# run the selector straight from GitHub
-bash <(curl -sL \
-  https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/refs/heads/main/scripts/pecu_release_selector.sh)
+bash <(curl -sL \https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/refs/heads/main/scripts/pecu_release_selector.sh)
 ```
 
-<details>
-<summary>Live preview&nbsp;—&nbsp;choose <code>Stable</code>, <code>Beta</code>, or <code>⚠ Experimental</code></summary>
 
-#### Screenshot (Real)
+
+#### Release Selector
 
 <p align="center">
   <img src="doc/img/pecu_release_selector.png" width="90%" alt="PECU selector in action">
 </p>
 
-#### ANSI-mock-up
-
-<pre><samp><span style="color:#3fb950">Stable</span>        Production ready
-<span style="color:#ff7b72">Beta</span>          Release candidate
-<span style="color:#a5d6ff">Preview</span>       Feature preview
-<span style="color:#ffa657">Experimental</span>  High-risk build
-<span style="color:#1f6feb">Nightly</span>       Un-tested daily build
-
-<span style="color:#8b949e">#   TAG            TITLE                         DATE       [CHANNEL]</span>
- <span style="color:#ff7b72">1   v2025.06.17    Intel iGPU support            2025-06-17 [beta   ] ★LATEST
- <span style="color:#a5d6ff">2   v2025.05.14    Whiptail UI overhaul          2025-05-14 [preview]
- <span style="color:#3fb950">3   v2025.04.14    Performance & bug-fix roll-up 2025-04-14 [stable ]
- <span style="color:#ffa657">4   v2025.03.03    Initial automated release     2025-03-03 [⚠ exp ]
-
-Select #release: <span style="color:#3fb950">3</span>
-──────────────────────────────────────────────────────────────────────────────
-TAG: v2025.04.14
-TITLE: Performance & bug-fix roll-up
-NOTE: Safe for production
-──────────────────────────────────────────────────────────────────────────────
-Press Y to run | any other key to cancel:</samp></pre>
-
-</details>
+#### PECU-Script
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/efeeff90-543b-4905-9b42-dbcf10647129" width="90%" alt="PECU selector in action">
+</p>
 
 ---
 
