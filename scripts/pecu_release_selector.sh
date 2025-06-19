@@ -65,6 +65,22 @@ show_loading_banner() {
 
 show_loading_banner
 
+# Lightweight banner without the animation
+show_brief_banner() {
+  clear
+  echo -e "${BLUE}┌───────────────────────────────────────────────────────┐${NC}"
+  echo -e "${BLUE}│   PROXMOX ENHANCED CONFIG UTILITY (PECU)             │${NC}"
+  echo -e "${BLUE}└───────────────────────────────────────────────────────┘${NC}"
+  echo -e "${GREEN}By: $AUTHOR${NC}"
+  echo -e "${GREEN}BuyMeACoffee: $BMAC_URL${NC}\n"
+  echo -e "${YELLOW}  ██████╗ ███████╗ ██████╗██╗   ██╗"
+  echo -e "  ██╔══██╗██╔════╝██╔════╝██║   ██║"
+  echo -e "  ██████╔╝█████╗  ██║     ██║   ██║"
+  echo -e "  ██╔═══╝ ██╔══╝  ██║     ██║   ██║"
+  echo -e "  ██║     ███████╗╚██████╗╚██████╔╝"
+  echo -e "  ╚═╝     ╚══════╝ ╚═════╝ ╚═════╝${NC}"
+}
+
 # ── dependencies ─────────────────────────────────────────────────────────────
 need(){ command -v "$1" &>/dev/null || { echo -e "${Y}Missing '$1'…${NC}"; sudo apt-get update -qq && sudo apt-get install -y "$1"; }; }
 for b in curl jq tar find; do need "$b"; done
@@ -138,6 +154,8 @@ while :; do
   [[ ${IDX[$id]-} ]] && break || echo "Invalid ID."
 done
 IFS='|' read -r TAG TTL DSC CHN ASSET <<<"${IDX[$id]}"
+
+show_brief_banner
 
 # ── confirmation banner ─────────────────────────────────────────────────────
 case $CHN in
