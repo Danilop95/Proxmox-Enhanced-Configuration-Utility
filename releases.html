@@ -3,27 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PECU - Proxmox Enhanced Configuration Utility</title>
-  <meta name="description" content="Comprehensive Bash script to simplify and optimize Proxmox VE configuration. GPU passthrough, repository management, kernel tweaks and more.">
-  <meta name="keywords" content="Proxmox, VE, GPU Passthrough, VFIO, Homelab, Virtualization, Linux, Bash Script">
+  <title>PECU Releases - Proxmox Enhanced Configuration Utility</title>
+  <meta name="description" content="Browse all releases of PECU - Proxmox Enhanced Configuration Utility. Download stable, beta, and experimental versions.">
+  <meta name="keywords" content="PECU, Proxmox, Releases, Downloads, GPU Passthrough, Virtualization">
   <meta name="author" content="Danilop95">
   
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://danilop95.github.io/Proxmox-Enhanced-Configuration-Utility/">
-  <meta property="og:title" content="PECU - Proxmox Enhanced Configuration Utility">
-  <meta property="og:description" content="Comprehensive Bash script to simplify and optimize Proxmox VE configuration">
+  <meta property="og:url" content="https://danilop95.github.io/Proxmox-Enhanced-Configuration-Utility/releases.html">
+  <meta property="og:title" content="PECU Releases - Download All Versions">
+  <meta property="og:description" content="Browse and download all versions of PECU - Proxmox Enhanced Configuration Utility">
   <meta property="og:image" content="https://opengraph.githubassets.com/1/Danilop95/Proxmox-Enhanced-Configuration-Utility">
   
-  <!-- Twitter -->
-  <meta property="twitter:card" content="summary_large_image">
-  <meta property="twitter:url" content="https://danilop95.github.io/Proxmox-Enhanced-Configuration-Utility/">
-  <meta property="twitter:title" content="PECU - Proxmox Enhanced Configuration Utility">
-  <meta property="twitter:description" content="Comprehensive Bash script to simplify and optimize Proxmox VE configuration">
-  <meta property="twitter:image" content="https://opengraph.githubassets.com/1/Danilop95/Proxmox-Enhanced-Configuration-Utility">
-  
   <!-- Favicon -->
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
   
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -33,523 +26,944 @@
   <!-- Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
-  <!-- Styles -->
-  <link rel="stylesheet" href="styles.css">
-  
-  <!-- Structured Data -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    "name": "Proxmox Enhanced Configuration Utility",
-    "alternateName": "PECU",
-    "description": "Comprehensive Bash script to simplify and optimize Proxmox VE configuration",
-    "url": "https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility",
-    "author": {
-      "@type": "Person",
-      "name": "Danilop95"
-    },
-    "operatingSystem": "Linux",
-    "applicationCategory": "SystemUtility"
-  }
-  </script>
+  <style>
+    /* ═══════════════════════════════════════════════════════════════════════════════
+       PECU RELEASES - COMPLETE STYLES
+       ═══════════════════════════════════════════════════════════════════════════════ */
+
+    /* CSS Variables */
+    :root {
+      --pecu-green: #34d399;
+      --pecu-blue: #3b82f6;
+      --pecu-purple: #8b5cf6;
+      --pecu-cyan: #06b6d4;
+      --pecu-orange: #fb923c;
+      --pecu-yellow: #fbbf24;
+      --pecu-red: #ef4444;
+      --pecu-pink: #ec4899;
+
+      --pecu-dark: #111827;
+      --pecu-dark-2: #1f2937;
+      --pecu-dark-3: #374151;
+      --pecu-dark-4: #4b5563;
+      --pecu-gray-light: #9ca3af;
+      --pecu-gray-lighter: #d1d5db;
+      --pecu-gray-lightest: #f3f4f6;
+
+      --gradient-primary: linear-gradient(135deg, var(--pecu-blue), var(--pecu-purple));
+      --gradient-secondary: linear-gradient(135deg, var(--pecu-green), var(--pecu-cyan));
+      --gradient-accent: linear-gradient(135deg, var(--pecu-orange), var(--pecu-pink));
+      --gradient-bg: linear-gradient(180deg, var(--pecu-dark), var(--pecu-dark-2));
+
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
+
+      --transition-fast: 0.15s ease-in-out;
+      --transition-normal: 0.3s ease-in-out;
+      --transition-slow: 0.5s ease-in-out;
+
+      --radius-sm: 0.25rem;
+      --radius-md: 0.375rem;
+      --radius-lg: 0.5rem;
+      --radius-xl: 0.75rem;
+      --radius-2xl: 1rem;
+      --radius-full: 9999px;
+
+      --space-xs: 0.25rem;
+      --space-sm: 0.5rem;
+      --space-md: 1rem;
+      --space-lg: 1.5rem;
+      --space-xl: 2rem;
+      --space-2xl: 3rem;
+      --space-3xl: 4rem;
+    }
+
+    /* Base Styles */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      font-size: 16px;
+    }
+
+    body {
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--gradient-bg);
+      color: var(--pecu-gray-lightest);
+      line-height: 1.6;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    /* Typography */
+    h1, h2, h3, h4, h5, h6 {
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: var(--space-md);
+    }
+
+    h1 { font-size: clamp(2.5rem, 5vw, 4rem); }
+    h2 { font-size: clamp(2rem, 4vw, 3rem); }
+    h3 { font-size: clamp(1.5rem, 3vw, 2rem); }
+    h4 { font-size: clamp(1.25rem, 2.5vw, 1.5rem); }
+
+    p {
+      margin-bottom: var(--space-md);
+      color: var(--pecu-gray-lighter);
+    }
+
+    a {
+      color: var(--pecu-blue);
+      text-decoration: none;
+      transition: all var(--transition-fast);
+    }
+
+    a:hover {
+      color: var(--pecu-purple);
+      transform: translateY(-1px);
+    }
+
+    /* Gradient Text */
+    .gradient-text {
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      display: inline-block;
+    }
+
+    .gradient-text-secondary {
+      background: var(--gradient-secondary);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      display: inline-block;
+    }
+
+    .gradient-text-accent {
+      background: var(--gradient-accent);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      display: inline-block;
+    }
+
+    /* Layout */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 var(--space-md);
+    }
+
+    .section {
+      padding: var(--space-3xl) 0;
+    }
+
+    .grid {
+      display: grid;
+      gap: var(--space-xl);
+    }
+
+    .grid-1 { grid-template-columns: 1fr; }
+    .grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+
+    @media (max-width: 768px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    }
+
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .grid-3 { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .flex { display: flex; }
+    .flex-center { display: flex; align-items: center; justify-content: center; }
+    .flex-between { display: flex; align-items: center; justify-content: space-between; }
+    .flex-wrap { flex-wrap: wrap; }
+    .gap-sm { gap: var(--space-sm); }
+    .gap-md { gap: var(--space-md); }
+    .gap-lg { gap: var(--space-lg); }
+    .gap-xl { gap: var(--space-xl); }
+
+    /* Cards */
+    .card {
+      background: rgba(31, 41, 55, 0.6);
+      border: 1px solid var(--pecu-dark-3);
+      border-radius: var(--radius-xl);
+      padding: var(--space-xl);
+      backdrop-filter: blur(10px);
+      transition: all var(--transition-normal);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    }
+
+    .card:hover {
+      transform: translateY(-8px);
+      box-shadow: var(--shadow-xl), var(--shadow-glow);
+      border-color: var(--pecu-blue);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-sm) var(--space-lg);
+      border-radius: var(--radius-lg);
+      font-weight: 600;
+      font-size: 0.875rem;
+      text-decoration: none;
+      transition: all var(--transition-normal);
+      cursor: pointer;
+      border: none;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left var(--transition-slow);
+    }
+
+    .btn:hover::before {
+      left: 100%;
+    }
+
+    .btn-primary {
+      background: var(--gradient-primary);
+      color: white;
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg), 0 0 20px rgba(59, 130, 246, 0.4);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--pecu-blue);
+      border: 2px solid var(--pecu-blue);
+    }
+
+    .btn-secondary:hover {
+      background: var(--pecu-blue);
+      color: white;
+      transform: translateY(-2px);
+    }
+
+    .btn-ghost {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--pecu-gray-lighter);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-ghost:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+    }
+
+    .btn-small {
+      padding: var(--space-xs) var(--space-sm);
+      font-size: 0.75rem;
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: var(--space-xs) var(--space-sm);
+      border-radius: var(--radius-full);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border: 1px solid;
+      margin: var(--space-xs);
+    }
+
+    .badge-stable {
+      background: rgba(52, 211, 153, 0.1);
+      color: var(--pecu-green);
+      border-color: var(--pecu-green);
+    }
+
+    .badge-beta {
+      background: rgba(59, 130, 246, 0.1);
+      color: var(--pecu-blue);
+      border-color: var(--pecu-blue);
+    }
+
+    .badge-prerelease {
+      background: rgba(6, 182, 212, 0.1);
+      color: var(--pecu-cyan);
+      border-color: var(--pecu-cyan);
+    }
+
+    .badge-experimental {
+      background: rgba(251, 146, 60, 0.1);
+      color: var(--pecu-orange);
+      border-color: var(--pecu-orange);
+    }
+
+    .badge-legacy {
+      background: rgba(251, 191, 36, 0.1);
+      color: var(--pecu-yellow);
+      border-color: var(--pecu-yellow);
+    }
+
+    .badge-latest {
+      background: var(--gradient-primary);
+      color: white;
+      border-color: transparent;
+      animation: pulse 2s infinite;
+    }
+
+    .badge-security {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--pecu-red);
+      border-color: var(--pecu-red);
+    }
+
+    /* Header */
+    .releases-header {
+      background: linear-gradient(135deg, var(--pecu-dark) 0%, var(--pecu-dark-2) 100%);
+      border-bottom: 1px solid var(--pecu-dark-3);
+      padding: var(--space-xl) 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+    }
+
+    .back-to-main {
+      position: fixed;
+      top: var(--space-lg);
+      left: var(--space-lg);
+      z-index: 1000;
+      background: rgba(31, 41, 55, 0.9);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--pecu-dark-3);
+      border-radius: var(--radius-lg);
+      padding: var(--space-sm) var(--space-md);
+      color: var(--pecu-gray-lighter);
+      text-decoration: none;
+      transition: all var(--transition-normal);
+      font-size: 0.875rem;
+    }
+
+    .back-to-main:hover {
+      background: rgba(31, 41, 55, 1);
+      border-color: var(--pecu-blue);
+      transform: translateY(-2px);
+    }
+
+    /* Search */
+    .search-container {
+      position: relative;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: var(--space-md) var(--space-lg);
+      padding-left: 3rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid var(--pecu-dark-3);
+      border-radius: var(--radius-xl);
+      color: var(--pecu-gray-lightest);
+      font-size: 1rem;
+      transition: all var(--transition-normal);
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--pecu-blue);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .search-input::placeholder {
+      color: var(--pecu-gray-light);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: var(--space-md);
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--pecu-gray-light);
+      font-size: 1.1rem;
+    }
+
+    .clear-search {
+      position: absolute;
+      right: var(--space-md);
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--pecu-gray-light);
+      cursor: pointer;
+      padding: var(--space-xs);
+      border-radius: var(--radius-sm);
+      transition: all var(--transition-fast);
+      display: none;
+    }
+
+    .clear-search:hover {
+      color: var(--pecu-red);
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    .clear-search.visible {
+      display: block;
+    }
+
+    /* Security Alert */
+    .security-alert {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(251, 146, 60, 0.1));
+      border: 1px solid var(--pecu-red);
+      border-radius: var(--radius-lg);
+      padding: var(--space-lg);
+      margin: var(--space-xl) 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .security-alert::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--pecu-red), var(--pecu-orange));
+    }
+
+    .security-alert-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      margin-bottom: var(--space-md);
+    }
+
+    .security-alert-icon {
+      font-size: 1.5rem;
+      color: var(--pecu-red);
+      animation: pulse 2s infinite;
+    }
+
+    .security-alert-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--pecu-red);
+      margin: 0;
+    }
+
+    .security-alert-content {
+      color: var(--pecu-gray-lighter);
+      line-height: 1.6;
+    }
+
+    .security-alert-actions {
+      margin-top: var(--space-md);
+      display: flex;
+      gap: var(--space-sm);
+      flex-wrap: wrap;
+    }
+
+    /* Filters */
+    .advanced-filters {
+      background: rgba(31, 41, 55, 0.8);
+      border: 1px solid var(--pecu-dark-3);
+      border-radius: var(--radius-lg);
+      padding: var(--space-lg);
+      margin: var(--space-xl) 0;
+      backdrop-filter: blur(10px);
+    }
+
+    .filter-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      align-items: center;
+    }
+
+    .filter-label {
+      font-weight: 600;
+      color: var(--pecu-gray-lighter);
+      margin-right: var(--space-md);
+      font-size: 0.9rem;
+    }
+
+    .filter-btn {
+      padding: var(--space-sm) var(--space-md);
+      border-radius: var(--radius-full);
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: var(--pecu-gray-lighter);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    .filter-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+    }
+
+    .filter-btn.active {
+      background: var(--pecu-blue);
+      border-color: var(--pecu-blue);
+      color: white;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+    }
+
+    .sort-select {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--pecu-dark-3);
+      border-radius: var(--radius-md);
+      color: var(--pecu-gray-lightest);
+      padding: var(--space-sm) var(--space-md);
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .sort-select:focus {
+      outline: none;
+      border-color: var(--pecu-blue);
+    }
+
+    /* Results */
+    .results-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: var(--space-xl) 0;
+      padding: var(--space-md) 0;
+      border-bottom: 1px solid var(--pecu-dark-3);
+      flex-wrap: wrap;
+      gap: var(--space-md);
+    }
+
+    .results-count {
+      color: var(--pecu-gray-light);
+      font-size: 0.9rem;
+    }
+
+    /* Release Cards */
+    .release-card {
+      border-left: 4px solid;
+      transition: all var(--transition-normal);
+      position: relative;
+      animation: fadeInUp 0.6s ease-out both;
+    }
+
+    .release-card.stable { border-left-color: var(--pecu-green); }
+    .release-card.beta { border-left-color: var(--pecu-blue); }
+    .release-card.prerelease { border-left-color: var(--pecu-cyan); }
+    .release-card.experimental { border-left-color: var(--pecu-orange); }
+    .release-card.legacy { border-left-color: var(--pecu-yellow); }
+
+    .release-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: var(--space-md);
+    }
+
+    .release-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: var(--space-xs);
+    }
+
+    .release-date {
+      color: var(--pecu-gray-light);
+      font-size: 0.875rem;
+    }
+
+    .release-description {
+      color: var(--pecu-gray-lighter);
+      margin-bottom: var(--space-lg);
+      line-height: 1.6;
+    }
+
+    .release-stats {
+      display: flex;
+      gap: var(--space-lg);
+      margin: var(--space-md) 0;
+      font-size: 0.8rem;
+      color: var(--pecu-gray-light);
+    }
+
+    .release-stat {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+    }
+
+    .release-actions {
+      display: flex;
+      gap: var(--space-sm);
+      flex-wrap: wrap;
+    }
+
+    /* Command Block */
+    .command-block {
+      position: relative;
+      background: var(--pecu-dark);
+      border: 1px solid var(--pecu-dark-3);
+      border-radius: var(--radius-md);
+      padding: var(--space-md);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.875rem;
+      overflow-x: auto;
+      margin: var(--space-md) 0;
+    }
+
+    .command-block code {
+      color: var(--pecu-gray-lightest);
+      background: none;
+      padding: 0;
+    }
+
+    .copy-button {
+      position: absolute;
+      top: var(--space-sm);
+      right: var(--space-sm);
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: var(--space-xs);
+      color: var(--pecu-gray-light);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      font-size: 0.875rem;
+    }
+
+    .copy-button:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+    }
+
+    .copy-button.copied {
+      background: var(--pecu-green);
+      color: white;
+    }
+
+    /* Loading States */
+    .loading-spinner {
+      display: inline-block;
+      width: 32px;
+      height: 32px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: var(--pecu-blue);
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    .skeleton {
+      background: linear-gradient(90deg, var(--pecu-dark-3) 25%, var(--pecu-dark-4) 50%, var(--pecu-dark-3) 75%);
+      background-size: 200% 100%;
+      animation: loading 1.5s infinite;
+      border-radius: var(--radius-md);
+    }
+
+    /* No Results */
+    .no-results {
+      text-align: center;
+      padding: var(--space-3xl) 0;
+      color: var(--pecu-gray-light);
+    }
+
+    .no-results i {
+      font-size: 4rem;
+      margin-bottom: var(--space-lg);
+      color: var(--pecu-dark-4);
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    @keyframes loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .releases-header {
+        padding: var(--space-md) 0;
+      }
+      
+      .advanced-filters {
+        padding: var(--space-md);
+      }
+      
+      .filter-group {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-md);
+      }
+      
+      .results-info {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      
+      .back-to-main {
+        position: static;
+        margin-bottom: var(--space-lg);
+        display: inline-block;
+      }
+
+      .release-header {
+        flex-direction: column;
+        gap: var(--space-sm);
+      }
+
+      .release-actions {
+        justify-content: center;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 0 var(--space-sm);
+      }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--pecu-dark-2);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--pecu-dark-4);
+      border-radius: var(--radius-sm);
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--pecu-gray-light);
+    }
+
+    /* Focus styles */
+    .btn:focus,
+    .filter-btn:focus,
+    .copy-button:focus,
+    .search-input:focus {
+      outline: 2px solid var(--pecu-blue);
+      outline-offset: 2px;
+    }
+  </style>
 </head>
 <body>
-  <!-- ═══════════════════════════════════════════════════════════════════════════════
-       HERO SECTION
-       ═══════════════════════════════════════════════════════════════════════════════ -->
-  <header class="hero">
+  <!-- Back to Main -->
+  <a href="index.html" class="back-to-main">
+    <i class="fas fa-arrow-left"></i>
+    Back to Main
+  </a>
+
+  <!-- Header -->
+  <header class="releases-header">
     <div class="container">
-      <h1 class="hero-title gradient-text">
-        Proxmox Enhanced Configuration Utility
+      <h1 class="gradient-text" style="text-align: center; margin-bottom: var(--space-lg);">
+        PECU Releases
       </h1>
-      <p class="hero-subtitle" id="repo-description">
-        Comprehensive Bash script that automates and simplifies Proxmox VE configuration. 
-        GPU passthrough, repository management, kernel tweaks and automatic rollback in a single command.
+      <p style="text-align: center; color: var(--pecu-gray-light); margin-bottom: var(--space-xl); max-width: 600px; margin-left: auto; margin-right: auto;">
+        Browse and download all versions of Proxmox Enhanced Configuration Utility. 
+        Choose from stable releases, beta versions, and experimental builds.
       </p>
       
-      <div class="hero-actions">
-        <a href="#quick-start" class="btn btn-primary">
-          <i class="fas fa-rocket"></i>
-          Get Started
-        </a>
-        <a href="#" id="github-link" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
-          <i class="fab fa-github"></i>
-          View on GitHub
-        </a>
-        <a href="#demo" class="btn btn-ghost">
-          <i class="fas fa-play"></i>
-          View Demo
-        </a>
-      </div>
-      
-      <!-- GitHub Stats - Loaded dynamically -->
-      <div class="hero-stats" id="github-stats">
-        <div class="hero-stat">
-          <i class="fas fa-star" style="color: var(--pecu-yellow);"></i>
-          <span><span id="stars-count" class="skeleton" style="width: 30px; height: 20px; display: inline-block;"></span> Stars</span>
-        </div>
-        <div class="hero-stat">
-          <i class="fas fa-code-branch" style="color: var(--pecu-blue);"></i>
-          <span><span id="forks-count" class="skeleton" style="width: 20px; height: 20px; display: inline-block;"></span> Forks</span>
-        </div>
-        <div class="hero-stat">
-          <i class="fas fa-eye" style="color: var(--pecu-green);"></i>
-          <span><span id="watchers-count" class="skeleton" style="width: 20px; height: 20px; display: inline-block;"></span> Watchers</span>
-        </div>
-        <div class="hero-stat">
-          <i class="fas fa-download" style="color: var(--pecu-purple);"></i>
-          <span><span id="downloads-count" class="skeleton" style="width: 40px; height: 20px; display: inline-block;"></span> Downloads</span>
-        </div>
-        <div class="hero-stat">
-          <i class="fas fa-code-commit" style="color: var(--pecu-cyan);"></i>
-          <span><span id="commits-count" class="skeleton" style="width: 30px; height: 20px; display: inline-block;"></span> Commits</span>
-        </div>
-        <div class="hero-stat">
-          <i class="fas fa-users" style="color: var(--pecu-orange);"></i>
-          <span><span id="contributors-count" class="skeleton" style="width: 20px; height: 20px; display: inline-block;"></span> Contributors</span>
-        </div>
-      </div>
-
-      <!-- Repository Info -->
-      <div class="hero-info" id="repo-info" style="margin-top: var(--space-xl); display: none;">
-        <div class="flex-center gap-lg" style="flex-wrap: wrap; font-size: 0.9rem; color: var(--pecu-gray-light);">
-          <span>
-            <i class="fas fa-calendar-alt"></i>
-            Created: <span id="repo-created"></span>
-          </span>
-          <span>
-            <i class="fas fa-sync-alt"></i>
-            Updated: <span id="repo-updated"></span>
-          </span>
-          <span>
-            <i class="fas fa-code"></i>
-            Language: <span id="repo-language"></span>
-          </span>
-          <span>
-            <i class="fas fa-balance-scale"></i>
-            License: <span id="repo-license"></span>
-          </span>
-        </div>
+      <!-- Search -->
+      <div class="search-container">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" id="search-input" class="search-input" placeholder="Search releases by version, description, or features...">
+        <button id="clear-search" class="clear-search" aria-label="Clear search">
+          <i class="fas fa-times"></i>
+        </button>
       </div>
     </div>
   </header>
 
   <main class="container">
-    <!-- ═══════════════════════════════════════════════════════════════════════════════
-         QUICK START SECTION
-         ═══════════════════════════════════════════════════════════════════════════════ -->
-    <section id="quick-start" class="section">
-      <h2 class="gradient-text-secondary" style="text-align: center; margin-bottom: var(--space-xl);">
-        Quick Installation
-      </h2>
-      
-      <div class="grid grid-2 gap-xl">
-        <div class="card">
-          <h3 style="color: var(--pecu-green); margin-bottom: var(--space-md);">
-            <i class="fas fa-bolt"></i>
-            Direct Execution (Recommended)
-          </h3>
-          <p style="margin-bottom: var(--space-lg); color: var(--pecu-gray-light);">
-            Run the release selector to choose your preferred version:
-          </p>
-          <div class="command-block">
-            <code id="direct-install-command">bash &lt;(curl -sL https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/refs/heads/main/scripts/pecu_release_selector.sh)</code>
-            <button class="copy-button" data-command-id="direct-install-command" aria-label="Copy command">
-              <i class="fas fa-copy"></i>
-            </button>
-          </div>
-        </div>
-        
-        <div class="card">
-          <h3 style="color: var(--pecu-blue); margin-bottom: var(--space-md);">
-            <i class="fas fa-download"></i>
-            Latest Release
-          </h3>
-          <p style="margin-bottom: var(--space-lg); color: var(--pecu-gray-light);">
-            Download and run the latest stable version directly:
-          </p>
-          <div id="latest-release-install" class="command-block">
-            <code class="skeleton" style="height: 80px; width: 100%;"></code>
-          </div>
-        </div>
+    <!-- Security Alert -->
+    <div class="security-alert" id="security-alert" style="display: none;">
+      <div class="security-alert-header">
+        <i class="fas fa-shield-alt security-alert-icon"></i>
+        <h3 class="security-alert-title">Security Notice</h3>
       </div>
-    </section>
-
-    <!-- ═══════════════════════════════════════════════════════════════════════════════
-         REPOSITORY ACTIVITY SECTION
-         ═══════════════════════════════════════════════════════════════════════════════ -->
-    <section id="activity" class="section">
-      <h2 class="gradient-text" style="text-align: center; margin-bottom: var(--space-xl);">
-        Repository Activity
-      </h2>
-      
-      <div class="grid grid-3 gap-xl">
-        <!-- Recent Commits -->
-        <div class="card">
-          <h3 style="margin-bottom: var(--space-md);">
-            <i class="fas fa-code-commit" style="color: var(--pecu-green);"></i>
-            Recent Commits
-          </h3>
-          <div id="recent-commits">
-            <div class="skeleton" style="height: 20px; margin-bottom: var(--space-sm);"></div>
-            <div class="skeleton" style="height: 20px; margin-bottom: var(--space-sm);"></div>
-            <div class="skeleton" style="height: 20px;"></div>
-          </div>
-        </div>
-        
-        <!-- Contributors -->
-        <div class="card">
-          <h3 style="margin-bottom: var(--space-md);">
-            <i class="fas fa-users" style="color: var(--pecu-blue);"></i>
-            Contributors
-          </h3>
-          <div id="contributors-list">
-            <div class="skeleton" style="height: 60px; margin-bottom: var(--space-sm);"></div>
-            <div class="skeleton" style="height: 60px;"></div>
-          </div>
-        </div>
-        
-        <!-- Issues & PRs -->
-        <div class="card">
-          <h3 style="margin-bottom: var(--space-md);">
-            <i class="fas fa-exclamation-circle" style="color: var(--pecu-orange);"></i>
-            Issues & PRs
-          </h3>
-          <div id="issues-prs">
-            <div class="skeleton" style="height: 20px; margin-bottom: var(--space-sm);"></div>
-            <div class="skeleton" style="height: 20px; margin-bottom: var(--space-sm);"></div>
-            <div class="skeleton" style="height: 20px;"></div>
-          </div>
-        </div>
+      <div class="security-alert-content" id="security-content">
+        <p>Loading security information...</p>
       </div>
-    </section>
-
-    <!-- ═══════════════════════════════════════════════════════════════════════════════
-         DEMO SECTION
-         ═══════════════════════════════════════════════════════════════════════════════ -->
-    <section id="demo" class="section">
-      <h2 class="gradient-text-accent" style="text-align: center; margin-bottom: var(--space-xl);">
-        Interactive Demos
-      </h2>
-      
-      <div class="card">
-        <div class="flex-between" style="margin-bottom: var(--space-lg);">
-          <h3>Explore PECU Features</h3>
-          <div class="flex gap-sm">
-            <button class="filter-btn active" data-demo="selector">Selector</button>
-            <button class="filter-btn" data-demo="main">Main Menu</button>
-            <button class="filter-btn" data-demo="gpu">GPU Passthrough</button>
-          </div>
-        </div>
-        
-        <!-- Demo: Release Selector -->
-        <div class="demo-content" id="demo-selector">
-          <div class="terminal">
-            <div class="terminal-header">
-              <div class="terminal-dots">
-                <div class="terminal-dot terminal-dot-red"></div>
-                <div class="terminal-dot terminal-dot-yellow"></div>
-                <div class="terminal-dot terminal-dot-green"></div>
-              </div>
-              <div class="terminal-title">pecu_release_selector.sh</div>
-            </div>
-            <div class="terminal-content">
-<span class="terminal-prompt">╔═══════════════════════════════════════════════════════════════╗</span>
-<span class="terminal-prompt">║           Proxmox Enhanced Configuration Utility             ║</span>
-<span class="terminal-prompt">║                      Version Selector                        ║</span>
-<span class="terminal-prompt">╚═══════════════════════════════════════════════════════════════╝</span>
-
-<span class="terminal-output">Select a PECU version to execute:</span>
-<span class="terminal-comment">───────────────────────────────────────────────────────────────</span>
-<span class="terminal-command" id="demo-releases-list">Loading releases from GitHub API...</span>
-<span class="terminal-command"> 0) Exit</span>
-<span class="terminal-comment">───────────────────────────────────────────────────────────────</span>
-<span class="terminal-prompt">Enter the option number: </span><span class="terminal-command">1</span>
-
-<span class="terminal-success">Selected version: <span id="demo-selected-version">Loading...</span></span>
-<span class="terminal-warning">Fetching and executing PECU from GitHub...</span>
-<span class="terminal-success">✓ Download complete</span>
-<span class="terminal-success">✓ Launching PECU...</span>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Demo: Main Menu -->
-        <div class="demo-content" id="demo-main" style="display: none;">
-          <div class="terminal">
-            <div class="terminal-header">
-              <div class="terminal-dots">
-                <div class="terminal-dot terminal-dot-red"></div>
-                <div class="terminal-dot terminal-dot-yellow"></div>
-                <div class="terminal-dot terminal-dot-green"></div>
-              </div>
-              <div class="terminal-title">proxmox-configurator.sh</div>
-            </div>
-            <div class="terminal-content">
-<span class="terminal-prompt">    ____  ______________  __</span>
-<span class="terminal-prompt">   / __ \/ ____/ ____/ / / /</span>
-<span class="terminal-prompt">  / /_/ / __/ / /   / / / / </span>
-<span class="terminal-prompt"> / ____/ /___/ /___/ /_/ /  </span>
-<span class="terminal-prompt">/_/   /_____/\____/\____/   </span>
-
-<span class="terminal-warning">Supported Technologies: Intel | AMD | Nvidia | Proxmox | Debian</span>
-
-<span class="terminal-prompt">═══════════════════════════════════════════════════════════════</span>
-<span class="terminal-prompt">│                    Options Menu                             │</span>
-<span class="terminal-prompt">═══════════════════════════════════════════════════════════════</span>
-<span class="terminal-command">1) Install Dependencies</span>
-<span class="terminal-command">2) Configure GPU Passthrough</span>  
-<span class="terminal-command">3) Check GPU Installation</span>
-<span class="terminal-command">4) Rollback GPU Passthrough Configuration</span>
-<span class="terminal-command">5) Advanced Kernel Tweaks</span>
-<span class="terminal-command">6) Check for Updates</span>
-<span class="terminal-command">7) Exit</span>
-<span class="terminal-prompt">═══════════════════════════════════════════════════════════════</span>
-<span class="terminal-prompt">Select an option: </span><span class="terminal-command">2</span>
-
-<span class="terminal-success">Initializing GPU Passthrough Configuration...</span>
-<span class="terminal-success">✓ Checking system compatibility</span>
-<span class="terminal-success">✓ Detecting available GPUs</span>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Demo: GPU Passthrough -->
-        <div class="demo-content" id="demo-gpu" style="display: none;">
-          <div class="terminal">
-            <div class="terminal-header">
-              <div class="terminal-dots">
-                <div class="terminal-dot terminal-dot-red"></div>
-                <div class="terminal-dot terminal-dot-yellow"></div>
-                <div class="terminal-dot terminal-dot-green"></div>
-              </div>
-              <div class="terminal-title">GPU Passthrough Configuration</div>
-            </div>
-            <div class="terminal-content">
-<span class="terminal-prompt">═══════════════════════════════════════════════════════════════</span>
-<span class="terminal-prompt">│              GPU Passthrough Configuration                  │</span>
-<span class="terminal-prompt">═══════════════════════════════════════════════════════════════</span>
-<span class="terminal-output">Please select a method for GPU passthrough:</span>
-<span class="terminal-command">1) Classic (edit vfio.conf and blacklists)</span>
-<span class="terminal-command">2) Driverctl (automatic persistent override)</span>
-<span class="terminal-comment">─────────────────────────────────────────────────────────────</span>
-<span class="terminal-prompt">Choose a passthrough method (1 or 2): </span><span class="terminal-command">2</span>
-
-<span class="terminal-warning">Using Driverctl Method (Automatic Persistent Override)</span>
-
-<span class="terminal-prompt">═══════════════════════════════════════════════════════════════</span>
-<span class="terminal-prompt">│              Available Graphics Devices                    │</span>
-<span class="terminal-prompt">═══════════════════════════════════════════════════════════════</span>
-<span class="terminal-output">01:00.0 VGA compatible controller: NVIDIA Corporation GA104</span> 
-<span class="terminal-output">       [GeForce RTX 3070] (rev a1)</span>
-<span class="terminal-output">02:00.0 VGA compatible controller: Advanced Micro Devices, Inc.</span>
-<span class="terminal-output">       [AMD/ATI] Navi 21 [Radeon RX 6800 XT] (rev c1)</span>
-
-<span class="terminal-prompt">Enter the PCI address (e.g., 0000:01:00.0): </span><span class="terminal-command">0000:01:00.0</span>
-
-<span class="terminal-success">✓ Binding 0000:01:00.0 to vfio-pci via driverctl</span>
-<span class="terminal-success">✓ Detected NVIDIA GPU. Blacklisting nouveau and nvidia</span>
-<span class="terminal-success">✓ Kernel configuration applied (initramfs updated)</span>
-
-<span class="terminal-prompt">Do you want to restart now? (y/n): </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ═══════════════════════════════════════════════════════════════════════════════
-         FEATURES SECTION
-         ═══════════════════════════════════════════════════════════════════════════════ -->
-    <section id="features" class="section">
-      <h2 class="gradient-text" style="text-align: center; margin-bottom: var(--space-xl);">
-        Key Features
-      </h2>
-      
-      <div class="grid grid-3 gap-xl">
-        <div class="card card-interactive">
-          <i class="fas fa-list-ul" style="color: var(--pecu-green); font-size: 2rem; margin-bottom: var(--space-md);"></i>
-          <h3 style="margin-bottom: var(--space-sm);">Repository Management</h3>
-          <p style="color: var(--pecu-gray-light); font-size: 0.9rem;">
-            Backup and restore sources.list, add no-subscription repositories, 
-            and complete package source management.
-          </p>
-        </div>
-        
-        <div class="card card-interactive">
-          <i class="fas fa-microchip" style="color: var(--pecu-blue); font-size: 2rem; margin-bottom: var(--space-md);"></i>
-          <h3 style="margin-bottom: var(--space-sm);">GPU Passthrough</h3>
-          <p style="color: var(--pecu-gray-light); font-size: 0.9rem;">
-            Assisted configuration for NVIDIA, AMD and Intel GPUs with automatic detection 
-            and custom configuration options.
-          </p>
-        </div>
-        
-        <div class="card card-interactive">
-          <i class="fas fa-shield-alt" style="color: var(--pecu-purple); font-size: 2rem; margin-bottom: var(--space-md);"></i>
-          <h3 style="margin-bottom: var(--space-sm);">System Validation</h3>
-          <p style="color: var(--pecu-gray-light); font-size: 0.9rem;">
-            Complete IOMMU checks, MSI options verification, and 
-            Proxmox repository configuration validation.
-          </p>
-        </div>
-        
-        <div class="card card-interactive">
-          <i class="fas fa-server" style="color: var(--pecu-cyan); font-size: 2rem; margin-bottom: var(--space-md);"></i>
-          <h3 style="margin-bottom: var(--space-sm);">Multi-GPU Support</h3>
-          <p style="color: var(--pecu-gray-light); font-size: 0.9rem;">
-            Detects multiple GPUs and provides specific configuration 
-            options for different GPU types.
-          </p>
-        </div>
-        
-        <div class="card card-interactive">
-          <i class="fas fa-cogs" style="color: var(--pecu-orange); font-size: 2rem; margin-bottom: var(--space-md);"></i>
-          <h3 style="margin-bottom: var(--space-sm);">Proxmox Compatibility</h3>
-          <p style="color: var(--pecu-gray-light); font-size: 0.9rem;">
-            Full support for Proxmox VE 7.x and 8.x with regular testing 
-            on the latest ISO versions.
-          </p>
-        </div>
-        
-        <div class="card card-interactive">
-          <i class="fas fa-undo-alt" style="color: var(--pecu-yellow); font-size: 2rem; margin-bottom: var(--space-md);"></i>
-          <h3 style="margin-bottom: var(--space-sm);">Rollback Functionality</h3>
-          <p style="color: var(--pecu-gray-light); font-size: 0.9rem;">
-            Built-in backup and rollback capabilities to safely undo configurations 
-            and restore previous states.
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <!-- ═══════════════════════════════════════════════════════════════════════════════
-         RELEASES SECTION
-         ═══════════════════════════════════════════════════════════════════════════════ -->
-    <section id="releases" class="section">
-      <h2 class="gradient-text-secondary" style="text-align: center; margin-bottom: var(--space-xl);">
-        Available Releases
-      </h2>
-      
-      <!-- Search and Filters -->
-      <div style="text-align: center; margin-bottom: var(--space-xl);">
-        <div class="filter-container" id="release-filters">
-          <button class="filter-btn active" data-filter="all">
-            <i class="fas fa-list"></i>
-            All (<span id="count-all">0</span>)
-          </button>
-          <button class="filter-btn" data-filter="stable">
-            <i class="fas fa-check-circle"></i>
-            Stable (<span id="count-stable">0</span>)
-          </button>
-          <button class="filter-btn" data-filter="beta">
-            <i class="fas fa-flask"></i>
-            Beta (<span id="count-beta">0</span>)
-          </button>
-          <button class="filter-btn" data-filter="prerelease">
-            <i class="fas fa-rocket"></i>
-            Pre-release (<span id="count-prerelease">0</span>)
-          </button>
-          <button class="filter-btn" data-filter="experimental">
-            <i class="fas fa-exclamation-triangle"></i>
-            Experimental (<span id="count-experimental">0</span>)
-          </button>
-          <button class="filter-btn" data-filter="legacy">
-            <i class="fas fa-archive"></i>
-            Legacy (<span id="count-legacy">0</span>)
-          </button>
-        </div>
-      </div>
-      
-      <!-- Loading State -->
-      <div id="releases-loading" class="flex-center" style="padding: var(--space-3xl) 0;">
-        <div style="text-align: center;">
-          <div class="loading-spinner" style="margin-bottom: var(--space-md);"></div>
-          <p style="color: var(--pecu-gray-light);">Loading releases from GitHub API...</p>
-          <p style="color: var(--pecu-gray-light); font-size: 0.875rem; margin-top: var(--space-sm);">
-            Fetching information for <span id="loading-progress">0</span> releases...
-          </p>
-        </div>
-      </div>
-      
-      <!-- Releases Container -->
-      <div id="releases-container" class="grid grid-1 gap-xl" style="display: none;"></div>
-      
-      <!-- Error State -->
-      <div id="releases-error" style="display: none; text-align: center; padding: var(--space-3xl) 0;">
-        <i class="fas fa-exclamation-triangle" style="color: var(--pecu-yellow); font-size: 3rem; margin-bottom: var(--space-md);"></i>
-        <h3 style="margin-bottom: var(--space-sm);">Error loading releases</h3>
-        <p style="color: var(--pecu-gray-light); margin-bottom: var(--space-lg);" id="error-message">
-          Could not load releases from GitHub. Please check your internet connection.
-        </p>
-        <button class="btn btn-primary" onclick="location.reload()">
-          <i class="fas fa-refresh"></i>
-          Retry
-        </button>
-      </div>
-      
-      <!-- Load More Button -->
-      <div id="load-more-container" style="text-align: center; margin-top: var(--space-xl); display: none;">
-        <button id="load-more-btn" class="btn btn-secondary">
-          <i class="fas fa-plus"></i>
-          Load more releases
-        </button>
-      </div>
-      
-      <!-- View More -->
-      <div style="text-align: center; margin-top: var(--space-xl);">
-        <a href="#" id="view-all-releases-link" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
+      <div class="security-alert-actions">
+        <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/blob/main/SECURITY.md" 
+           target="_blank" rel="noopener noreferrer" class="btn btn-small btn-secondary">
           <i class="fas fa-external-link-alt"></i>
-          View all releases on GitHub
+          View Security Policy
+        </a>
+        <button id="dismiss-security" class="btn btn-small btn-ghost">
+          <i class="fas fa-times"></i>
+          Dismiss
+        </button>
+      </div>
+    </div>
+
+    <!-- Advanced Filters -->
+    <div class="advanced-filters">
+      <div class="filter-group" style="margin-bottom: var(--space-md);">
+        <span class="filter-label">
+          <i class="fas fa-filter"></i>
+          Channel:
+        </span>
+        <button class="filter-btn active" data-filter="all">
+          <i class="fas fa-list"></i>
+          All (<span id="count-all">0</span>)
+        </button>
+        <button class="filter-btn" data-filter="stable">
+          <i class="fas fa-check-circle"></i>
+          Stable (<span id="count-stable">0</span>)
+        </button>
+        <button class="filter-btn" data-filter="beta">
+          <i class="fas fa-flask"></i>
+          Beta (<span id="count-beta">0</span>)
+        </button>
+        <button class="filter-btn" data-filter="prerelease">
+          <i class="fas fa-rocket"></i>
+          Pre-release (<span id="count-prerelease">0</span>)
+        </button>
+        <button class="filter-btn" data-filter="experimental">
+          <i class="fas fa-exclamation-triangle"></i>
+          Experimental (<span id="count-experimental">0</span>)
+        </button>
+        <button class="filter-btn" data-filter="legacy">
+          <i class="fas fa-archive"></i>
+          Legacy (<span id="count-legacy">0</span>)
+        </button>
+      </div>
+      
+      <div class="filter-group">
+        <span class="filter-label">
+          <i class="fas fa-sort"></i>
+          Sort by:
+        </span>
+        <select id="sort-select" class="sort-select">
+          <option value="date-desc">Newest First</option>
+          <option value="date-asc">Oldest First</option>
+          <option value="version-desc">Version (High to Low)</option>
+          <option value="version-asc">Version (Low to High)</option>
+          <option value="downloads-desc">Most Downloaded</option>
+          <option value="size-desc">Largest Size</option>
+          <option value="size-asc">Smallest Size</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Results Info -->
+    <div class="results-info">
+      <div class="results-count" id="results-count">
+        Loading releases...
+      </div>
+      <div style="display: flex; gap: var(--space-md); align-items: center;">
+        <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/releases" 
+           target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-small">
+          <i class="fab fa-github"></i>
+          GitHub
         </a>
       </div>
-    </section>
+    </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════════════════════
-         SUPPORT SECTION
-         ═══════════════════════════════════════════════════════════════════════════════ -->
-    <section id="support" class="section">
-      <h2 class="gradient-text-accent" style="text-align: center; margin-bottom: var(--space-xl);">
-        Support the Project
-      </h2>
-      
-      <div class="card" style="text-align: center;">
-        <h3 style="margin-bottom: var(--space-md);">Like PECU?</h3>
-        <p style="color: var(--pecu-gray-light); margin-bottom: var(--space-xl); max-width: 600px; margin-left: auto; margin-right: auto;">
-          If PECU has been useful to you, consider supporting the development to keep the project active 
-          and add new features.
+    <!-- Loading State -->
+    <div id="releases-loading" class="flex-center" style="padding: var(--space-3xl) 0;">
+      <div style="text-align: center;">
+        <div class="loading-spinner" style="margin-bottom: var(--space-md);"></div>
+        <p style="color: var(--pecu-gray-light);">Loading releases from GitHub API...</p>
+        <p style="color: var(--pecu-gray-light); font-size: 0.875rem; margin-top: var(--space-sm);">
+          Fetching <span id="loading-progress">0</span> releases...
         </p>
-        
-        <div class="flex-center gap-lg" style="flex-wrap: wrap;">
-          <a href="https://buymeacoffee.com/danilop95pS" 
-             target="_blank" rel="noopener noreferrer" 
-             class="btn btn-primary" 
-             style="background: linear-gradient(135deg, #FFDD00, #FF6B35);">
-            <i class="fas fa-coffee"></i>
-            Buy Me a Coffee
-          </a>
-          <a href="https://patreon.com/c/DVNILXP95" 
-             target="_blank" rel="noopener noreferrer" 
-             class="btn btn-primary"
-             style="background: linear-gradient(135deg, #F96854, #FF424D);">
-            <i class="fab fa-patreon"></i>
-            Patreon
-          </a>
-          <a href="#" id="star-repo-link"
-             target="_blank" rel="noopener noreferrer" 
-             class="btn btn-secondary">
-            <i class="fas fa-star"></i>
-            Give it a star
-          </a>
-        </div>
       </div>
-    </section>
+    </div>
+
+    <!-- Releases Container -->
+    <div id="releases-container" class="releases-grid grid grid-1 gap-xl" style="display: none;"></div>
+
+    <!-- No Results -->
+    <div id="no-results" class="no-results" style="display: none;">
+      <i class="fas fa-search"></i>
+      <h3>No releases found</h3>
+      <p>Try adjusting your search terms or filters</p>
+      <button id="reset-filters" class="btn btn-primary" style="margin-top: var(--space-lg);">
+        <i class="fas fa-refresh"></i>
+        Reset Filters
+      </button>
+    </div>
+
+    <!-- Error State -->
+    <div id="releases-error" style="display: none; text-align: center; padding: var(--space-3xl) 0;">
+      <i class="fas fa-exclamation-triangle" style="color: var(--pecu-yellow); font-size: 3rem; margin-bottom: var(--space-md);"></i>
+      <h3 style="margin-bottom: var(--space-sm);">Error loading releases</h3>
+      <p style="color: var(--pecu-gray-light); margin-bottom: var(--space-lg);" id="error-message">
+        Could not load releases from GitHub. Please check your internet connection.
+      </p>
+      <button class="btn btn-primary" onclick="location.reload()">
+        <i class="fas fa-refresh"></i>
+        Retry
+      </button>
+    </div>
   </main>
 
-  <!-- ═══════════════════════════════════════════════════════════════════════════════
-       FOOTER
-       ═══════════════════════════════════════════════════════════════════════════════ -->
+  <!-- Footer -->
   <footer style="border-top: 1px solid var(--pecu-dark-3); padding: var(--space-xl) 0; margin-top: var(--space-3xl);">
     <div class="container">
       <div class="flex-between" style="flex-wrap: wrap; gap: var(--space-md);">
@@ -558,14 +972,14 @@
             © <span id="current-year">2025</span> Proxmox Enhanced Configuration Utility
           </p>
           <p style="color: var(--pecu-gray-light); font-size: 0.875rem;">
-            Licensed under <span id="repo-license-footer">GPL-3.0</span> • Made with ❤️ by 
-            <a href="#" id="author-link" target="_blank" rel="noopener noreferrer" style="color: var(--pecu-blue);">
+            Licensed under GPL-3.0 • Made with ❤️ by 
+            <a href="https://github.com/Danilop95" target="_blank" rel="noopener noreferrer" style="color: var(--pecu-blue);">
               Danilop95
             </a>
           </p>
         </div>
         <div class="flex gap-md">
-          <a href="#" id="footer-github-link"
+          <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility"
              target="_blank" rel="noopener noreferrer" 
              style="color: var(--pecu-gray-light); font-size: 1.5rem;" 
              aria-label="GitHub">
@@ -582,32 +996,33 @@
     </div>
   </footer>
 
-  <!-- ═══════════════════════════════════════════════════════════════════════════════
-       JAVASCRIPT - GITHUB API INTEGRATION
-       ═══════════════════════════════════════════════════════════════════════════════ -->
   <script>
-    // ─────────────────────────────────────────────────────────────────────────────── 
-    // GITHUB API CONFIGURATION
-    // ─────────────────────────────────────────────────────────────────────────────── 
-    const GITHUB_CONFIG = {
-      OWNER: 'Danilop95',
-      REPO: 'Proxmox-Enhanced-Configuration-Utility',
-      API_BASE: 'https://api.github.com',
-      CACHE_DURATION: 5 * 60 * 1000, // 5 minutes
-      MAX_RELEASES_PER_PAGE: 30,
-      MAX_COMMITS: 5,
-      MAX_CONTRIBUTORS: 10,
-      RATE_LIMIT_DELAY: 1000 // 1 second between requests
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // PECU RELEASES - COMPLETE JAVASCRIPT
+    // ═══════════════════════════════════════════════════════════════════════════════
+
+    // Configuration
+    const CONFIG = {
+      GITHUB: {
+        OWNER: 'Danilop95',
+        REPO: 'Proxmox-Enhanced-Configuration-Utility',
+        API_BASE: 'https://api.github.com',
+        CACHE_DURATION: 5 * 60 * 1000, // 5 minutes
+        RATE_LIMIT_DELAY: 1000
+      }
     };
 
-    // ─────────────────────────────────────────────────────────────────────────────── 
-    // UTILITY FUNCTIONS
-    // ─────────────────────────────────────────────────────────────────────────────── 
+    // Global State
+    let allReleases = [];
+    let filteredReleases = [];
+    let currentFilter = 'all';
+    let currentSort = 'date-desc';
+    let searchQuery = '';
+
+    // Utility Functions
     const Utils = {
-      // Format numbers with locale
       formatNumber: (num) => num.toLocaleString('en-US'),
       
-      // Format file size
       formatFileSize: (bytes) => {
         if (bytes === 0) return '0 Bytes';
         const k = 1024;
@@ -616,7 +1031,6 @@
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
       },
       
-      // Format dates
       formatDate: (dateString) => {
         const date = new Date(dateString);
         const now = new Date();
@@ -630,7 +1044,6 @@
         return `${Math.ceil(diffDays / 365)} years ago`;
       },
       
-      // Format absolute date
       formatAbsoluteDate: (dateString) => {
         return new Date(dateString).toLocaleDateString('en-US', {
           year: 'numeric',
@@ -639,7 +1052,6 @@
         });
       },
       
-      // Get channel from release
       getChannel: (release) => {
         const body = release.body || '';
         const channelMatch = body.match(/PECU-Channel:\s*(\w+)/i);
@@ -647,39 +1059,47 @@
         return release.prerelease ? 'prerelease' : 'stable';
       },
       
-      // Get metadata from release body
       getMeta: (body, key) => {
         const regex = new RegExp(`${key}:\\s*(.+)`, 'i');
         const match = regex.exec(body || '');
         return match ? match[1].trim() : '';
       },
       
-      // Truncate text
       truncate: (text, length = 150) => {
         if (!text || text.length <= length) return text || '';
         return text.substring(0, length) + '...';
       },
       
-      // Animate number counting
-      animateNumber: (element, start, end, duration = 1000) => {
-        if (!element) return;
-        element.classList.remove('skeleton');
-        
-        const startTime = Date.now();
-        const animate = () => {
-          const elapsed = Date.now() - startTime;
-          const progress = Math.min(elapsed / duration, 1);
-          const current = Math.floor(start + (end - start) * progress);
-          element.textContent = Utils.formatNumber(current);
-          if (progress < 1) requestAnimationFrame(animate);
-        };
-        animate();
+      parseVersion: (version) => {
+        const parts = version.replace(/^v/, '').split(/[.-]/).map(part => {
+          const num = parseInt(part);
+          return isNaN(num) ? part : num;
+        });
+        return parts;
       },
       
-      // Cache management
+      compareVersions: (a, b) => {
+        const versionA = Utils.parseVersion(a);
+        const versionB = Utils.parseVersion(b);
+        
+        for (let i = 0; i < Math.max(versionA.length, versionB.length); i++) {
+          const partA = versionA[i] || 0;
+          const partB = versionB[i] || 0;
+          
+          if (typeof partA === 'number' && typeof partB === 'number') {
+            if (partA !== partB) return partA - partB;
+          } else {
+            const strA = String(partA);
+            const strB = String(partB);
+            if (strA !== strB) return strA.localeCompare(strB);
+          }
+        }
+        return 0;
+      },
+      
       setCache: (key, data) => {
         try {
-          localStorage.setItem(`pecu_${key}`, JSON.stringify({
+          localStorage.setItem(`pecu_releases_${key}`, JSON.stringify({
             data,
             timestamp: Date.now()
           }));
@@ -690,27 +1110,23 @@
       
       getCache: (key) => {
         try {
-          const cached = localStorage.getItem(`pecu_${key}`);
+          const cached = localStorage.getItem(`pecu_releases_${key}`);
           if (!cached) return null;
           const { data, timestamp } = JSON.parse(cached);
-          if (Date.now() - timestamp > GITHUB_CONFIG.CACHE_DURATION) return null;
+          if (Date.now() - timestamp > CONFIG.GITHUB.CACHE_DURATION) return null;
           return data;
         } catch (e) {
           return null;
         }
       },
       
-      // Delay function for rate limiting
       delay: (ms) => new Promise(resolve => setTimeout(resolve, ms))
     };
 
-    // ─────────────────────────────────────────────────────────────────────────────── 
-    // GITHUB API CLIENT
-    // ─────────────────────────────────────────────────────────────────────────────── 
+    // GitHub API Client
     const GitHubAPI = {
-      // Base fetch with error handling and rate limiting
       async fetch(endpoint, options = {}) {
-        const url = `${GITHUB_CONFIG.API_BASE}${endpoint}`;
+        const url = `${CONFIG.GITHUB.API_BASE}${endpoint}`;
         
         try {
           const response = await fetch(url, {
@@ -725,12 +1141,6 @@
             throw new Error(`GitHub API Error: ${response.status} ${response.statusText}`);
           }
           
-          // Check rate limit
-          const remaining = response.headers.get('X-RateLimit-Remaining');
-          if (remaining && parseInt(remaining) < 10) {
-            console.warn('GitHub API rate limit approaching');
-          }
-          
           return await response.json();
         } catch (error) {
           console.error(`Failed to fetch ${endpoint}:`, error);
@@ -738,29 +1148,6 @@
         }
       },
       
-      // Get repository information
-      async getRepository() {
-        const cacheKey = 'repository';
-        const cached = Utils.getCache(cacheKey);
-        if (cached) return cached;
-        
-        const data = await this.fetch(`/repos/${GITHUB_CONFIG.OWNER}/${GITHUB_CONFIG.REPO}`);
-        Utils.setCache(cacheKey, data);
-        return data;
-      },
-      
-      // Get releases with pagination
-      async getReleases(page = 1, perPage = GITHUB_CONFIG.MAX_RELEASES_PER_PAGE) {
-        const cacheKey = `releases_${page}_${perPage}`;
-        const cached = Utils.getCache(cacheKey);
-        if (cached) return cached;
-        
-        const data = await this.fetch(`/repos/${GITHUB_CONFIG.OWNER}/${GITHUB_CONFIG.REPO}/releases?page=${page}&per_page=${perPage}`);
-        Utils.setCache(cacheKey, data);
-        return data;
-      },
-      
-      // Get all releases (with pagination)
       async getAllReleases() {
         const cacheKey = 'all_releases';
         const cached = Utils.getCache(cacheKey);
@@ -771,7 +1158,7 @@
         let hasMore = true;
         
         while (hasMore) {
-          const releases = await this.getReleases(page, 100);
+          const releases = await this.fetch(`/repos/${CONFIG.GITHUB.OWNER}/${CONFIG.GITHUB.REPO}/releases?page=${page}&per_page=100`);
           allReleases = allReleases.concat(releases);
           hasMore = releases.length === 100;
           page++;
@@ -782,127 +1169,55 @@
             progressElement.textContent = allReleases.length;
           }
           
-          // Rate limiting
           if (hasMore) {
-            await Utils.delay(GITHUB_CONFIG.RATE_LIMIT_DELAY);
+            await Utils.delay(CONFIG.GITHUB.RATE_LIMIT_DELAY);
           }
         }
         
         Utils.setCache(cacheKey, allReleases);
         return allReleases;
       },
-      
-      // Get recent commits
-      async getCommits(count = GITHUB_CONFIG.MAX_COMMITS) {
-        const cacheKey = `commits_${count}`;
+
+      async getSecurityInfo() {
+        const cacheKey = 'security_info';
         const cached = Utils.getCache(cacheKey);
         if (cached) return cached;
         
-        const data = await this.fetch(`/repos/${GITHUB_CONFIG.OWNER}/${GITHUB_CONFIG.REPO}/commits?per_page=${count}`);
-        Utils.setCache(cacheKey, data);
-        return data;
-      },
-      
-      // Get contributors
-      async getContributors(count = GITHUB_CONFIG.MAX_CONTRIBUTORS) {
-        const cacheKey = `contributors_${count}`;
-        const cached = Utils.getCache(cacheKey);
-        if (cached) return cached;
-        
-        const data = await this.fetch(`/repos/${GITHUB_CONFIG.OWNER}/${GITHUB_CONFIG.REPO}/contributors?per_page=${count}`);
-        Utils.setCache(cacheKey, data);
-        return data;
-      },
-      
-      // Get issues and pull requests
-      async getIssuesAndPRs() {
-        const cacheKey = 'issues_prs';
-        const cached = Utils.getCache(cacheKey);
-        if (cached) return cached;
-        
-        const [issues, prs] = await Promise.all([
-          this.fetch(`/repos/${GITHUB_CONFIG.OWNER}/${GITHUB_CONFIG.REPO}/issues?state=open&per_page=5`),
-          this.fetch(`/repos/${GITHUB_CONFIG.OWNER}/${GITHUB_CONFIG.REPO}/pulls?state=open&per_page=5`)
-        ]);
-        
-        const data = { issues, prs };
-        Utils.setCache(cacheKey, data);
-        return data;
+        try {
+          const securityMd = await this.fetch(`/repos/${CONFIG.GITHUB.OWNER}/${CONFIG.GITHUB.REPO}/contents/SECURITY.md`);
+          const content = atob(securityMd.content);
+          
+          // Extract security notices from SECURITY.md
+          const notices = [];
+          const lines = content.split('\n');
+          let currentNotice = null;
+          
+          for (const line of lines) {
+            if (line.startsWith('## ') && (line.toLowerCase().includes('security') || line.toLowerCase().includes('vulnerability') || line.toLowerCase().includes('advisory'))) {
+              if (currentNotice) notices.push(currentNotice);
+              currentNotice = {
+                title: line.replace('## ', '').trim(),
+                content: []
+              };
+            } else if (currentNotice && line.trim()) {
+              currentNotice.content.push(line);
+            }
+          }
+          
+          if (currentNotice) notices.push(currentNotice);
+          
+          const data = { notices, lastUpdated: securityMd.sha };
+          Utils.setCache(cacheKey, data);
+          return data;
+        } catch (error) {
+          console.warn('Failed to fetch security info:', error);
+          return { notices: [], lastUpdated: null };
+        }
       }
     };
 
-    // ─────────────────────────────────────────────────────────────────────────────── 
-    // UI COMPONENTS
-    // ─────────────────────────────────────────────────────────────────────────────── 
+    // UI Components
     const UI = {
-      // Update repository information
-      updateRepositoryInfo: (repo) => {
-        // Update basic info
-        document.getElementById('repo-description').textContent = repo.description || 'No description available';
-        document.getElementById('github-link').href = repo.html_url;
-        document.getElementById('view-all-releases-link').href = `${repo.html_url}/releases`;
-        document.getElementById('star-repo-link').href = repo.html_url;
-        document.getElementById('footer-github-link').href = repo.html_url;
-        document.getElementById('author-link').href = repo.owner.html_url;
-        
-        // Update repository details
-        document.getElementById('repo-created').textContent = Utils.formatAbsoluteDate(repo.created_at);
-        document.getElementById('repo-updated').textContent = Utils.formatDate(repo.updated_at);
-        document.getElementById('repo-language').textContent = repo.language || 'Multiple';
-        document.getElementById('repo-license').textContent = repo.license?.name || 'Not specified';
-        document.getElementById('repo-license-footer').textContent = repo.license?.spdx_id || 'GPL-3.0';
-        
-        // Show repo info
-        document.getElementById('repo-info').style.display = 'block';
-      },
-      
-      // Update GitHub statistics
-      updateGitHubStats: async (repo, releases) => {
-        // Calculate total downloads
-        const totalDownloads = releases.reduce((total, release) => {
-          return total + release.assets.reduce((sum, asset) => sum + asset.download_count, 0);
-        }, 0);
-        
-        // Get additional data
-        let commitsCount = 0;
-        let contributorsCount = 0;
-        
-        try {
-          const [commits, contributors] = await Promise.all([
-            GitHubAPI.getCommits(1),
-            GitHubAPI.getContributors()
-          ]);
-          
-          // For commits count, we need to make another request to get the total
-          // This is an approximation based on the default branch
-          commitsCount = 500; // Placeholder - GitHub API doesn't provide total commits easily
-          contributorsCount = contributors.length;
-        } catch (error) {
-          console.warn('Failed to get additional stats:', error);
-        }
-        
-        // Animate stats
-        const statsData = {
-          'stars-count': repo.stargazers_count,
-          'forks-count': repo.forks_count,
-          'watchers-count': repo.subscribers_count || repo.watchers_count,
-          'downloads-count': totalDownloads,
-          'commits-count': commitsCount,
-          'contributors-count': contributorsCount
-        };
-        
-        Object.entries(statsData).forEach(([id, value], index) => {
-          setTimeout(() => {
-            const element = document.getElementById(id);
-            if (element) {
-              const currentValue = parseInt(element.textContent.replace(/[^\d]/g, '')) || 0;
-              Utils.animateNumber(element, currentValue, value, 1500);
-            }
-          }, index * 200);
-        });
-      },
-      
-      // Create release card
       createReleaseCard: (release, index) => {
         const channel = Utils.getChannel(release);
         const title = Utils.getMeta(release.body, 'PECU-Title') || release.name || release.tag_name;
@@ -914,16 +1229,19 @@
         const publishedDate = Utils.formatDate(release.published_at);
         const absoluteDate = Utils.formatAbsoluteDate(release.published_at);
         
+        const totalSize = release.assets.reduce((sum, asset) => sum + asset.size, 0);
+        const totalDownloads = release.assets.reduce((sum, asset) => sum + asset.download_count, 0);
+        
+        const directCommand = `bash <(curl -sL https://raw.githubusercontent.com/${CONFIG.GITHUB.OWNER}/${CONFIG.GITHUB.REPO}/${release.tag_name}/src/proxmox-configurator.sh)`;
+        
         const card = document.createElement('div');
         card.className = `card release-card ${channel}`;
         card.dataset.channel = channel;
-        card.style.animationDelay = `${index * 100}ms`;
-        
-        const directCommand = `bash <(curl -sL https://raw.githubusercontent.com/${GITHUB_CONFIG.OWNER}/${GITHUB_CONFIG.REPO}/${release.tag_name}/src/proxmox-configurator.sh)`;
-        
-        // Calculate total download size
-        const totalSize = release.assets.reduce((sum, asset) => sum + asset.size, 0);
-        const totalDownloads = release.assets.reduce((sum, asset) => sum + asset.download_count, 0);
+        card.dataset.version = release.tag_name;
+        card.dataset.downloads = totalDownloads;
+        card.dataset.size = totalSize;
+        card.dataset.date = release.published_at;
+        card.style.animationDelay = `${index * 50}ms`;
         
         card.innerHTML = `
           <div class="release-header">
@@ -933,18 +1251,35 @@
                 <i class="fas fa-calendar-alt"></i>
                 ${publishedDate} (${absoluteDate})
               </p>
-              ${totalDownloads > 0 ? `
-                <p style="color: var(--pecu-gray-light); font-size: 0.8rem; margin-top: var(--space-xs);">
-                  <i class="fas fa-download"></i>
-                  ${Utils.formatNumber(totalDownloads)} downloads
-                </p>
-              ` : ''}
             </div>
             <div class="flex gap-sm" style="align-items: flex-start;">
               ${isLatest ? '<span class="badge badge-latest">Latest</span>' : ''}
               <span class="badge badge-${channel}">${channel}</span>
             </div>
           </div>
+          
+          ${totalDownloads > 0 || totalSize > 0 || release.assets.length > 0 ? `
+            <div class="release-stats">
+              ${totalDownloads > 0 ? `
+                <div class="release-stat">
+                  <i class="fas fa-download"></i>
+                  <span>${Utils.formatNumber(totalDownloads)} downloads</span>
+                </div>
+              ` : ''}
+              ${totalSize > 0 ? `
+                <div class="release-stat">
+                  <i class="fas fa-hdd"></i>
+                  <span>${Utils.formatFileSize(totalSize)}</span>
+                </div>
+              ` : ''}
+              ${release.assets.length > 0 ? `
+                <div class="release-stat">
+                  <i class="fas fa-file-archive"></i>
+                  <span>${release.assets.length} asset${release.assets.length > 1 ? 's' : ''}</span>
+                </div>
+              ` : ''}
+            </div>
+          ` : ''}
           
           <div style="margin-bottom: var(--space-lg);">
             <h4 style="font-weight: 600; margin-bottom: var(--space-sm); color: var(--pecu-gray-lightest);">
@@ -978,7 +1313,7 @@
               </a>
             ` : ''}
             ${release.body ? `
-              <button class="btn btn-ghost" onclick="UI.showReleaseNotes('${release.tag_name}', \`${release.body.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)">
+              <button class="btn btn-ghost" onclick="UI.showReleaseNotes('${release.tag_name}')">
                 <i class="fas fa-file-text"></i>
                 Release Notes
               </button>
@@ -989,40 +1324,39 @@
         return card;
       },
       
-      // Show release notes in a modal-like expansion
-      showReleaseNotes: (tagName, body) => {
-        // Find the release card
-        const cards = document.querySelectorAll('.release-card');
-        let targetCard = null;
+      showReleaseNotes: (tagName) => {
+        const release = allReleases.find(r => r.tag_name === tagName);
+        if (!release || !release.body) return;
         
-        cards.forEach(card => {
-          if (card.innerHTML.includes(tagName)) {
-            targetCard = card;
-          }
-        });
-        
-        if (!targetCard) return;
-        
-        // Check if notes are already shown
-        const existingNotes = targetCard.querySelector('.release-notes');
-        if (existingNotes) {
-          existingNotes.remove();
-          return;
-        }
-        
-        // Create notes element
-        const notesElement = document.createElement('div');
-        notesElement.className = 'release-notes';
-        notesElement.style.cssText = `
-          margin-top: var(--space-lg);
+        // Simple modal implementation
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.8);
+          z-index: 10000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           padding: var(--space-lg);
-          background: rgba(0, 0, 0, 0.3);
-          border-radius: var(--radius-md);
-          border-left: 4px solid var(--pecu-blue);
         `;
         
-        // Convert markdown-like formatting to HTML
-        const formattedBody = body
+        const content = document.createElement('div');
+        content.style.cssText = `
+          background: var(--pecu-dark-2);
+          border: 1px solid var(--pecu-dark-3);
+          border-radius: var(--radius-lg);
+          padding: var(--space-xl);
+          max-width: 800px;
+          max-height: 80vh;
+          overflow-y: auto;
+          position: relative;
+        `;
+        
+        const formattedBody = release.body
           .replace(/### (.*)/g, '<h4 style="color: var(--pecu-blue); margin: var(--space-md) 0 var(--space-sm) 0;">$1</h4>')
           .replace(/## (.*)/g, '<h3 style="color: var(--pecu-green); margin: var(--space-lg) 0 var(--space-md) 0;">$1</h3>')
           .replace(/# (.*)/g, '<h2 style="color: var(--pecu-purple); margin: var(--space-xl) 0 var(--space-lg) 0;">$1</h2>')
@@ -1032,332 +1366,251 @@
           .replace(/\n- (.*)/g, '\n• $1')
           .replace(/\n/g, '<br>');
         
-        notesElement.innerHTML = `
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md);">
-            <h5 style="color: var(--pecu-blue); margin: 0;">
+        content.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-lg);">
+            <h3 style="color: var(--pecu-blue); margin: 0;">
               <i class="fas fa-file-text"></i>
               Release Notes - ${tagName}
-            </h5>
-            <button onclick="this.parentElement.parentElement.remove()" 
-                    style="background: none; border: none; color: var(--pecu-gray-light); cursor: pointer; font-size: 1.2rem;">
+            </h3>
+            <button onclick="this.closest('[style*=\"position: fixed\"]').remove()" 
+                    style="background: none; border: none; color: var(--pecu-gray-light); cursor: pointer; font-size: 1.5rem; padding: var(--space-xs);">
               <i class="fas fa-times"></i>
             </button>
           </div>
-          <div style="color: var(--pecu-gray-lighter); line-height: 1.6; font-size: 0.9rem;">
+          <div style="color: var(--pecu-gray-lighter); line-height: 1.6;">
             ${formattedBody}
           </div>
         `;
         
-        targetCard.appendChild(notesElement);
+        modal.appendChild(content);
+        document.body.appendChild(modal);
         
-        // Scroll to the notes
-        setTimeout(() => {
-          notesElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }, 100);
-      },
-      
-      // Load and display releases
-      loadReleases: async () => {
-        const loadingElement = document.getElementById('releases-loading');
-        const containerElement = document.getElementById('releases-container');
-        const errorElement = document.getElementById('releases-error');
-        
-        try {
-          const releases = await GitHubAPI.getAllReleases();
-          
-          // Sort releases by priority and date
-          const channelPriority = {
-            stable: 0, latest: 0, beta: 1, preview: 2, 
-            prerelease: 2, experimental: 3, legacy: 4
-          };
-          
-          const sortedReleases = releases
-            .map(release => ({
-              ...release,
-              channel: Utils.getChannel(release),
-              priority: channelPriority[Utils.getChannel(release)] || 5
-            }))
-            .sort((a, b) => {
-              if (a.priority !== b.priority) return a.priority - b.priority;
-              return new Date(b.published_at) - new Date(a.published_at);
-            });
-          
-          // Update filter counts
-          const channelCounts = {};
-          sortedReleases.forEach(release => {
-            channelCounts[release.channel] = (channelCounts[release.channel] || 0) + 1;
-          });
-          
-          Object.entries(channelCounts).forEach(([channel, count]) => {
-            const countElement = document.getElementById(`count-${channel}`);
-            if (countElement) countElement.textContent = count;
-          });
-          
-          document.getElementById('count-all').textContent = sortedReleases.length;
-          
-          // Clear container and hide loading
-          containerElement.innerHTML = '';
-          loadingElement.style.display = 'none';
-          containerElement.style.display = 'block';
-          
-          // Create and append release cards
-          sortedReleases.forEach((release, index) => {
-            const card = UI.createReleaseCard(release, index);
-            containerElement.appendChild(card);
-          });
-          
-          // Initialize filters
-          UI.initializeFilters();
-          
-          // Update latest release install command
-          if (sortedReleases.length > 0) {
-            const latestStable = sortedReleases.find(r => r.channel === 'stable') || sortedReleases[0];
-            UI.updateLatestReleaseInstall(latestStable);
+        // Close on background click
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) {
+            modal.remove();
           }
-          
-          // Update demo with real releases
-          UI.updateDemoReleases(sortedReleases.slice(0, 4));
-          
-        } catch (error) {
-          console.error('Error loading releases:', error);
-          loadingElement.style.display = 'none';
-          errorElement.style.display = 'block';
-          document.getElementById('error-message').textContent = `Error: ${error.message}`;
-        }
+        });
       },
       
-      // Update latest release install command
-      updateLatestReleaseInstall: (release) => {
-        const container = document.getElementById('latest-release-install');
-        const downloadUrl = release.assets.length > 0 ? release.assets[0].browser_download_url : null;
+      updateResultsCount: () => {
+        const total = allReleases.length;
+        const filtered = filteredReleases.length;
+        const countElement = document.getElementById('results-count');
         
-        let commands = '';
-        if (downloadUrl) {
-          const filename = release.assets[0].name;
-          commands = `# Download latest release (${release.tag_name})
-wget ${downloadUrl}
-tar -xzf ${filename}
-cd PECU-*/src
-sudo ./proxmox-configurator.sh`;
+        if (searchQuery || currentFilter !== 'all') {
+          countElement.textContent = `Showing ${Utils.formatNumber(filtered)} of ${Utils.formatNumber(total)} releases`;
         } else {
-          commands = `# Run latest release directly (${release.tag_name})
-bash <(curl -sL https://raw.githubusercontent.com/${GITHUB_CONFIG.OWNER}/${GITHUB_CONFIG.REPO}/${release.tag_name}/src/proxmox-configurator.sh)`;
-        }
-        
-        container.innerHTML = `
-          <code>${commands}</code>
-          <button class="copy-button" data-command="${commands}" aria-label="Copy commands">
-            <i class="fas fa-copy"></i>
-          </button>
-        `;
-      },
-      
-      // Update demo with real releases
-      updateDemoReleases: (releases) => {
-        const demoList = document.getElementById('demo-releases-list');
-        const selectedVersion = document.getElementById('demo-selected-version');
-        
-        if (releases.length > 0) {
-          const releasesList = releases.map((release, index) => {
-            const channel = Utils.getChannel(release);
-            const channelLabel = channel === 'stable' ? 'Stable' : 
-                                channel === 'prerelease' ? 'Pre-release' : 
-                                channel.charAt(0).toUpperCase() + channel.slice(1);
-            const recommended = index === 0 && channel === 'stable' ? ' [RECOMMENDED]' : '';
-            return `<span class="terminal-command"> ${index + 1}) ${release.tag_name} (${channelLabel})${recommended}</span> - Published: ${Utils.formatDate(release.published_at)}`;
-          }).join('\n');
-          
-          demoList.innerHTML = releasesList;
-          selectedVersion.textContent = releases[0].tag_name;
+          countElement.textContent = `${Utils.formatNumber(total)} releases available`;
         }
       },
       
-      // Initialize filter functionality
-      initializeFilters: () => {
-        const filterButtons = document.querySelectorAll('.filter-btn');
-        const releaseCards = document.querySelectorAll('.release-card');
-        
-        filterButtons.forEach(button => {
-          button.addEventListener('click', () => {
-            const filter = button.dataset.filter;
-            
-            // Update active button
-            filterButtons.forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
-            
-            // Filter cards
-            releaseCards.forEach(card => {
-              const shouldShow = filter === 'all' || card.dataset.channel === filter;
-              card.style.display = shouldShow ? 'block' : 'none';
-              
-              if (shouldShow) {
-                card.style.animation = 'fadeInUp 0.5s ease-out';
-              }
-            });
-          });
+      updateChannelCounts: () => {
+        const channelCounts = {};
+        allReleases.forEach(release => {
+          const channel = Utils.getChannel(release);
+          channelCounts[channel] = (channelCounts[channel] || 0) + 1;
         });
+        
+        Object.entries(channelCounts).forEach(([channel, count]) => {
+          const countElement = document.getElementById(`count-${channel}`);
+          if (countElement) countElement.textContent = count;
+        });
+        
+        document.getElementById('count-all').textContent = allReleases.length;
       },
       
-      // Load repository activity
-      loadActivity: async () => {
-        try {
-          const [commits, contributors, issuesAndPRs] = await Promise.all([
-            GitHubAPI.getCommits(),
-            GitHubAPI.getContributors(),
-            GitHubAPI.getIssuesAndPRs()
-          ]);
-          
-          // Update commits
-          const commitsContainer = document.getElementById('recent-commits');
-          commitsContainer.innerHTML = commits.slice(0, 3).map(commit => `
-            <div style="margin-bottom: var(--space-sm); padding-bottom: var(--space-sm); border-bottom: 1px solid var(--pecu-dark-3);">
-              <div style="font-size: 0.85rem; font-weight: 500; margin-bottom: var(--space-xs);">
-                ${Utils.truncate(commit.commit.message, 60)}
-              </div>
-              <div style="font-size: 0.75rem; color: var(--pecu-gray-light);">
-                <i class="fas fa-user"></i>
-                ${commit.commit.author.name} • ${Utils.formatDate(commit.commit.author.date)}
-              </div>
-            </div>
-          `).join('');
-          
-          // Update contributors
-          const contributorsContainer = document.getElementById('contributors-list');
-          contributorsContainer.innerHTML = contributors.slice(0, 3).map(contributor => `
-            <div style="display: flex;  align-items: center; margin-bottom: var(--space-sm); padding-bottom: var(--space-sm); border-bottom: 1px solid var(--pecu-dark-3);">
-              <img src="${contributor.avatar_url}" alt="${contributor.login}" 
-                   style="width: 32px; height: 32px; border-radius: 50%; margin-right: var(--space-sm);">
-              <div>
-                <div style="font-size: 0.85rem; font-weight: 500;">
-                  <a href="${contributor.html_url}" target="_blank" rel="noopener noreferrer" 
-                     style="color: var(--pecu-blue); text-decoration: none;">
-                    ${contributor.login}
-                  </a>
-                </div>
-                <div style="font-size: 0.75rem; color: var(--pecu-gray-light);">
-                  ${Utils.formatNumber(contributor.contributions)} contributions
-                </div>
-              </div>
-            </div>
-          `).join('');
-          
-          // Update issues and PRs
-          const issuesPRsContainer = document.getElementById('issues-prs');
-          const allItems = [
-            ...issuesAndPRs.issues.map(issue => ({ ...issue, type: 'issue' })),
-            ...issuesAndPRs.prs.map(pr => ({ ...pr, type: 'pr' }))
-          ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 3);
-          
-          issuesPRsContainer.innerHTML = allItems.map(item => `
-            <div style="margin-bottom: var(--space-sm); padding-bottom: var(--space-sm); border-bottom: 1px solid var(--pecu-dark-3);">
-              <div style="font-size: 0.85rem; font-weight: 500; margin-bottom: var(--space-xs);">
-                <i class="fas fa-${item.type === 'issue' ? 'exclamation-circle' : 'code-branch'}" 
-                   style="color: var(--pecu-${item.type === 'issue' ? 'orange' : 'blue'});"></i>
-                <a href="${item.html_url}" target="_blank" rel="noopener noreferrer" 
-                   style="color: var(--pecu-gray-lightest); text-decoration: none;">
-                  ${Utils.truncate(item.title, 50)}
-                </a>
-              </div>
-              <div style="font-size: 0.75rem; color: var(--pecu-gray-light);">
-                #${item.number} • ${Utils.formatDate(item.created_at)}
-              </div>
-            </div>
-          `).join('');
-          
-        } catch (error) {
-          console.error('Error loading activity:', error);
+      renderReleases: () => {
+        const container = document.getElementById('releases-container');
+        const noResults = document.getElementById('no-results');
+        
+        if (filteredReleases.length === 0) {
+          container.style.display = 'none';
+          noResults.style.display = 'block';
+          return;
         }
-      }
-    };
-
-    // ─────────────────────────────────────────────────────────────────────────────── 
-    // EVENT HANDLERS
-    // ─────────────────────────────────────────────────────────────────────────────── 
-    const Events = {
-      // Handle copy button clicks
-      handleCopyClick: (event) => {
-        const button = event.target.closest('.copy-button');
-        if (!button) return;
         
-        let command = button.dataset.command;
+        container.style.display = 'block';
+        noResults.style.display = 'none';
+        container.innerHTML = '';
         
-        // If no direct command, get from command-id
-        if (!command) {
-          const commandId = button.dataset.commandId;
-          if (commandId) {
-            const commandElement = document.getElementById(commandId);
-            if (commandElement) {
-              command = commandElement.textContent;
-            }
+        filteredReleases.forEach((release, index) => {
+          const card = UI.createReleaseCard(release, index);
+          container.appendChild(card);
+        });
+        
+        UI.updateResultsCount();
+      },
+      
+      filterAndSort: () => {
+        // Filter by channel
+        let filtered = currentFilter === 'all' 
+          ? [...allReleases] 
+          : allReleases.filter(release => Utils.getChannel(release) === currentFilter);
+        
+        // Filter by search query
+        if (searchQuery) {
+          const query = searchQuery.toLowerCase();
+          filtered = filtered.filter(release => {
+            const searchText = [
+              release.tag_name,
+              release.name || '',
+              release.body || '',
+              Utils.getMeta(release.body, 'PECU-Title'),
+              Utils.getMeta(release.body, 'PECU-Desc')
+            ].join(' ').toLowerCase();
+            
+            return searchText.includes(query);
+          });
+        }
+        
+        // Sort releases
+        filtered.sort((a, b) => {
+          switch (currentSort) {
+            case 'date-desc':
+              return new Date(b.published_at) - new Date(a.published_at);
+            case 'date-asc':
+              return new Date(a.published_at) - new Date(b.published_at);
+            case 'version-desc':
+              return Utils.compareVersions(b.tag_name, a.tag_name);
+            case 'version-asc':
+              return Utils.compareVersions(a.tag_name, b.tag_name);
+            case 'downloads-desc':
+              const downloadsA = a.assets.reduce((sum, asset) => sum + asset.download_count, 0);
+              const downloadsB = b.assets.reduce((sum, asset) => sum + asset.download_count, 0);
+              return downloadsB - downloadsA;
+            case 'size-desc':
+              const sizeA = a.assets.reduce((sum, asset) => sum + asset.size, 0);
+              const sizeB = b.assets.reduce((sum, asset) => sum + asset.size, 0);
+              return sizeB - sizeA;
+            case 'size-asc':
+              const sizeA2 = a.assets.reduce((sum, asset) => sum + asset.size, 0);
+              const sizeB2 = b.assets.reduce((sum, asset) => sum + asset.size, 0);
+              return sizeA2 - sizeB2;
+            default:
+              return 0;
           }
-        }
-        
-        if (!command) return;
-        
-        navigator.clipboard.writeText(command).then(() => {
-          const icon = button.querySelector('i');
-          const originalClass = icon.className;
-          
-          icon.className = 'fas fa-check';
-          button.classList.add('copied');
-          
-          setTimeout(() => {
-            icon.className = originalClass;
-            button.classList.remove('copied');
-          }, 2000);
-        }).catch(err => {
-          console.error('Failed to copy:', err);
-          // Fallback for older browsers
-          const textarea = document.createElement('textarea');
-          textarea.value = command;
-          document.body.appendChild(textarea);
-          textarea.select();
-          document.execCommand('copy');
-          document.body.removeChild(textarea);
         });
-      },
-      
-      // Handle demo tab switching
-      handleDemoTabs: () => {
-        const demoButtons = document.querySelectorAll('[data-demo]');
-        const demoContents = document.querySelectorAll('.demo-content');
         
-        demoButtons.forEach(button => {
+        filteredReleases = filtered;
+        UI.renderReleases();
+      },
+
+      showSecurityAlert: async () => {
+        try {
+          const securityInfo = await GitHubAPI.getSecurityInfo();
+          
+          if (securityInfo.notices.length > 0) {
+            const alertElement = document.getElementById('security-alert');
+            const contentElement = document.getElementById('security-content');
+            
+            const latestNotice = securityInfo.notices[0];
+            contentElement.innerHTML = `
+              <h4 style="color: var(--pecu-red); margin-bottom: var(--space-sm);">${latestNotice.title}</h4>
+              <p style="margin-bottom: var(--space-sm);">${latestNotice.content.slice(0, 3).join(' ')}</p>
+              <p style="font-size: 0.875rem; color: var(--pecu-gray-light);">
+                <i class="fas fa-info-circle"></i>
+                Always verify downloads and review security policies before installation.
+              </p>
+            `;
+            
+            alertElement.style.display = 'block';
+          }
+        } catch (error) {
+          console.warn('Failed to load security info:', error);
+        }
+      }
+    };
+
+    // Event Handlers
+    const Events = {
+      init: () => {
+        // Search input
+        const searchInput = document.getElementById('search-input');
+        const clearSearch = document.getElementById('clear-search');
+        
+        searchInput.addEventListener('input', (e) => {
+          searchQuery = e.target.value.trim();
+          clearSearch.classList.toggle('visible', searchQuery.length > 0);
+          UI.filterAndSort();
+        });
+        
+        clearSearch.addEventListener('click', () => {
+          searchInput.value = '';
+          searchQuery = '';
+          clearSearch.classList.remove('visible');
+          UI.filterAndSort();
+          searchInput.focus();
+        });
+        
+        // Filter buttons
+        document.querySelectorAll('.filter-btn').forEach(button => {
           button.addEventListener('click', () => {
-            const targetDemo = button.dataset.demo;
-            
-            // Update active button
-            demoButtons.forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
-            
-            // Show target demo
-            demoContents.forEach(content => {
-              content.style.display = content.id === `demo-${targetDemo}` ? 'block' : 'none';
-            });
+            currentFilter = button.dataset.filter;
+            UI.filterAndSort();
           });
         });
-      },
-      
-      // Handle smooth scrolling for anchor links
-      handleSmoothScroll: () => {
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-          anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            const target = document.querySelector(this.getAttribute('href'));
-            if (target) {
-              target.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start'
-              });
-            }
+        
+        // Sort select
+        document.getElementById('sort-select').addEventListener('change', (e) => {
+          currentSort = e.target.value;
+          UI.filterAndSort();
+        });
+        
+        // Reset filters button
+        document.getElementById('reset-filters').addEventListener('click', () => {
+          searchInput.value = '';
+          searchQuery = '';
+          currentFilter = 'all';
+          currentSort = 'date-desc';
+          clearSearch.classList.remove('visible');
+          document.querySelector('.filter-btn[data-filter="all"]').classList.add('active');
+          document.querySelectorAll('.filter-btn:not([data-filter="all"])').forEach(btn => btn.classList.remove('active'));
+          document.getElementById('sort-select').value = 'date-desc';
+          UI.filterAndSort();
+        });
+        
+        // Security alert dismiss
+        document.getElementById('dismiss-security').addEventListener('click', () => {
+          document.getElementById('security-alert').style.display = 'none';
+        });
+        
+        // Copy button handler
+        document.addEventListener('click', (event) => {
+          const button = event.target.closest('.copy-button');
+          if (!button) return;
+          
+          const command = button.dataset.command;
+          if (!command) return;
+          
+          navigator.clipboard.writeText(command).then(() => {
+            const icon = button.querySelector('i');
+            const originalClass = icon.className;
+            
+            icon.className = 'fas fa-check';
+            button.classList.add('copied');
+            
+            setTimeout(() => {
+              icon.className = originalClass;
+              button.classList.remove('copied');
+            }, 2000);
+          }).catch(err => {
+            console.error('Failed to copy:', err);
+            // Fallback for older browsers
+            const textarea = document.createElement('textarea');
+            textarea.value = command;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
           });
         });
       }
     };
 
-    // ─────────────────────────────────────────────────────────────────────────────── 
-    // APPLICATION INITIALIZATION
-    // ─────────────────────────────────────────────────────────────────────────────── 
+    // Application
     const App = {
       init: async () => {
         try {
@@ -1365,61 +1618,57 @@ bash <(curl -sL https://raw.githubusercontent.com/${GITHUB_CONFIG.OWNER}/${GITHU
           document.getElementById('current-year').textContent = new Date().getFullYear();
           
           // Initialize event handlers
-          document.addEventListener('click', Events.handleCopyClick);
-          Events.handleDemoTabs();
-          Events.handleSmoothScroll();
+          Events.init();
           
-          // Load repository data
-          const repo = await GitHubAPI.getRepository();
-          UI.updateRepositoryInfo(repo);
+          // Load security info
+          UI.showSecurityAlert();
           
-          // Load releases and update stats
-          const releases = await GitHubAPI.getAllReleases();
-          await UI.updateGitHubStats(repo, releases);
-          await UI.loadReleases();
+          // Load releases
+          allReleases = await GitHubAPI.getAllReleases();
           
-          // Load activity data
-          await UI.loadActivity();
+          // Process releases
+          allReleases = allReleases.map(release => ({
+            ...release,
+            channel: Utils.getChannel(release)
+          }));
           
-          // Add loading animation classes
-          document.querySelectorAll('.card').forEach((card, index) => {
-            card.style.animation = `fadeInUp 0.6s ease-out ${index * 0.1}s both`;
-          });
+          // Hide loading, show content
+          document.getElementById('releases-loading').style.display = 'none';
+          document.getElementById('releases-container').style.display = 'block';
           
-          console.log('PECU Landing Page initialized successfully');
+          // Update UI
+          UI.updateChannelCounts();
+          UI.filterAndSort();
+          
+          console.log('PECU Releases page initialized successfully');
           
         } catch (error) {
-          console.error('Failed to initialize application:', error);
+          console.error('Failed to initialize releases page:', error);
           
-          // Show error state
-          const errorElements = document.querySelectorAll('#releases-error, #github-stats');
-          errorElements.forEach(element => {
-            if (element.id === 'releases-error') {
-              element.style.display = 'block';
-              document.getElementById('releases-loading').style.display = 'none';
-            }
-          });
+          document.getElementById('releases-loading').style.display = 'none';
+          document.getElementById('releases-error').style.display = 'block';
+          document.getElementById('error-message').textContent = `Error: ${error.message}`;
         }
       }
     };
 
-    // ─────────────────────────────────────────────────────────────────────────────── 
-    // START APPLICATION
-    // ─────────────────────────────────────────────────────────────────────────────── 
+    // Initialize when DOM is ready
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', App.init);
     } else {
       App.init();
     }
 
+    // Make UI functions globally available
+    window.UI = UI;
+
     // Handle visibility change to refresh data when tab becomes active
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) {
-        const lastUpdate = localStorage.getItem('pecu_last_update');
-        if (!lastUpdate || Date.now() - parseInt(lastUpdate) > GITHUB_CONFIG.CACHE_DURATION) {
+        const lastUpdate = localStorage.getItem('pecu_releases_last_update');
+        if (!lastUpdate || Date.now() - parseInt(lastUpdate) > CONFIG.GITHUB.CACHE_DURATION) {
           console.log('Refreshing data due to visibility change');
-          App.init();
-          localStorage.setItem('pecu_last_update', Date.now().toString());
+          localStorage.setItem('pecu_releases_last_update', Date.now().toString());
         }
       }
     });
