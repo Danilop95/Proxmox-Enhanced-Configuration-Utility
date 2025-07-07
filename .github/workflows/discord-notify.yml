@@ -1,0 +1,109 @@
+name: Discord Notify
+
+on:
+  release:
+    types: [published, edited]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  USERNAME:    "PECU Releases"
+  AVATAR_URL:  "https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/main/doc/img/logo.png"
+  COLOR_STABLE:    3066993      # verde
+  COLOR_BETA:      16776960     # amarillo
+  COLOR_PREVIEW:   16098851     # naranja
+  COLOR_LEGACY:     9807270     # azul-gris
+  COLOR_DEPRECATED: 15158332    # rojo
+  COLOR_DEFAULT:    5793266     # cyan
+
+jobs:
+  discord:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Parse release body
+      id: meta
+      shell: bash
+      run: |
+        TAG="${{ github.event.release.tag_name }}"
+        TITLE="${{ github.event.release.name || TAG }}"
+        URL='${{ github.event.release.html_url }}'
+        BODY='${{ github.event.release.body }}'
+
+        CHANNEL=$(printf "%s" "$BODY" | grep -oP '(?<=PECU-Channel:\s).*' | tr -d '\r')
+        TITLE_OVR=$(printf "%s" "$BODY" | grep -oP '(?<=PECU-Title:\s).*'   | tr -d '\r')
+        DESC_OVR=$( printf "%s" "$BODY" | grep -oP '(?<=PECU-Desc:\s).*'    | tr -d '\r')
+
+        [[ -n "$TITLE_OVR" ]] && TITLE="$TITLE_OVR"
+
+        DESC=$(printf "%s" "$BODY" | sed -n '/^### What/,$p' | head -c 3500)
+        [[ -n "$DESC_OVR" ]] && DESC="$DESC_OVR"
+        DESC=$(printf "%s" "$DESC" | jq -Rs .)   # JSON-escape
+
+        case "${CHANNEL,,}" in
+          stable)        COLOR=$COLOR_STABLE  ;;
+          beta)          COLOR=$COLOR_BETA    ;;
+          preview|exp*)  COLOR=$COLOR_PREVIEW ;;
+          legacy)        COLOR=$COLOR_LEGACY  ;;
+          deprecated)    COLOR=$COLOR_DEPRECATED ;;
+          *)             COLOR=$COLOR_DEFAULT ;;
+        esac
+
+        # decide webhook (stable/legacy público, resto patron)
+        case "${CHANNEL,,}" in
+          stable|legacy)         HOOK="$WEBHOOK_PUBLIC"  ;;
+          beta|preview|exp*|deprecated)  HOOK="$WEBHOOK_PATRON" ;;
+          *)                     HOOK="$WEBHOOK_PUBLIC"  ;;
+        esac
+
+        echo "title=$TITLE"   >> $GITHUB_OUTPUT
+        echo "url=$URL"       >> $GITHUB_OUTPUT
+        echo "desc=$DESC"     >> $GITHUB_OUTPUT
+        echo "color=$COLOR"   >> $GITHUB_OUTPUT
+        echo "hook=$HOOK"     >> $GITHUB_OUTPUT
+        echo "tag=$TAG"       >> $GITHUB_OUTPUT
+        echo "channel=$CHANNEL" >> $GITHUB_OUTPUT
+
+    - name: Build payload.json
+      run: |
+        cat > payload.json <<EOF
+        {
+          "username": "${USERNAME}",
+          "avatar_url": "${AVATAR_URL}",
+          "embeds": [{
+            "title": "${{ steps.meta.outputs.title }}",
+            "url":   "${{ steps.meta.outputs.url }}",
+            "description": ${{ steps.meta.outputs.desc }},
+            "color": ${{ steps.meta.outputs.color }},
+            "fields": [
+              {
+                "name": "Quick Install",
+                "value": "```bash\nbash <(curl -sL https://raw.githubusercontent.com/${{ github.repository }}/${{ steps.meta.outputs.tag }}/proxmox-configurator.sh)\n```"
+              },
+              {
+                "name": "Release page",
+                "value": "[View on GitHub](${{ steps.meta.outputs.url }})"
+              }
+            ],
+            "footer": { "text": "${{ github.repository }} • ${{ steps.meta.outputs.tag }}" },
+            "timestamp": "${{ github.event.release.published_at }}"
+          }]
+        }
+        EOF
+
+    - name: Post to Discord
+      run: |
+        curl -sS -H "Content-Type: application/json" \
+             --data @payload.json \
+             --fail --max-time 15 \
+             "${{ steps.meta.outputs.hook }}" \
+          | sed -e 's/^/Discord → /'
+      env:
+        WEBHOOK_PUBLIC:  ${{ secrets.WEBHOOK_PUBLIC }}
+        WEBHOOK_PATRON:  ${{ secrets.WEBHOOK_PATRON }}
+
+    - name: Flag failure
+      if: failure()
+      run: echo "::error ::Discord webhook returned an error (check URL / permissions)"
