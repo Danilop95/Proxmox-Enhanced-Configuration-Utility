@@ -292,9 +292,9 @@ enable_iommu() {
     local vendor=$(grep -m1 'vendor_id' /proc/cpuinfo | awk -F':' '{print $2}' | xargs)
     if [[ -f "/etc/default/grub" ]]; then
         if [[ "$vendor" == "GenuineIntel" ]]; then
-            sed -i 's|\(GRUB_CMDLINE_LINUX_DEFAULT="[^"]*)|\1 intel_iommu=on iommu=pt|' /etc/default/grub
+            sed -i 's|\(GRUB_CMDLINE_LINUX_DEFAULT="[^"]*\)|\1 intel_iommu=on iommu=pt|' /etc/default/grub
         else
-            sed -i 's|\(GRUB_CMDLINE_LINUX_DEFAULT="[^"]*)|\1 amd_iommu=on iommu=pt|' /etc/default/grub
+            sed -i 's|\(GRUB_CMDLINE_LINUX_DEFAULT="[^"]*\)|\1 amd_iommu=on iommu=pt|' /etc/default/grub
         fi
         update-grub &>/dev/null
     elif [[ -f "/etc/kernel/cmdline" ]]; then
