@@ -1,0 +1,61 @@
+# PECU - Proxmox Enhanced Configuration Utility
+# Robots.txt for pecu.tools
+# Last updated: 2024
+
+User-agent: *
+Allow: /
+Allow: /premium.html
+Allow: /releases.html
+
+# Premium content - allowed for indexing
+Allow: /premium/
+
+# Security - Block sensitive areas
+Disallow: /api/
+Disallow: /.git/
+Disallow: /.github/
+Disallow: /node_modules/
+Disallow: /src/
+Disallow: /dev/
+Disallow: /test/
+Disallow: /temp/
+Disallow: /tmp/
+
+# Block common attack vectors
+Disallow: /wp-admin/
+Disallow: /admin/
+Disallow: /phpmyadmin/
+Disallow: /wp-login.php
+Disallow: /wp-config.php
+
+# Allow all major search engines
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+User-agent: Baiduspider
+Allow: /
+
+User-agent: YandexBot
+Allow: /
+
+# Block aggressive crawlers
+User-agent: AhrefsBot
+Crawl-delay: 10
+
+User-agent: MJ12bot
+Crawl-delay: 10
+
+User-agent: SemrushBot
+Crawl-delay: 10
+
+# Sitemap
+Sitemap: https://pecu.tools/sitemap.xml

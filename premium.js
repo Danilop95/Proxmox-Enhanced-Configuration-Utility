@@ -10,9 +10,10 @@
       VALIDATE: '/api/v1/license/validate',
       HEALTH: '/api/v1/health'
     },
-    TIMEOUT: 30000, // 30 seconds
+    TIMEOUT: 15000, // 15 seconds
     RETRY_ATTEMPTS: 3,
     RETRY_DELAY: 1000, // 1 second
+    CACHE_DURATION: 5 * 60 * 1000, // 5 minutes
   };
 
   // ═══════════════════════════════════════════════════════════════════════════════
@@ -21,11 +22,23 @@
   const Utils = {
     // Format license key with dashes
     formatLicenseKey: (key) => {
-      const cleaned = key.replace(/[^A-Z0-9]/g, '');
-      if (cleaned.length <= 4) return cleaned;
+      const cleaned = key.replace(/[^A-Z0-9]/g, '').toUpperCase();
       
-      const formatted = cleaned.match(/.{1,4}/g).join('-');
-      return formatted.toUpperCase();
+      // Add PECU prefix if not present
+      const withPrefix = cleaned.startsWith('PECU') ? cleaned : 'PECU' + cleaned;
+      
+      // Format as PECU-XXXX-XXXX-XXXX-XXXX
+      const parts = [];
+      for (let i = 0; i < withPrefix.length; i += 4) {
+        parts.push(withPrefix.substr(i, 4));
+      }
+      
+      // Ensure we have exactly 5 parts (PECU + 4 groups of 4)
+      while (parts.length < 5) {
+        parts.push('');
+      }
+      
+      return parts.slice(0, 5).join('-');
     },
 
     // Validate license key format
@@ -74,7 +87,7 @@
     // Sleep function
     sleep: (ms) => new Promise(resolve => setTimeout(resolve, ms)),
 
-    // Copy to clipboard
+    // Copy to clipboard with feedback
     copyToClipboard: async (text) => {
       try {
         await navigator.clipboard.writeText(text);
@@ -85,12 +98,49 @@
         textarea.value = text;
         textarea.style.position = 'fixed';
         textarea.style.opacity = '0';
+        textarea.style.left = '-9999px';
         document.body.appendChild(textarea);
         textarea.select();
         const success = document.execCommand('copy');
         document.body.removeChild(textarea);
         return success;
       }
+    },
+
+    // Cache management
+    setCache: (key, data) => {
+      try {
+        localStorage.setItem(`pecu_premium_${key}`, JSON.stringify({
+          data,
+          timestamp: Date.now()
+        }));
+      } catch (e) {
+        console.warn('Failed to cache data:', e);
+      }
+    },
+
+    getCache: (key) => {
+      try {
+        const cached = localStorage.getItem(`pecu_premium_${key}`);
+        if (!cached) return null;
+        const { data, timestamp } = JSON.parse(cached);
+        if (Date.now() - timestamp > CONFIG.CACHE_DURATION) return null;
+        return data;
+      } catch (e) {
+        return null;
+      }
+    },
+
+    // Validate email format
+    isValidEmail: (email) => {
+      const pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return pattern.test(email);
+    },
+
+    // Truncate text
+    truncate: (text, length = 50) => {
+      if (!text || text.length <= length) return text || '';
+      return text.substring(0, length) + '...';
     }
   };
 
@@ -106,7 +156,7 @@
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'User-Agent': 'PECU-Web/1.0'
+          'User-Agent': 'PECU-Premium-Web/1.0'
         },
         timeout: CONFIG.TIMEOUT
       };
@@ -125,8 +175,20 @@
 
           clearTimeout(timeoutId);
 
+          const contentType = response.headers.get('content-type');
           if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+            
+            if (contentType && contentType.includes('application/json')) {
+              try {
+                const errorData = await response.json();
+                errorMessage = errorData.error || errorData.message || errorMessage;
+              } catch (e) {
+                // Ignore JSON parse errors for error responses
+              }
+            }
+            
+            throw new Error(errorMessage);
           }
 
           const data = await response.json();
@@ -143,14 +205,21 @@
             };
           }
 
-          // Wait before retry
-          await Utils.sleep(CONFIG.RETRY_DELAY * attempt);
+          // Wait before retry with exponential backoff
+          await Utils.sleep(CONFIG.RETRY_DELAY * Math.pow(2, attempt - 1));
         }
       }
     },
 
     // Validate license
     async validateLicense(licenseKey, hardwareHash = 'browser-check') {
+      // Check cache first
+      const cacheKey = `validate_${licenseKey}`;
+      const cached = Utils.getCache(cacheKey);
+      if (cached) {
+        return { success: true, data: cached };
+      }
+
       const response = await this.request(CONFIG.ENDPOINTS.VALIDATE, {
         method: 'POST',
         body: JSON.stringify({
@@ -159,12 +228,28 @@
         })
       });
 
+      // Cache successful validations
+      if (response.success && response.data.valid) {
+        Utils.setCache(cacheKey, response.data);
+      }
+
       return response;
     },
 
     // Check API health
     async checkHealth() {
+      const cacheKey = 'health_check';
+      const cached = Utils.getCache(cacheKey);
+      if (cached) {
+        return { success: true, data: cached };
+      }
+
       const response = await this.request(CONFIG.ENDPOINTS.HEALTH);
+      
+      if (response.success) {
+        Utils.setCache(cacheKey, response.data);
+      }
+      
       return response;
     }
   };
