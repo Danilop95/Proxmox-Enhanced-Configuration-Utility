@@ -73,6 +73,10 @@
           <i class="fas fa-rocket"></i>
           Get Started
         </a>
+        <a href="/premium.html" class="btn" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;">
+          <i class="fas fa-crown"></i>
+          Premium
+        </a>
         <a href="#" id="github-link" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
           <i class="fab fa-github"></i>
           View on GitHub
@@ -171,6 +175,29 @@
           </p>
           <div id="latest-release-install" class="command-block">
             <code class="skeleton" style="height: 80px; width: 100%;"></code>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Premium Banner -->
+    <section style="padding: var(--space-2xl) 0;">
+      <div class="card" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border: 1px solid rgba(102, 126, 234, 0.3); text-align: center;">
+        <div style="display: flex; align-items: center; justify-content: center; gap: var(--space-md); flex-wrap: wrap;">
+          <div style="flex: 1; min-width: 300px;">
+            <h3 style="margin-bottom: var(--space-sm); background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">
+              <i class="fas fa-crown"></i>
+              Unlock Premium Features
+            </h3>
+            <p style="color: var(--pecu-gray-light); margin-bottom: 0;">
+              Get access to advanced configurations, automated setups, performance monitoring, and priority support
+            </p>
+          </div>
+          <div>
+            <a href="/premium.html" class="btn btn-primary" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); white-space: nowrap;">
+              <i class="fas fa-rocket"></i>
+              Learn More
+            </a>
           </div>
         </div>
       </div>
@@ -517,28 +544,40 @@
       <div class="card" style="text-align: center;">
         <h3 style="margin-bottom: var(--space-md);">Like PECU?</h3>
         <p style="color: var(--pecu-gray-light); margin-bottom: var(--space-xl); max-width: 600px; margin-left: auto; margin-right: auto;">
-          If PECU has been useful to you, consider supporting the development to keep the project active 
-          and add new features.
+          Support the development and unlock premium features for advanced Proxmox configurations.
         </p>
+        
+        <div class="flex-center gap-lg" style="flex-wrap: wrap; margin-bottom: var(--space-lg);">
+          <a href="/premium.html" 
+             class="btn btn-primary" 
+             style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-size: 1.1rem; padding: 16px 32px;">
+            <i class="fas fa-crown"></i>
+            Get PECU Premium
+          </a>
+        </div>
+        
+        <div style="color: var(--pecu-gray-light); margin-bottom: var(--space-lg);">
+          <small>Or support with a one-time donation:</small>
+        </div>
         
         <div class="flex-center gap-lg" style="flex-wrap: wrap;">
           <a href="https://buymeacoffee.com/danilop95pS" 
              target="_blank" rel="noopener noreferrer" 
-             class="btn btn-primary" 
+             class="btn btn-secondary" 
              style="background: linear-gradient(135deg, #FFDD00, #FF6B35);">
             <i class="fas fa-coffee"></i>
             Buy Me a Coffee
           </a>
           <a href="https://patreon.com/c/DVNILXP95" 
              target="_blank" rel="noopener noreferrer" 
-             class="btn btn-primary"
+             class="btn btn-secondary"
              style="background: linear-gradient(135deg, #F96854, #FF424D);">
             <i class="fab fa-patreon"></i>
             Patreon
           </a>
           <a href="#" id="star-repo-link"
              target="_blank" rel="noopener noreferrer" 
-             class="btn btn-secondary">
+             class="btn btn-ghost">
             <i class="fas fa-star"></i>
             Give it a star
           </a>

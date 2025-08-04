@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PECU Premium - License Activation</title>
+  <meta name="description" content="Activate your PECU Premium license and access advanced features for Proxmox Enhanced Configuration Utility">
+  <meta name="keywords" content="PECU Premium, License, Activation, Proxmox, GPU Passthrough, Advanced Features">
+  <meta name="author" content="Danilop95">
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pecu.tools/premium">
+  <meta property="og:title" content="PECU Premium - License Activation">
+  <meta property="og:description" content="Activate your PECU Premium license and access advanced features">
+  <meta property="og:image" content="https://opengraph.githubassets.com/1/Danilop95/Proxmox-Enhanced-Configuration-Utility">
+  
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://pecu.tools/premium">
+  <meta property="twitter:title" content="PECU Premium - License Activation">
+  <meta property="twitter:description" content="Activate your PECU Premium license and access advanced features">
+  <meta property="twitter:image" content="https://opengraph.githubassets.com/1/Danilop95/Proxmox-Enhanced-Configuration-Utility">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💎</text></svg>">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="styles.css">
+  
+  <style>
+    .premium-gradient {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .premium-card {
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+      border: 1px solid rgba(102, 126, 234, 0.3);
+      backdrop-filter: blur(10px);
+    }
+    
+    .license-input {
+      width: 100%;
+      padding: 16px;
+      background: var(--pecu-dark-2);
+      border: 2px solid var(--pecu-dark-3);
+      border-radius: var(--radius-md);
+      color: var(--pecu-gray-lightest);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.1rem;
+      letter-spacing: 1px;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+    
+    .license-input:focus {
+      outline: none;
+      border-color: var(--pecu-blue);
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    }
+    
+    .status-message {
+      padding: 16px;
+      border-radius: var(--radius-md);
+      margin-top: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+    }
+    
+    .status-success {
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      color: var(--pecu-green);
+    }
+    
+    .status-error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: var(--pecu-red);
+    }
+    
+    .status-loading {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      color: var(--pecu-blue);
+    }
+    
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: var(--space-lg);
+      margin-top: var(--space-2xl);
+    }
+    
+    .feature-card {
+      background: var(--pecu-dark-2);
+      border: 1px solid var(--pecu-dark-3);
+      border-radius: var(--radius-lg);
+      padding: var(--space-xl);
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+    
+    .feature-card:hover {
+      border-color: var(--pecu-blue);
+      transform: translateY(-4px);
+    }
+    
+    .feature-icon {
+      font-size: 2.5rem;
+      margin-bottom: var(--space-md);
+      background: linear-gradient(135deg, var(--pecu-blue), var(--pecu-purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .plan-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      background: linear-gradient(135deg, var(--pecu-purple), var(--pecu-blue));
+      color: white;
+      border-radius: 16px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-left: 8px;
+    }
+    
+    .pricing-section {
+      background: var(--pecu-dark-2);
+      border: 1px solid var(--pecu-dark-3);
+      border-radius: var(--radius-lg);
+      padding: var(--space-2xl);
+      margin-top: var(--space-2xl);
+      text-align: center;
+    }
+    
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: var(--space-xl);
+      margin-top: var(--space-xl);
+    }
+    
+    .pricing-card {
+      background: var(--pecu-dark-1);
+      border: 2px solid var(--pecu-dark-3);
+      border-radius: var(--radius-lg);
+      padding: var(--space-2xl);
+      position: relative;
+      transition: all 0.3s ease;
+    }
+    
+    .pricing-card.recommended {
+      border-color: var(--pecu-blue);
+      transform: scale(1.05);
+    }
+    
+    .pricing-card.recommended::before {
+      content: "Most Popular";
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, var(--pecu-blue), var(--pecu-purple));
+      color: white;
+      padding: 6px 20px;
+      border-radius: 16px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    
+    .price {
+      font-size: 3rem;
+      font-weight: 800;
+      color: var(--pecu-gray-lightest);
+      margin: var(--space-md) 0;
+    }
+    
+    .price-currency {
+      font-size: 1.5rem;
+      vertical-align: top;
+    }
+    
+    .price-period {
+      font-size: 1rem;
+      color: var(--pecu-gray-light);
+      font-weight: 400;
+    }
+    
+    .pricing-features {
+      list-style: none;
+      padding: 0;
+      margin: var(--space-xl) 0;
+    }
+    
+    .pricing-features li {
+      padding: var(--space-sm) 0;
+      border-bottom: 1px solid var(--pecu-dark-3);
+      display: flex;
+      align-items: center;
+    }
+    
+    .pricing-features li:last-child {
+      border-bottom: none;
+    }
+    
+    .pricing-features i {
+      color: var(--pecu-green);
+      margin-right: var(--space-sm);
+      width: 16px;
+    }
+    
+    @media (max-width: 768px) {
+      .pricing-card.recommended {
+        transform: none;
+      }
+      
+      .feature-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .pricing-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav style="padding: var(--space-lg) 0; border-bottom: 1px solid var(--pecu-dark-3);">
+    <div class="container">
+      <div class="flex-between">
+        <a href="/" style="text-decoration: none;">
+          <h2 class="gradient-text" style="margin: 0;">
+            <i class="fas fa-bolt"></i>
+            PECU
+          </h2>
+        </a>
+        <div class="flex gap-md">
+          <a href="/" class="btn btn-ghost">
+            <i class="fas fa-home"></i>
+            Home
+          </a>
+          <a href="/releases.html" class="btn btn-ghost">
+            <i class="fas fa-download"></i>
+            Releases
+          </a>
+          <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility" target="_blank" rel="noopener noreferrer" class="btn btn-ghost">
+            <i class="fab fa-github"></i>
+            GitHub
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <header style="padding: var(--space-3xl) 0; text-align: center;">
+    <div class="container">
+      <div style="max-width: 800px; margin: 0 auto;">
+        <h1 class="premium-gradient" style="font-size: 3.5rem; font-weight: 800; margin-bottom: var(--space-lg);">
+          <i class="fas fa-crown"></i>
+          PECU Premium
+        </h1>
+        <p style="font-size: 1.25rem; color: var(--pecu-gray-light); margin-bottom: var(--space-2xl); line-height: 1.6;">
+          Unlock advanced features and priority support for your Proxmox infrastructure. 
+          Get access to exclusive tools, automated configurations, and enterprise-grade functionality.
+        </p>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="max-width: 1200px;">
+    <!-- License Activation Section -->
+    <section class="section">
+      <div class="premium-card card" style="max-width: 600px; margin: 0 auto;">
+        <h2 style="text-align: center; margin-bottom: var(--space-xl);">
+          <i class="fas fa-key" style="color: var(--pecu-blue);"></i>
+          License Activation
+        </h2>
+        
+        <div id="license-form">
+          <p style="color: var(--pecu-gray-light); margin-bottom: var(--space-lg); text-align: center;">
+            Enter your license key below to validate your PECU Premium subscription.
+            <br>
+            <small>You can find your license key in the email receipt from your purchase.</small>
+          </p>
+          
+          <input 
+            type="text" 
+            id="license-input" 
+            class="license-input"
+            placeholder="PECU-XXXX-XXXX-XXXX-XXXX"
+            maxlength="24"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          
+          <button id="validate-btn" class="btn btn-primary" style="width: 100%; margin-top: var(--space-lg); padding: 16px;">
+            <i class="fas fa-check-circle"></i>
+            Validate License
+          </button>
+          
+          <div id="validation-result"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Installation Instructions -->
+    <section class="section">
+      <div class="card" style="max-width: 800px; margin: 0 auto;">
+        <h2 style="text-align: center; margin-bottom: var(--space-xl);">
+          <i class="fas fa-terminal" style="color: var(--pecu-green);"></i>
+          Next Steps
+        </h2>
+        
+        <div style="margin-bottom: var(--space-xl);">
+          <h3 style="margin-bottom: var(--space-md); color: var(--pecu-blue);">
+            <i class="fas fa-rocket"></i>
+            Run PECU with Premium Access
+          </h3>
+          <p style="color: var(--pecu-gray-light); margin-bottom: var(--space-lg);">
+            Use the PECU Release Selector and enter your license when prompted:
+          </p>
+          <div class="command-block">
+            <code>bash &lt;(curl -sL https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/refs/heads/main/scripts/pecu_release_selector.sh)</code>
+            <button class="copy-button" data-command="bash <(curl -sL https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/refs/heads/main/scripts/pecu_release_selector.sh)" aria-label="Copy command">
+              <i class="fas fa-copy"></i>
+            </button>
+          </div>
+        </div>
+
+        <div style="background: var(--pecu-dark-2); border-radius: var(--radius-md); padding: var(--space-lg); border-left: 4px solid var(--pecu-blue);">
+          <h4 style="color: var(--pecu-blue); margin-bottom: var(--space-md);">
+            <i class="fas fa-info-circle"></i>
+            How it works:
+          </h4>
+          <ol style="color: var(--pecu-gray-light); line-height: 1.8; padding-left: var(--space-lg);">
+            <li>Run the command above on your Proxmox server</li>
+            <li>Select "P) Premium releases" from the menu</li>
+            <li>Enter your license key when prompted</li>
+            <li>Choose from available premium releases</li>
+            <li>Enjoy advanced features and priority support!</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- Premium Features -->
+    <section class="section">
+      <h2 class="gradient-text" style="text-align: center; margin-bottom: var(--space-xl);">
+        Premium Features
+      </h2>
+      
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i class="fas fa-robot"></i>
+          </div>
+          <h3 style="margin-bottom: var(--space-md);">Automated Configurations</h3>
+          <p style="color: var(--pecu-gray-light);">
+            Pre-configured templates for common enterprise setups. One-click deployment for GPU clusters, 
+            storage optimization, and network configurations.
+          </p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i class="fas fa-shield-alt"></i>
+          </div>
+          <h3 style="margin-bottom: var(--space-md);">Advanced Security</h3>
+          <p style="color: var(--pecu-gray-light);">
+            Enhanced security hardening, automatic backup encryption, 
+            compliance templates for GDPR/HIPAA, and security audit tools.
+          </p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i class="fas fa-chart-line"></i>
+          </div>
+          <h3 style="margin-bottom: var(--space-md);">Performance Monitoring</h3>
+          <p style="color: var(--pecu-gray-light);">
+            Real-time performance analytics, GPU utilization tracking, 
+            resource optimization suggestions, and detailed reporting.
+          </p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i class="fas fa-users"></i>
+          </div>
+          <h3 style="margin-bottom: var(--space-md);">Priority Support</h3>
+          <p style="color: var(--pecu-gray-light);">
+            Direct access to the development team, priority issue resolution, 
+            custom configuration assistance, and exclusive Discord channel.
+          </p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i class="fas fa-cloud"></i>
+          </div>
+          <h3 style="margin-bottom: var(--space-md);">Cloud Integration</h3>
+          <p style="color: var(--pecu-gray-light);">
+            Seamless integration with AWS, Azure, Google Cloud. 
+            Hybrid cloud management and automated disaster recovery.
+          </p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i class="fas fa-cogs"></i>
+          </div>
+          <h3 style="margin-bottom: var(--space-md);">Advanced GPU Features</h3>
+          <p style="color: var(--pecu-gray-light);">
+            Multi-GPU orchestration, dynamic GPU allocation, 
+            CUDA toolkit management, and AI/ML workload optimization.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="section">
+      <div class="pricing-section">
+        <h2 class="gradient-text-secondary" style="margin-bottom: var(--space-md);">
+          Choose Your Plan
+        </h2>
+        <p style="color: var(--pecu-gray-light); font-size: 1.1rem; margin-bottom: var(--space-xl);">
+          Flexible pricing options for individuals and teams
+        </p>
+        
+        <div class="pricing-grid">
+          <!-- Monthly Plan -->
+          <div class="pricing-card">
+            <h3 style="color: var(--pecu-blue); margin-bottom: var(--space-sm);">
+              Monthly
+            </h3>
+            <div class="price">
+              <span class="price-currency">€</span>3,99
+              <span class="price-period">/month</span>
+            </div>
+            <p style="color: var(--pecu-gray-light); margin-bottom: var(--space-lg);">
+              Perfect for testing and small deployments
+            </p>
+            <ul class="pricing-features">
+              <li><i class="fas fa-check"></i> All premium features</li>
+              <li><i class="fas fa-check"></i> Priority support</li>
+              <li><i class="fas fa-check"></i> Advanced configurations</li>
+              <li><i class="fas fa-check"></i> Performance monitoring</li>
+              <li><i class="fas fa-check"></i> Cloud integrations</li>
+              <li><i class="fas fa-check"></i> Regular updates</li>
+            </ul>
+            <a href="https://danilop95.lemonsqueezy.com/checkout/buy/monthly-plan-id" 
+               target="_blank" 
+               rel="noopener noreferrer" 
+               class="btn btn-secondary" 
+               style="width: 100%;">
+              <i class="fas fa-credit-card"></i>
+              Get Monthly Plan
+            </a>
+          </div>
+          
+          <!-- Annual Plan -->
+          <div class="pricing-card recommended">
+            <h3 style="color: var(--pecu-purple); margin-bottom: var(--space-sm);">
+              Annual
+              <span class="plan-badge">Save 69%</span>
+            </h3>
+            <div class="price">
+              <span class="price-currency">€</span>14,99
+              <span class="price-period">/year</span>
+            </div>
+            <p style="color: var(--pecu-gray-light); margin-bottom: var(--space-lg);">
+              Best value for production environments
+            </p>
+            <ul class="pricing-features">
+              <li><i class="fas fa-check"></i> All premium features</li>
+              <li><i class="fas fa-check"></i> Priority support</li>
+              <li><i class="fas fa-check"></i> Advanced configurations</li>
+              <li><i class="fas fa-check"></i> Performance monitoring</li>
+              <li><i class="fas fa-check"></i> Cloud integrations</li>
+              <li><i class="fas fa-check"></i> Regular updates</li>
+              <li><i class="fas fa-star" style="color: var(--pecu-yellow);"></i> Exclusive Discord access</li>
+              <li><i class="fas fa-star" style="color: var(--pecu-yellow);"></i> Custom configuration help</li>
+            </ul>
+            <a href="https://danilop95.lemonsqueezy.com/checkout/buy/annual-plan-id" 
+               target="_blank" 
+               rel="noopener noreferrer" 
+               class="btn btn-primary" 
+               style="width: 100%;">
+              <i class="fas fa-crown"></i>
+              Get Annual Plan
+            </a>
+          </div>
+        </div>
+        
+        <div style="margin-top: var(--space-2xl); padding: var(--space-lg); background: var(--pecu-dark-1); border-radius: var(--radius-md);">
+          <p style="color: var(--pecu-gray-light); text-align: center; margin: 0;">
+            <i class="fas fa-shield-alt" style="color: var(--pecu-green);"></i>
+            <strong>30-day money-back guarantee</strong> • 
+            <i class="fas fa-credit-card" style="color: var(--pecu-blue);"></i>
+            Secure payment processing • 
+            <i class="fas fa-sync-alt" style="color: var(--pecu-purple);"></i>
+            Cancel anytime
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="section">
+      <h2 class="gradient-text-accent" style="text-align: center; margin-bottom: var(--space-xl);">
+        Frequently Asked Questions
+      </h2>
+      
+      <div style="max-width: 800px; margin: 0 auto;">
+        <div class="card" style="margin-bottom: var(--space-lg);">
+          <h3 style="color: var(--pecu-blue); margin-bottom: var(--space-md);">
+            How does the licensing work?
+          </h3>
+          <p style="color: var(--pecu-gray-light); line-height: 1.6;">
+            Each license is tied to your hardware and allows you to use PECU Premium on one Proxmox server. 
+            You can transfer your license to a new server if needed by contacting support.
+          </p>
+        </div>
+        
+        <div class="card" style="margin-bottom: var(--space-lg);">
+          <h3 style="color: var(--pecu-blue); margin-bottom: var(--space-md);">
+            What's included in premium features?
+          </h3>
+          <p style="color: var(--pecu-gray-light); line-height: 1.6;">
+            Premium includes automated configurations, advanced security tools, performance monitoring, 
+            priority support, cloud integrations, and exclusive access to new features before public release.
+          </p>
+        </div>
+        
+        <div class="card" style="margin-bottom: var(--space-lg);">
+          <h3 style="color: var(--pecu-blue); margin-bottom: var(--space-md);">
+            Can I use it in commercial environments?
+          </h3>
+          <p style="color: var(--pecu-gray-light); line-height: 1.6;">
+            Yes! PECU Premium is designed for both personal and commercial use. 
+            We offer volume discounts for organizations with multiple servers.
+          </p>
+        </div>
+        
+        <div class="card">
+          <h3 style="color: var(--pecu-blue); margin-bottom: var(--space-md);">
+            What if I need help with configuration?
+          </h3>
+          <p style="color: var(--pecu-gray-light); line-height: 1.6;">
+            Premium subscribers get priority support through our Discord channel and email. 
+            We also offer one-on-one configuration assistance for complex setups.
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer style="border-top: 1px solid var(--pecu-dark-3); padding: var(--space-xl) 0; margin-top: var(--space-3xl);">
+    <div class="container">
+      <div class="flex-between" style="flex-wrap: wrap; gap: var(--space-md);">
+        <div>
+          <p style="color: var(--pecu-gray-light); margin-bottom: var(--space-xs);">
+            © 2025 PECU Premium - Proxmox Enhanced Configuration Utility
+          </p>
+          <p style="color: var(--pecu-gray-light); font-size: 0.875rem;">
+            Licensed under GPL-3.0 • Made with ❤️ by 
+            <a href="https://github.com/Danilop95" target="_blank" rel="noopener noreferrer" style="color: var(--pecu-blue);">
+              Danilop95
+            </a>
+          </p>
+        </div>
+        <div class="flex gap-md">
+          <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility"
+             target="_blank" rel="noopener noreferrer" 
+             style="color: var(--pecu-gray-light); font-size: 1.5rem;" 
+             aria-label="GitHub">
+            <i class="fab fa-github"></i>
+          </a>
+          <a href="https://discord.gg/euQTVNc2xg" 
+             target="_blank" rel="noopener noreferrer" 
+             style="color: var(--pecu-gray-light); font-size: 1.5rem;" 
+             aria-label="Discord">
+            <i class="fab fa-discord"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- JavaScript -->
+  <script src="premium.js"></script>
+</body>
+</html>
