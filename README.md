@@ -3,30 +3,22 @@
   <br>
   Proxmox-Enhanced-Configuration-Utility<br><sub>( PECU )</sub>
 </h1>
-## Features
 
-| Category              | Highlights                                                                               |
-| --------------------- | ---------------------------------------------------------------------------------------- |
-| **Repositories**      | Backup / restore `sources.list`, add "non-subscription" repo, edit with Nano.            |
-| **GPU Passthrough**   | Wizard-style setup for NVIDIA, AMD, Intel; supports driverctl override; rollback option. |
-| **Kernel Tweaks**     | Add `pcie_acs_override`, `video=efifb:off`, or custom flags with risk prompts.           |
-| **Multi-GPU**         | Detects multiple GPUs and lets you choose the one to passthrough.                        |
-| **Intel iGPU (test)** | Experimental automatic isolation of iGPU functions.                                      |
-| **VM Templates**      | Declarative YAML templates with CLI tools for common VM configurations.                  |
-| **Template Validation** | JSON Schema validation and CI/CD integration for template quality assurance.           |
-| **Proxmox 9.x**       | Full support for the latest Proxmox VE 9.x series with enhanced compatibility and performance optimizations. |
-| **Logging**           | Detailed `/var/log/pecu.log` with timestamps and automatic log rotation.                 |="center">
+<p align="center">
   <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/actions">
-    <img src="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/actions/workflows/release.yml/badge.svg" alt="CI Status"></a>
+    <img src="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/actions/workflows/release.yml/badge.svg" alt="CI Status">
+  </a>
   <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/wiki">
-    <img src="https://img.shields.io/badge/wiki-up%20to%20date-blue?logo=read-the-docs" alt="Wiki"></a>
+    <img src="https://img.shields.io/badge/wiki-up%20to%20date-blue?logo=read-the-docs" alt="Wiki">
+  </a>
   <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/releases">
-    <img src="https://img.shields.io/github/v/release/Danilop95/Proxmox-Enhanced-Configuration-Utility?include_prereleases" alt="Latest release"></a>
+    <img src="https://img.shields.io/github/v/release/Danilop95/Proxmox-Enhanced-Configuration-Utility?include_prereleases" alt="Latest release">
+  </a>
   <a href="LICENSE">
-    <img src="https://img.shields.io/github/license/Danilop95/Proxmox-Enhanced-Configuration-Utility" alt="License"></a>
+    <img src="https://img.shields.io/github/license/Danilop95/Proxmox-Enhanced-Configuration-Utility" alt="License">
+  </a>
 </p>
 
----
 
 ## Table of Contents
 - [Overview](#overview)
@@ -182,14 +174,20 @@ See [templates/README.md](templates/README.md) for detailed documentation.
 
 | Category              | Highlights                                                                               |
 | --------------------- | ---------------------------------------------------------------------------------------- |
-| **Repositories**      | Backup / restore `sources.list`, add “non-subscription” repo, edit with Nano.            |
+| **Repositories**      | Backup / restore `sources.list`, add "non-subscription" repo, edit with Nano.            |
 | **GPU Passthrough**   | Wizard-style setup for NVIDIA, AMD, Intel; supports driverctl override; rollback option. |
 | **Kernel Tweaks**     | Add `pcie_acs_override`, `video=efifb:off`, or custom flags with risk prompts.           |
 | **Multi-GPU**         | Detects multiple GPUs and lets you choose the one to passthrough.                        |
 | **Intel iGPU (test)** | Experimental automatic isolation of iGPU functions.                                      |
-| **Logging**           | Detailed `/var/log/pecu.log` with timestamps.                                            |
+| **VM Templates**      | Declarative YAML templates with CLI tools for common VM configurations.                  |
+| **Template Validation** | JSON Schema validation and CI/CD integration for template quality assurance.           |
+| **Proxmox 9.x**       | Full support for the latest Proxmox VE 9.x series with enhanced compatibility and performance optimizations. |
+| **Logging**           | Detailed `/var/log/pecu.log` with timestamps and automatic log rotation.                 |="center">
 
 ---
+
+---
+
 
 ## Community & Contribution
 
