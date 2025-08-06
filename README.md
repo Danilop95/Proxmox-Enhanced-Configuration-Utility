@@ -14,7 +14,7 @@
 | **Intel iGPU (test)** | Experimental automatic isolation of iGPU functions.                                      |
 | **VM Templates**      | Declarative YAML templates with CLI tools for common VM configurations.                  |
 | **Template Validation** | JSON Schema validation and CI/CD integration for template quality assurance.           |
-| **Proxmox 9.0**       | Full support for the latest Proxmox VE 9.0 with Debian Trixie compatibility.           |
+| **Proxmox 9.x**       | Full support for the latest Proxmox VE 9.x series with enhanced compatibility and performance optimizations. |
 | **Logging**           | Detailed `/var/log/pecu.log` with timestamps and automatic log rotation.                 |="center">
   <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/actions">
     <img src="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/actions/workflows/release.yml/badge.svg" alt="CI Status"></a>
@@ -52,7 +52,7 @@ as painless as possible:
 * reversible operations (backup / rollback built-in)  
 * auto-detects NVIDIA, AMD **and** Intel iGPUs out of the box  
 * **NEW**: declarative VM template system with CLI management tools
-* **NEW**: full Proxmox VE 9.0 support with enhanced compatibility  
+* **NEW**: full Proxmox VE 9.x series support with enhanced compatibility and performance optimizations  
 
 ---
 
@@ -63,7 +63,7 @@ as painless as possible:
 
 |                              |                                                                                                                                                                                                                                           |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Platform**                 | <img src="https://img.shields.io/badge/Proxmox VE-7.x %2F 8.x %2F 9.x-000000?style=for-the-badge&logo=proxmox&logoColor=white" alt="Proxmox 7 / 8 / 9 badge"> *(tested weekly on the latest ISO)*                                      |
+| **Platform**                 | <img src="https://img.shields.io/badge/Proxmox VE-7.x %2F 8.x %2F 9.x-000000?style=for-the-badge&logo=proxmox&logoColor=white" alt="Proxmox 7 / 8 / 9 badge"> *(fully supports latest Proxmox VE 9.x with enhanced compatibility)*     |
 | **CPU arch**                 | <img src="https://img.shields.io/badge/x86--64-required-6A737D?style=for-the-badge">                                                                                                                                                      |
 | **Privileges**               | <img src="https://img.shields.io/badge/root_or_sudo-required-E74C3C?style=for-the-badge" alt="root badge">                                                                                                                                                                                                              
 
@@ -89,12 +89,18 @@ bash <(curl -sL \https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Co
 #### Release Selector
 
 <p align="center">
-  <img src="doc/img/pecu_release_selector.png" width="90%" alt="PECU selector in action">
+  <img src="doc/img/pecu_release_selector.png" width="90%" alt="PECU Release Selector - Standard View">
+</p>
+
+#### Release Selector - Premium Interface
+
+<p align="center">
+  <img src="doc/img/pecu_release_selector-premium.png" width="90%" alt="PECU Release Selector - Premium Interface">
 </p>
 
 #### PECU-Script
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/efeeff90-543b-4905-9b42-dbcf10647129" width="90%" alt="PECU selector in action">
+  <img src="https://github.com/user-attachments/assets/efeeff90-543b-4905-9b42-dbcf10647129" width="90%" alt="PECU Script Interface">
 </p>
 
 ---
