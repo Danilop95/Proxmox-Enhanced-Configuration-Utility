@@ -1,14 +1,32 @@
+# Ignore everything by default
 *
-!scripts/
-!release-notes/
-!src/
+
+# Include important project files
 !LICENSE
 !README.md
-!release-notes/release-notes.md
+!SECURITY.md
+!.gitignore
+
+# Include configuration files
+!.pre-commit-config.yaml
+!.yamllint.yaml
+
+# Include GitHub configuration
+!.github/
+!.github/**
+
+# Include documentation
 !doc/
 !doc/**
-!scripts/pecu_release_selector.sh
-!scripts/pecu_release_selector_old.sh
-!scripts/versions.conf
-!src/proxmox-configurator.sh
-!.gitignore
+
+# Include scripts
+!scripts/
+!scripts/**
+
+# Include source code
+!src/
+!src/**
+
+# Include templates
+!templates/
+!templates/**

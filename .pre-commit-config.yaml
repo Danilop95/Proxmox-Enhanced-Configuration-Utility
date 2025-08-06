@@ -1,0 +1,17 @@
+repos:
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.35.1
+    hooks:
+      - id: yamllint
+        files: ^templates/
+  - repo: https://github.com/jumanjihouse/pre-commit-hooks
+    rev: 3.0.0
+    hooks:
+      - id: shellcheck
+        files: ^src/tools/
+  - repo: https://github.com/sirosen/check-jsonschema
+    rev: 0.28.6
+    hooks:
+      - id: check-jsonschema
+        files: ^templates/.*\.yaml$
+        args: ["--schemafile", "templates/schemas/template.schema.json"]

@@ -3,9 +3,19 @@
   <br>
   Proxmox-Enhanced-Configuration-Utility<br><sub>( PECU )</sub>
 </h1>
+## Features
 
-
-<p align="center">
+| Category              | Highlights                                                                               |
+| --------------------- | ---------------------------------------------------------------------------------------- |
+| **Repositories**      | Backup / restore `sources.list`, add "non-subscription" repo, edit with Nano.            |
+| **GPU Passthrough**   | Wizard-style setup for NVIDIA, AMD, Intel; supports driverctl override; rollback option. |
+| **Kernel Tweaks**     | Add `pcie_acs_override`, `video=efifb:off`, or custom flags with risk prompts.           |
+| **Multi-GPU**         | Detects multiple GPUs and lets you choose the one to passthrough.                        |
+| **Intel iGPU (test)** | Experimental automatic isolation of iGPU functions.                                      |
+| **VM Templates**      | Declarative YAML templates with CLI tools for common VM configurations.                  |
+| **Template Validation** | JSON Schema validation and CI/CD integration for template quality assurance.           |
+| **Proxmox 9.0**       | Full support for the latest Proxmox VE 9.0 with Debian Trixie compatibility.           |
+| **Logging**           | Detailed `/var/log/pecu.log` with timestamps and automatic log rotation.                 |="center">
   <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/actions">
     <img src="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/actions/workflows/release.yml/badge.svg" alt="CI Status"></a>
   <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/wiki">
@@ -25,6 +35,7 @@
   - [Direct execution (recommended)](#direct-execution-recommended)
   - [Offline / local install](#offline--local-install)
 - [What Is the Release Selector?](#what-is-the-release-selector)
+- [VM Templates System](#vm-templates-system)
 - [Features](#features)
 - [Community & Contribution](#community--contribution)
 - [Support the Project](#support-the-project)
@@ -40,6 +51,8 @@ as painless as possible:
 * interactive menus for repositories, kernel flags, GPU passthrough, etc.  
 * reversible operations (backup / rollback built-in)  
 * auto-detects NVIDIA, AMD **and** Intel iGPUs out of the box  
+* **NEW**: declarative VM template system with CLI management tools
+* **NEW**: full Proxmox VE 9.0 support with enhanced compatibility  
 
 ---
 
@@ -48,11 +61,11 @@ as painless as possible:
 > The selector and the underlying scripts are designed for a **typical, up-to-date Proxmox host**.
 > If your stack falls outside the matrix below, use at your own risk.
 
-|                              |                                                                                                                                                                                                                                           |
+|                              |                                                                                                                                                                                                                                           |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Platform**                 | <img src="https://img.shields.io/badge/Proxmox VE-7.x %2F 8.x-000000?style=for-the-badge&logo=proxmox&logoColor=white" alt="Proxmox 7 / 8 badge"> *(tested weekly on the latest ISO)*                                                     |
+| **Platform**                 | <img src="https://img.shields.io/badge/Proxmox VE-7.x %2F 8.x %2F 9.x-000000?style=for-the-badge&logo=proxmox&logoColor=white" alt="Proxmox 7 / 8 / 9 badge"> *(tested weekly on the latest ISO)*                                      |
 | **CPU arch**                 | <img src="https://img.shields.io/badge/x86--64-required-6A737D?style=for-the-badge">                                                                                                                                                      |
-| **Privileges**               | <img src="https://img.shields.io/badge/root_or_sudo-required-E74C3C?style=for-the-badge" alt="root badge">                                                                                                                               
+| **Privileges**               | <img src="https://img.shields.io/badge/root_or_sudo-required-E74C3C?style=for-the-badge" alt="root badge">                                                                                                                                                                                                              
 
 > **Heads-up** PECU does **not** support ARM / Raspberry Pi builds of Proxmox at this time.
 > Community ports are welcome, but official testing is x86-64 only.
@@ -113,6 +126,49 @@ sudo ./proxmox-configurator.sh
   so I can ship rough prototypes or quick-fix versions without confusing people who only want Stable releases.
 lector.
 * `pecu_release_selector_old.sh` still exists **only as a shim** that `exec`s the new script — **it will be removed on _05 July 2025_**.
+
+---
+
+## VM Templates System
+
+**New in 2025.08** – PECU now includes a declarative VM template system with CLI management tools.
+
+### Template Features
+
+* **Declarative YAML templates** for common VM configurations (Windows Gaming, Linux Workstation, Media Server)
+* **JSON Schema validation** ensuring template consistency and correctness
+* **CLI management** with `templatectl.sh` for listing, validating, rendering, and applying templates
+* **Safe rendering** – view `qm` commands before execution with `--dry-run`
+* **Storage flexibility** – supports `local-lvm`, `local`, and auto-detection
+* **CI/CD ready** – GitHub Actions workflow for automatic validation
+
+### Quick Template Usage
+
+```bash
+# List available templates
+src/tools/templatectl.sh list --channel Stable
+
+# Validate all templates
+src/tools/templatectl.sh validate templates/
+
+# Preview commands (safe, no execution)
+src/tools/templatectl.sh render templates/windows/windows-gaming.yaml \
+  --vmid 200 --storage-pool local-lvm --dry-run
+
+# Apply template (creates VM)
+sudo src/tools/templatectl.sh apply templates/windows/windows-gaming.yaml \
+  --vmid 200 --storage-pool local-lvm
+```
+
+### Available Templates
+
+| Template | Channel | OS Type | Description |
+|----------|---------|---------|-------------|
+| `windows-gaming` | Stable | win11 | Windows 11 VM optimized for gaming with GPU passthrough support |
+| `linux-workstation` | Stable | l26 | Linux workstation for development and productivity |
+| `media-server` | Stable | l26 | Lightweight Linux VM for media services (Plex, Jellyfin, etc.) |
+
+See [templates/README.md](templates/README.md) for detailed documentation.
 
 ---
 

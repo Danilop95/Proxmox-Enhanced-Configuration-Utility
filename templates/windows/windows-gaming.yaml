@@ -1,0 +1,40 @@
+apiVersion: pecu.io/v1
+kind: VMTemplate
+metadata:
+  name: windows-gaming
+  displayName: "Windows Gaming (UEFI, Q35, Win11)"
+  version: "2025.08.06"
+  channel: Stable            # Stable | Beta | Experimental
+  compat:
+    proxmox: ["8.x"]
+spec:
+  vm:
+    ostype: win11
+    name: "win-gaming"
+    cpu: "host,hidden=1,flags=+pcid"
+    sockets: 1
+    cores: 8
+    memoryMiB: 16384
+    chipset: q35
+    bios: ovmf
+    tablet: false
+    args: "-cpu host,kvm=off,hv_vendor_id=proxmox,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time"
+  storage:
+    pool: auto               # auto | local-lvm | local
+    bootdisk:
+      bus: scsi
+      sizeGiB: 120
+      format: raw            # se ignora en local-lvm (LVM-thin)
+    efi:
+      sizeGiB: 1
+      preEnrolledKeys: true
+    tpm:
+      sizeGiB: 1
+      version: "v2.0"
+  network:
+    - model: virtio
+      bridge: vmbr0
+      firewall: true
+  policy:
+    allowMachinePin: false
+    addUsbRootHub: false

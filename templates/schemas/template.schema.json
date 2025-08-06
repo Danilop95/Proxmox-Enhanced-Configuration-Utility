@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PECU VMTemplate",
+  "type": "object",
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "pecu.io/v1" },
+    "kind": { "const": "VMTemplate" },
+    "metadata": {
+      "type": "object",
+      "required": ["name", "version", "channel"],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "displayName": { "type": "string" },
+        "version": { "type": "string" },
+        "channel": { "enum": ["Stable", "Beta", "Experimental"] },
+        "compat": {
+          "type": "object",
+          "properties": {
+            "proxmox": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "spec": {
+      "type": "object",
+      "required": ["vm", "storage", "network", "policy"],
+      "properties": {
+        "vm": {
+          "type": "object",
+          "required": ["ostype", "cpu", "sockets", "cores", "memoryMiB", "chipset", "bios"],
+          "properties": {
+            "ostype": { "type": "string" },
+            "name": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+            "cpu": { "type": "string" },
+            "sockets": { "type": "integer", "minimum": 1 },
+            "cores": { "type": "integer", "minimum": 1 },
+            "memoryMiB": { "type": "integer", "minimum": 256 },
+            "chipset": { "enum": ["q35", "i440fx", "auto"] },
+            "bios": { "enum": ["ovmf", "seabios"] },
+            "tablet": { "type": "boolean" },
+            "args": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        "storage": {
+          "type": "object",
+          "required": ["pool", "bootdisk"],
+          "properties": {
+            "pool": { "enum": ["auto", "local-lvm", "local"] },
+            "bootdisk": {
+              "type": "object",
+              "required": ["bus", "sizeGiB"],
+              "properties": {
+                "bus": { "enum": ["scsi", "virtio", "sata", "ide"] },
+                "sizeGiB": { "type": "integer", "minimum": 8 },
+                "format": { "enum": ["raw", "qcow2"] }
+              },
+              "additionalProperties": false
+            },
+            "efi": {
+              "type": "object",
+              "required": ["sizeGiB"],
+              "properties": {
+                "sizeGiB": { "type": "integer", "minimum": 1 },
+                "preEnrolledKeys": { "type": "boolean" }
+              },
+              "additionalProperties": false
+            },
+            "tpm": {
+              "type": "object",
+              "required": ["sizeGiB", "version"],
+              "properties": {
+                "sizeGiB": { "type": "integer", "minimum": 1 },
+                "version": { "enum": ["v2.0"] }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "network": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["model", "bridge"],
+            "properties": {
+              "model": { "enum": ["virtio", "e1000", "vmxnet3", "rtl8139"] },
+              "bridge": { "type": "string" },
+              "firewall": { "type": "boolean" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "policy": {
+          "type": "object",
+          "required": ["allowMachinePin", "addUsbRootHub"],
+          "properties": {
+            "allowMachinePin": { "type": "boolean" },
+            "addUsbRootHub": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,68 @@
+name: Templates CI
+
+on:
+  pull_request:
+    paths:
+      - 'templates/**'
+      - 'src/tools/templatectl.sh'
+      - 'src/tools/renderers/**'
+  push:
+    branches: [ main ]
+    paths:
+      - 'templates/**'
+      - 'src/tools/templatectl.sh'
+      - 'src/tools/renderers/**'
+
+jobs:
+  lint-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq curl python3 python3-pip shellcheck
+          pip3 install jsonschema pyyaml
+          # yq v4 está en GitHub releases; para CI usamos binario estático
+          YQ_VERSION="v4.44.3"
+          wget -q https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64 -O yq
+          chmod +x yq
+          sudo mv yq /usr/local/bin/yq
+          yq --version
+
+      - name: Yamllint
+        uses: ibiqlik/action-yamllint@v3
+        with:
+          strict: true
+          file_or_dir: templates/
+
+      - name: JSON Schema validate
+        run: |
+          python3 - <<'PY'
+          import sys, json, yaml, glob
+          from jsonschema import Draft202012Validator as V
+          schema = json.load(open('templates/schemas/template.schema.json'))
+          validator = V(schema)
+          ok = True
+          for f in glob.glob('templates/**/*.yaml', recursive=True):
+              try:
+                  data = yaml.safe_load(open(f))
+                  validator.validate(data)
+                  print('OK', f)
+              except Exception as e:
+                  ok = False
+                  print('FAIL', f, '->', e, file=sys.stderr)
+          sys.exit(0 if ok else 1)
+          PY
+
+      - name: Shellcheck
+        run: |
+          shellcheck -x src/tools/templatectl.sh src/tools/renderers/qm.sh
+
+      - name: Dry-run render all templates
+        run: |
+          chmod +x src/tools/templatectl.sh src/tools/renderers/qm.sh
+          find templates -name '*.yaml' -print0 | while IFS= read -r -d '' f; do
+            ./src/tools/templatectl.sh render "$f" --vmid 999 --storage-pool local-lvm --dry-run >/dev/null
+          done
