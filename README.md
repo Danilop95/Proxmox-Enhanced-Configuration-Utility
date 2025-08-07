@@ -1,21 +1,29 @@
 <h1 align="center">
-  <img src="doc/img/Logo-PECU.png" width="150" alt="PECU logo"/>
-  <br>
-  Proxmox-Enhanced-Configuration-Utility<br><sub>( PECU )</sub>
+  <img src="doc/img/Logo-PECU.png" width="150" alt="PECU logo"/><br>
+  <strong>Proxmox Enhanced Configuration Utility</strong><br>
+  <sub>( PECU )</sub>
 </h1>
 
 <p align="center">
   <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/actions">
-    <img src="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/actions/workflows/release.yml/badge.svg" alt="CI Status">
+    <img src="https://img.shields.io/github/actions/workflow/status/Danilop95/Proxmox-Enhanced-Configuration-Utility/release.yml?label=CI%20Status&logo=github&logoColor=white&color=2E8B57&style=for-the-badge" alt="CI Status">
   </a>
   <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/wiki">
-    <img src="https://img.shields.io/badge/wiki-up%20to%20date-blue?logo=read-the-docs" alt="Wiki">
+    <img src="https://img.shields.io/badge/Wiki-Up%20to%20date-1E90FF?logo=read-the-docs&logoColor=white&style=for-the-badge" alt="Wiki">
   </a>
   <a href="https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/releases">
-    <img src="https://img.shields.io/github/v/release/Danilop95/Proxmox-Enhanced-Configuration-Utility?include_prereleases" alt="Latest release">
+    <img src="https://img.shields.io/github/v/release/Danilop95/Proxmox-Enhanced-Configuration-Utility?include_prereleases&label=Latest%20Release&logo=github&logoColor=white&color=orange&style=for-the-badge" alt="Latest release">
   </a>
   <a href="LICENSE">
-    <img src="https://img.shields.io/github/license/Danilop95/Proxmox-Enhanced-Configuration-Utility" alt="License">
+    <img src="https://img.shields.io/github/license/Danilop95/Proxmox-Enhanced-Configuration-Utility?style=for-the-badge&color=blue&logo=gnu&logoColor=white" alt="License">
+  </a>
+</p>
+
+<hr style="border: 1px solid #444; margin: 20px 0;">
+
+<p align="center">
+  <a href="https://buymeacoffee.com/danilop95ps" target="_blank">
+    <img src="https://img.shields.io/badge/%20Buy%20Me%20a%20Coffee-Support%20PECU-FF813F?logo=buy-me-a-coffee&logoColor=white&style=for-the-badge" alt="Buy Me a Coffee">
   </a>
 </p>
 
