@@ -7,10 +7,15 @@
 #        ██║     ███████╗╚██████╗╚██████╔╝
 #        ╚═╝     ╚══════╝ ╚═════╝ ╚═════╝
 # -----------------------------------------------------------------------------
-#  PECU Release Selector · 2025-06-19
+#  PECU Release Selector · 2025-08-11
 #  Author  : Daniel Puente García — https://github.com/Danilop95
 #  Donate  : https://buymeacoffee.com/danilop95
 #  Project : Proxmox Enhanced Configuration Utility (PECU)
+#  
+#  Fixed Issues:
+#  - #18: Handles execution without sudo when running as root
+#  - #19: Improved jq installation with multiple fallback methods
+#  - Better privilege detection and error handling
 # -----------------------------------------------------------------------------
 
 set -Eeuo pipefail
@@ -94,6 +99,19 @@ init_workspace() {
 }
 init_workspace
 
+# Check for absolutely critical dependencies first
+missing_critical=()
+for cmd in curl find awk sed; do
+  command -v "$cmd" &>/dev/null || missing_critical+=("$cmd")
+done
+
+if ((${#missing_critical[@]})); then
+  echo -e "${R}Critical dependencies missing: ${missing_critical[*]}${NC}"
+  echo -e "${Y}These are required for the script to function properly.${NC}"
+  echo -e "${Y}Please install them first: apt update && apt install ${missing_critical[*]}${NC}"
+  exit 1
+fi
+
 # ── banner ───────────────────────────────────────────────────────────────────
 banner() {
   clear
@@ -171,184 +189,398 @@ security_notice() {
 }
 
 # ── environment & deps ───────────────────────────────────────────────────────
+# Check if running as root and if sudo is available
+IS_ROOT=false
+HAS_SUDO=false
+SUDO_CMD=""
+
+if [[ $EUID -eq 0 ]]; then
+  IS_ROOT=true
+  SUDO_CMD=""
+elif command -v sudo &>/dev/null; then
+  HAS_SUDO=true
+  SUDO_CMD="sudo"
+fi
+
+# Helper function to run commands with appropriate privileges
+run_as_admin() {
+  if [[ $IS_ROOT == true ]]; then
+    "$@"
+  elif [[ $HAS_SUDO == true ]]; then
+    sudo "$@"
+  else
+    echo -e "${R}Error: This script requires root privileges or sudo to be installed.${NC}"
+    echo -e "${Y}Please run as root or install sudo first: apt update && apt install sudo${NC}"
+    return 1
+  fi
+}
+
 proxmox_hint() {
   if [[ -f /etc/pve/.version ]]; then
-    echo -e "${L}Proxmox VE detected${NC}\n"
+    echo -e "${L}Proxmox VE detected${NC}"
+    if [[ $IS_ROOT == false && $HAS_SUDO == false ]]; then
+      echo -e "${Y}Note: Running without root privileges and sudo not found.${NC}"
+      echo -e "${Y}Some operations may require manual intervention.${NC}"
+    fi
+    echo ""
   fi
 }
 
 fix_proxmox_repos() {
   if [[ -f /etc/pve/.version ]] && [[ ! -f /etc/apt/sources.list.d/pve-no-subscription.list ]]; then
     echo -e "${Y}Configuring community repositories for Proxmox (no subscription)…${NC}"
-    [[ -f /etc/apt/sources.list.d/pve-enterprise.list ]] && sed -i 's/^deb/#deb/' /etc/apt/sources.list.d/pve-enterprise.list 2>/dev/null || true
-    [[ -f /etc/apt/sources.list.d/ceph.list ]] && sed -i 's/^deb/#deb/' /etc/apt/sources.list.d/ceph.list 2>/dev/null || true
-    printf "deb http://download.proxmox.com/debian/pve bookworm pve-no-subscription\n" > /etc/apt/sources.list.d/pve-no-subscription.list
-    printf "deb http://download.proxmox.com/debian/ceph-quincy bookworm no-subscription\n" > /etc/apt/sources.list.d/ceph-no-subscription.list
-    apt-get -qq update || true
+    
+    # Use run_as_admin for file modifications that require root
+    if [[ $IS_ROOT == true ]]; then
+      [[ -f /etc/apt/sources.list.d/pve-enterprise.list ]] && sed -i 's/^deb/#deb/' /etc/apt/sources.list.d/pve-enterprise.list 2>/dev/null || true
+      [[ -f /etc/apt/sources.list.d/ceph.list ]] && sed -i 's/^deb/#deb/' /etc/apt/sources.list.d/ceph.list 2>/dev/null || true
+      printf "deb http://download.proxmox.com/debian/pve bookworm pve-no-subscription\n" > /etc/apt/sources.list.d/pve-no-subscription.list
+      printf "deb http://download.proxmox.com/debian/ceph-quincy bookworm no-subscription\n" > /etc/apt/sources.list.d/ceph-no-subscription.list
+      apt-get -qq update || true
+    elif [[ $HAS_SUDO == true ]]; then
+      [[ -f /etc/apt/sources.list.d/pve-enterprise.list ]] && sudo sed -i 's/^deb/#deb/' /etc/apt/sources.list.d/pve-enterprise.list 2>/dev/null || true
+      [[ -f /etc/apt/sources.list.d/ceph.list ]] && sudo sed -i 's/^deb/#deb/' /etc/apt/sources.list.d/ceph.list 2>/dev/null || true
+      printf "deb http://download.proxmox.com/debian/pve bookworm pve-no-subscription\n" | sudo tee /etc/apt/sources.list.d/pve-no-subscription.list >/dev/null
+      printf "deb http://download.proxmox.com/debian/ceph-quincy bookworm no-subscription\n" | sudo tee /etc/apt/sources.list.d/ceph-no-subscription.list >/dev/null
+      sudo apt-get -qq update || true
+    else
+      echo -e "${Y}Warning: Cannot configure repositories without root privileges or sudo.${NC}"
+      return 1
+    fi
   fi
 }
 
 banner
 proxmox_hint
+
+# Display privilege status information
+if [[ $IS_ROOT == true ]]; then
+  echo -e "${G}Running as root - full system access available${NC}"
+elif [[ $HAS_SUDO == true ]]; then
+  echo -e "${Y}Running as regular user with sudo available${NC}"
+else
+  echo -e "${R}Warning: Running without root privileges and sudo not found${NC}"
+  echo -e "${Y}Some operations may fail. Consider running as root or installing sudo.${NC}"
+  echo -e "${Y}To install sudo: ${C}apt update && apt install sudo${NC}"
+  echo ""
+  read -rp "Continue anyway? [y/N]: " continue_anyway
+  if [[ ! $continue_anyway =~ ^[Yy]$ ]]; then
+    echo "Installation cancelled."
+    exit 0
+  fi
+fi
+
 show_web_info
+
+# Check what dependencies need to be installed
+missing_deps=()
+for pkg in curl jq tar find awk sed; do
+  if ! command -v "$pkg" &>/dev/null; then
+    missing_deps+=("$pkg")
+  fi
+done
+
+# Ask user permission if there are missing dependencies
+if ((${#missing_deps[@]})); then
+  echo -e "${Y}Missing required dependencies: ${missing_deps[*]}${NC}"
+  echo -e "${Y}These packages are required for the script to function properly.${NC}"
+  read -rp "Do you want to install them automatically? [Y/n]: " install_deps
+  
+  if [[ $install_deps =~ ^[Nn]$ ]]; then
+    echo -e "${R}Cannot continue without required dependencies.${NC}"
+    echo -e "${Y}Please install them manually: apt update && apt install ${missing_deps[*]}${NC}"
+    exit 1
+  fi
+  
+  echo -e "${G}Installing dependencies...${NC}"
+fi
 
 for pkg in curl jq tar find awk sed; do
   if ! command -v "$pkg" &>/dev/null; then
     echo -e "${Y}Installing dependency: $pkg …${NC}"
-    [[ -f /etc/pve/.version ]] && fix_proxmox_repos
-    sudo DEBIAN_FRONTEND=noninteractive apt-get -qq update || true
-    sudo DEBIAN_FRONTEND=noninteractive apt-get -y install "$pkg" || {
+    
+    # Try to fix Proxmox repos if needed
+    if [[ -f /etc/pve/.version ]]; then
+      fix_proxmox_repos || {
+        echo -e "${Y}Warning: Could not configure repositories, trying with existing sources.${NC}"
+      }
+    fi
+    
+    # Try to update package lists
+    if ! run_as_admin apt-get -qq update; then
+      echo -e "${Y}Warning: Could not update package lists, proceeding anyway.${NC}"
+    fi
+    
+    # Try to install the package
+    if run_as_admin apt-get -y install "$pkg"; then
+      echo -e "${G}Successfully installed $pkg${NC}"
+    else
+      # Special handling for jq - try alternative installation methods
       if [[ "$pkg" == "jq" ]]; then
-        echo -e "${Y}Trying direct jq binary…${NC}"
-        curl -fsSL "https://github.com/jqlang/jq/releases/latest/download/jq-linux64" -o "$WORKDIR/jq" \
-          && chmod +x "$WORKDIR/jq" && sudo mv "$WORKDIR/jq" /usr/local/bin/jq \
-          || { echo -e "${R}Failed to install jq.${NC}"; exit 1; }
+        echo -e "${Y}Standard installation failed, trying alternative methods for jq…${NC}"
+        
+        # Method 1: Try direct binary download
+        if curl -fsSL "https://github.com/jqlang/jq/releases/latest/download/jq-linux64" -o "$WORKDIR/jq" 2>/dev/null; then
+          chmod +x "$WORKDIR/jq"
+          if run_as_admin mv "$WORKDIR/jq" /usr/local/bin/jq; then
+            echo -e "${G}Successfully installed jq via direct download${NC}"
+            continue
+          fi
+        fi
+        
+        # Method 2: Try snap if available
+        if command -v snap &>/dev/null; then
+          echo -e "${Y}Trying snap installation for jq…${NC}"
+          if run_as_admin snap install jq; then
+            echo -e "${G}Successfully installed jq via snap${NC}"
+            continue
+          fi
+        fi
+        
+        # Method 3: Try downloading and installing statically linked version
+        echo -e "${Y}Trying static binary installation for jq…${NC}"
+        local jq_url="https://github.com/jqlang/jq/releases/latest/download/jq-linux64"
+        local jq_temp="$WORKDIR/jq-static"
+        if curl -fsSL "$jq_url" -o "$jq_temp" 2>/dev/null; then
+          chmod +x "$jq_temp"
+          # Test if the binary works
+          if "$jq_temp" --version &>/dev/null; then
+            if run_as_admin cp "$jq_temp" /usr/local/bin/jq; then
+              echo -e "${G}Successfully installed static jq binary${NC}"
+              continue
+            elif cp "$jq_temp" "$HOME/.local/bin/jq" 2>/dev/null; then
+              export PATH="$HOME/.local/bin:$PATH"
+              echo -e "${G}Successfully installed jq to user directory${NC}"
+              continue
+            fi
+          else
+            echo -e "${Y}Downloaded jq binary is not compatible with this system${NC}"
+          fi
+        fi
+        
+        echo -e "${R}Failed to install jq using all available methods.${NC}"
+        echo -e "${Y}You can try installing it manually with one of these commands:${NC}"
+        echo -e "  ${C}apt update && apt install jq${NC}"
+        echo -e "  ${C}snap install jq${NC}"
+        echo -e "  ${C}wget https://github.com/jqlang/jq/releases/latest/download/jq-linux64 -O /usr/local/bin/jq && chmod +x /usr/local/bin/jq${NC}"
+        exit 1
       else
-        echo -e "${R}Failed to install $pkg.${NC}"; exit 1
+        echo -e "${R}Failed to install $pkg.${NC}"
+        echo -e "${Y}You may need to install it manually: apt install $pkg${NC}"
+        exit 1
       fi
-    }
+    fi
   fi
 done
+
+# Final verification that jq is working
+if ! command -v jq &>/dev/null || ! echo '{}' | jq . &>/dev/null; then
+  echo -e "${R}jq is still not available or not working properly.${NC}"
+  echo -e "${Y}The script requires jq to parse JSON responses from GitHub API.${NC}"
+  echo -e "${Y}Please install jq manually using one of these methods:${NC}"
+  echo -e "  ${C}# Method 1: Package manager (preferred)${NC}"
+  echo -e "  ${C}apt update && apt install jq${NC}"
+  echo -e "  ${C}# Method 2: Direct download${NC}"
+  echo -e "  ${C}wget https://github.com/jqlang/jq/releases/latest/download/jq-linux64 -O /usr/local/bin/jq${NC}"
+  echo -e "  ${C}chmod +x /usr/local/bin/jq${NC}"
+  echo -e "  ${C}# Method 3: Snap (if available)${NC}"
+  echo -e "  ${C}snap install jq${NC}"
+  exit 1
+fi
+
+# If we installed any dependencies, clean screen and restart the interface
+if ((${#missing_deps[@]})); then
+  echo -e "${G}✓ All dependencies installed successfully!${NC}"
+  echo -e "${Y}Restarting interface...${NC}"
+  sleep 2
+  banner
+  proxmox_hint
+  
+  # Re-display privilege status information
+  if [[ $IS_ROOT == true ]]; then
+    echo -e "${G}Running as root - full system access available${NC}"
+  elif [[ $HAS_SUDO == true ]]; then
+    echo -e "${Y}Running as regular user with sudo available${NC}"
+  fi
+  
+  show_web_info
+fi
 
 security_notice
 
-# ── fetch releases (skip Deprecated/Obsolete/Retired) ────────────────────────
-echo -e "${Y}Fetching available releases…${NC}"
-mapfile -t META < <(
-  curl -fsSL "$API" | jq -r '
-    .[]
-    | select(.body|test("PECU-Channel:"))
-    | select(.body|test("Deprecated|Obsolete|Retired";"i")|not)
-    | .asset = ((.assets[]? | select(.name|test("\\.tar\\.gz$")) | .browser_download_url) // "")
-    | { tag:.tag_name,
-        date:(.published_at|split("T")[0]),
-        chan:(.body|capture("PECU-Channel:\\s*(?<x>[^\r\n]+)") .x),
-        title:(.body|capture("PECU-Title:\\s*(?<x>[^\r\n]+)") .x // "Release"),
-        asset:.asset }
-    | "\(.date)|\(.chan)|\(.tag)|\(.title)|\(.asset)"' 2>/dev/null )
+# Function to display releases and handle selection
+show_releases_and_select() {
+  # ── fetch releases (skip Deprecated/Obsolete/Retired) ────────────────────────
+  echo -e "${Y}Fetching available releases…${NC}"
+  mapfile -t META < <(
+    curl -fsSL "$API" | jq -r '
+      .[]
+      | select(.body|test("PECU-Channel:"))
+      | select(.body|test("Deprecated|Obsolete|Retired";"i")|not)
+      | .asset = ((.assets[]? | select(.name|test("\\.tar\\.gz$")) | .browser_download_url) // "")
+      | { tag:.tag_name,
+          date:(.published_at|split("T")[0]),
+          chan:(.body|capture("PECU-Channel:\\s*(?<x>[^\r\n]+)") .x),
+          title:(.body|capture("PECU-Title:\\s*(?<x>[^\r\n]+)") .x // "Release"),
+          asset:.asset }
+      | "\(.date)|\(.chan)|\(.tag)|\(.title)|\(.asset)"' 2>/dev/null )
 
-((${#META[@]})) || { echo -e "${R}No releases found.${NC}"; exit 1; }
+  ((${#META[@]})) || { echo -e "${R}No releases found.${NC}"; exit 1; }
 
-IFS=$'\n' META=($(sort -r <<<"${META[*]}"))
-LATEST=$(printf '%s\n' "${META[@]}" | grep -m1 '|[Ss]table|' || true)
+  IFS=$'\n' META=($(sort -r <<<"${META[*]}"))
+  LATEST=$(printf '%s\n' "${META[@]}" | grep -m1 '|[Ss]table|' || true)
 
-# ── table layout (clean alignment) ───────────────────────────────────────────
-TW=$(cols)
-ID_W=3; TAG_W=14; DATE_W=10
-MAX_CH=$(printf '%s\n' "${META[@]}" | cut -d'|' -f2 | awk '{print length}' | sort -nr | head -1)
-(( MAX_CH<7 )) && MAX_CH=7
-CH_W=$((MAX_CH+2))
-TITLE_W=$((TW - ID_W - TAG_W - DATE_W - CH_W - 6))
-((TITLE_W>42)) && TITLE_W=42
-((TITLE_W<18)) && TITLE_W=18
+  # ── table layout (clean alignment) ───────────────────────────────────────────
+  TW=$(cols)
+  ID_W=3; TAG_W=14; DATE_W=10
+  MAX_CH=$(printf '%s\n' "${META[@]}" | cut -d'|' -f2 | awk '{print length}' | sort -nr | head -1)
+  (( MAX_CH<7 )) && MAX_CH=7
+  CH_W=$((MAX_CH+2))
+  TITLE_W=$((TW - ID_W - TAG_W - DATE_W - CH_W - 6))
+  ((TITLE_W>42)) && TITLE_W=42
+  ((TITLE_W<18)) && TITLE_W=18
 
-echo -e "\n${B}Available Releases:${NC}"
-printf "${B}%-${ID_W}s %-${TAG_W}s %-${TITLE_W}s %-${DATE_W}s [%-${MAX_CH}s]${NC}\n" "#" "TAG" "TITLE" "DATE" "CHANNEL"
-printf '%s\n' "$(repeat '─' "$TW")"
+  echo -e "\n${B}Available Releases:${NC}"
+  printf "${B}%-${ID_W}s %-${TAG_W}s %-${TITLE_W}s %-${DATE_W}s [%-${MAX_CH}s]${NC}\n" "#" "TAG" "TITLE" "DATE" "CHANNEL"
+  printf '%s\n' "$(repeat '─' "$TW")"
 
-declare -A IDX; n=1
-for rec in "${META[@]}"; do
-  IFS='|' read -r d ch tag ttl asset <<<"$rec"
-  lc=${ch,,}; [[ $lc =~ ^(stable|beta|preview|experimental|nightly|legacy)$ ]] || lc=other
-  cut=$ttl; (( ${#cut}>TITLE_W )) && cut="${cut:0:$((TITLE_W-2))}…"
-  latest=''; [[ $rec == "$LATEST" ]] && latest=' ★LATEST'
-  printf "${COL[$lc]} %-${ID_W}d %-${TAG_W}s %-${TITLE_W}s %-${DATE_W}s [%-${MAX_CH}s]${NC}%s\n" \
-         "$n" "$tag" "$cut" "$d" "$lc" "$latest"
-  IDX[$n]="$tag|$lc|$asset"
-  ((n++))
-done
+  declare -A IDX; n=1
+  for rec in "${META[@]}"; do
+    IFS='|' read -r d ch tag ttl asset <<<"$rec"
+    lc=${ch,,}; [[ $lc =~ ^(stable|beta|preview|experimental|nightly|legacy)$ ]] || lc=other
+    cut=$ttl; (( ${#cut}>TITLE_W )) && cut="${cut:0:$((TITLE_W-2))}…"
+    latest=''; [[ $rec == "$LATEST" ]] && latest=' ★LATEST'
+    printf "${COL[$lc]} %-${ID_W}d %-${TAG_W}s %-${TITLE_W}s %-${DATE_W}s [%-${MAX_CH}s]${NC}%s\n" \
+           "$n" "$tag" "$cut" "$d" "$lc" "$latest"
+    IDX[$n]="$tag|$lc|$asset"
+    ((n++))
+  done
 
-show_premium_teaser
-printf " %-${ID_W}s Exit\n" 0
+  show_premium_teaser
+  printf " %-${ID_W}s Exit\n" 0
 
-# ── selection ────────────────────────────────────────────────────────────────
-while :; do
-  read -rp $'\nSelect release # (or P for Premium): ' sel
-  if [[ "$sel" =~ ^[Pp]$ ]]; then
-    premium_info_menu
-    banner; proxmox_hint; show_web_info
-    echo -e "\n${B}Available Releases:${NC}"
-    printf "${B}%-${ID_W}s %-${TAG_W}s %-${TITLE_W}s %-${DATE_W}s [%-${MAX_CH}s]${NC}\n" "#" "TAG" "TITLE" "DATE" "CHANNEL"
-    printf '%s\n' "$(repeat '─' "$TW")"
-    n=1; for rec in "${META[@]}"; do
-      IFS='|' read -r d ch tag ttl asset <<<"$rec"
-      lc=${ch,,}; [[ $lc =~ ^(stable|beta|preview|experimental|nightly|legacy)$ ]] || lc=other
-      cut=$ttl; (( ${#cut}>TITLE_W )) && cut="${cut:0:$((TITLE_W-2))}…"
-      latest=''; [[ $rec == "$LATEST" ]] && latest=' ★LATEST'
-      printf "${COL[$lc]} %-${ID_W}d %-${TAG_W}s %-${TITLE_W}s %-${DATE_W}s [%-${MAX_CH}s]${NC}%s\n" \
-             "$n" "$tag" "$cut" "$d" "$lc" "$latest"
-      ((n++))
-    done
-    show_premium_teaser
-    printf " %-${ID_W}s Exit\n" 0
-    continue
-  fi
-  if [[ "$sel" =~ ^[0-9]+$ ]]; then
-    (( sel==0 )) && exit 0
-    [[ ${IDX[$sel]-} ]] && break || echo -e "${R}Invalid ID.${NC}"
-  else
-    echo -e "${Y}Enter a number (1-${#META[@]}), 'P' for Premium, or '0' to exit.${NC}"
-  fi
-done
-IFS='|' read -r TAG CHN ASSET <<<"${IDX[$sel]}"
-
-# ── optional UI deps ─────────────────────────────────────────────────────────
-ui_missing=()
-for d in whiptail dialog; do command -v "$d" &>/dev/null || ui_missing+=("$d"); done
-if ((${#ui_missing[@]})); then
-  echo -e "${Y}Missing optional UI packages: ${ui_missing[*]}${NC}"
-  read -rp "Install them automatically? [Y/n]: " ans
-  [[ $ans =~ ^[Nn]$ ]] || for d in "${ui_missing[@]}"; do
-      echo -e "${Y}Installing $d …${NC}"
-      sudo DEBIAN_FRONTEND=noninteractive apt-get -y install "$d" || true
-    done
-fi
-
-# ── confirmation (boxed, aligned) ────────────────────────────────────────────
-show_selected_release_box() {
-  local W="$1"
-  ((W>72)) && W=72
-  box_single "$W" \
-    "${B}SELECTED RELEASE${NC}" \
-    "Tag:     ${TAG}" \
-    "Channel: ${CHN^}" \
-    "Source:  GitHub"
+  # ── selection ────────────────────────────────────────────────────────────────
+  while :; do
+    read -rp $'\nSelect release # (or P for Premium): ' sel
+    if [[ "$sel" =~ ^[Pp]$ ]]; then
+      premium_info_menu
+      banner; proxmox_hint; show_web_info
+      show_releases_and_select
+      return
+    fi
+    if [[ "$sel" =~ ^[0-9]+$ ]]; then
+      (( sel==0 )) && exit 0
+      [[ ${IDX[$sel]-} ]] && break || echo -e "${R}Invalid ID.${NC}"
+    else
+      echo -e "${Y}Enter a number (1-${#META[@]}), 'P' for Premium, or '0' to exit.${NC}"
+    fi
+  done
+  
+  IFS='|' read -r TAG CHN ASSET <<<"${IDX[$sel]}"
+  
+  # Continue with the rest of the script
+  handle_ui_deps_and_execute
 }
-banner
-show_selected_release_box "$(cols)"
-read -rp "Press Y to run | any other key to cancel: " ok
-[[ $ok =~ ^[Yy]$ ]] || { echo "Cancelled."; exit 0; }
 
-# ── execution helpers (robust workspace, no mktemp) ──────────────────────────
-run_raw() {
-  local rel="$1"; [[ -n "${rel:-}" ]] || return 1
-  local url="$RAW/$TAG/$rel"
-  if curl -sfIL "$url" &>/dev/null; then
-    local runner="$WORKDIR/runner.sh"
-    if curl -fsSL "$url" -o "$runner"; then
-      chmod +x "$runner"; "$runner"; return 0
+# Function to handle UI dependencies and execution
+handle_ui_deps_and_execute() {
+  # ── optional UI deps ─────────────────────────────────────────────────────────
+  ui_missing=()
+  for d in whiptail dialog; do command -v "$d" &>/dev/null || ui_missing+=("$d"); done
+  if ((${#ui_missing[@]})); then
+    echo -e "${Y}Missing optional UI packages: ${ui_missing[*]}${NC}"
+    echo -e "${Y}These packages improve the user interface but are not required.${NC}"
+    read -rp "Install them automatically? [Y/n]: " ans
+    if [[ ! $ans =~ ^[Nn]$ ]]; then
+      echo -e "${G}Installing optional UI packages...${NC}"
+      packages_installed=false
+      for d in "${ui_missing[@]}"; do
+        echo -e "${Y}Installing $d …${NC}"
+        if run_as_admin apt-get -y install "$d"; then
+          echo -e "${G}Successfully installed $d${NC}"
+          packages_installed=true
+        else
+          echo -e "${R}Warning: Failed to install $d${NC}"
+          echo -e "${Y}This package is optional and the script will continue without it.${NC}"
+        fi
+      done
+      
+      # If we installed any UI packages, clean screen and reload
+      if [[ $packages_installed == true ]]; then
+        echo -e "${G}✓ UI packages installation completed!${NC}"
+        echo -e "${Y}Continuing with release selection...${NC}"
+        sleep 1
+        banner
+      fi
     fi
   fi
-  return 1
+
+  # ── confirmation (boxed, aligned) ────────────────────────────────────────────
+  show_selected_release_box() {
+    local W="$1"
+    ((W>72)) && W=72
+    box_single "$W" \
+      "${B}SELECTED RELEASE${NC}" \
+      "Tag:     ${TAG}" \
+      "Channel: ${CHN^}" \
+      "Source:  GitHub"
+  }
+  
+  show_selected_release_box "$(cols)"
+  read -rp "Press Y to run | any other key to cancel: " ok
+  [[ $ok =~ ^[Yy]$ ]] || { echo "Cancelled."; exit 0; }
+
+  # ── execution helpers (robust workspace, no mktemp) ──────────────────────────
+  run_raw() {
+    local rel="$1"; [[ -n "${rel:-}" ]] || return 1
+    local url="$RAW/$TAG/$rel"
+    if curl -sfIL "$url" &>/dev/null; then
+      local runner="$WORKDIR/runner.sh"
+      if curl -fsSL "$url" -o "$runner"; then
+        chmod +x "$runner"; "$runner"; return 0
+      fi
+    fi
+    return 1
+  }
+
+  run_asset() {
+    [[ -n "${ASSET:-}" ]] || return 1
+    local tgz="$WORKDIR/pecu.tgz"
+    curl -fsSL "$ASSET" -o "$tgz" || return 1
+    tar -xzf "$tgz" -C "$WORKDIR"
+    local sh; sh=$(find "$WORKDIR" -name proxmox-configurator.sh -type f | head -n1 || true)
+    [[ -f "${sh:-}" ]] || return 1
+    chmod +x "$sh"; "$sh"
+  }
+
+  # ── launch ───────────────────────────────────────────────────────────────────
+  echo -e "${G}→ Executing $TAG …${NC}"
+  START=$(date +%s)
+  run_raw "src/proxmox-configurator.sh"  || true
+  run_raw "proxmox-configurator.sh"      || true
+
+  if (( $(date +%s) - START < 3 )); then
+    echo -e "${Y}Script ended quickly — trying packaged asset…${NC}"
+    run_asset || { echo -e "${R}Error:${NC} No runnable content found."; exit 1; }
+  fi
 }
 
-run_asset() {
-  [[ -n "${ASSET:-}" ]] || return 1
-  local tgz="$WORKDIR/pecu.tgz"
-  curl -fsSL "$ASSET" -o "$tgz" || return 1
-  tar -xzf "$tgz" -C "$WORKDIR"
-  local sh; sh=$(find "$WORKDIR" -name proxmox-configurator.sh -type f | head -n1 || true)
-  [[ -f "${sh:-}" ]] || return 1
-  chmod +x "$sh"; "$sh"
-}
-
-# ── launch ───────────────────────────────────────────────────────────────────
-echo -e "${G}→ Executing $TAG …${NC}"
-START=$(date +%s)
-run_raw "src/proxmox-configurator.sh"  || true
-run_raw "proxmox-configurator.sh"      || true
-
-if (( $(date +%s) - START < 3 )); then
-  echo -e "${Y}Script ended quickly — trying packaged asset…${NC}"
-  run_asset || { echo -e "${R}Error:${NC} No runnable content found."; exit 1; }
+# If we installed any dependencies, clean screen and restart the interface
+if ((${#missing_deps[@]})); then
+  echo -e "${G}✓ All dependencies installed successfully!${NC}"
+  echo -e "${Y}Restarting interface...${NC}"
+  sleep 2
+  banner
+  proxmox_hint
+  
+  # Re-display privilege status information
+  if [[ $IS_ROOT == true ]]; then
+    echo -e "${G}Running as root - full system access available${NC}"
+  elif [[ $HAS_SUDO == true ]]; then
+    echo -e "${Y}Running as regular user with sudo available${NC}"
+  fi
+  
+  show_web_info
 fi
+
+show_releases_and_select
