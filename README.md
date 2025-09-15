@@ -21,38 +21,46 @@
 
 <hr style="border: 1px solid #444; margin: 20px 0;">
 
+<!-- Top donations: Buy Me a Coffee + Ko-fi -->
+
 <p align="center">
-  <a href="https://buymeacoffee.com/danilop95ps" target="_blank">
+  <a href="https://buymeacoffee.com/danilop95ps" target="_blank" rel="noopener noreferrer" style="margin-right:8px;">
     <img src="https://img.shields.io/badge/%20Buy%20Me%20a%20Coffee-Support%20PECU-FF813F?logo=buy-me-a-coffee&logoColor=white&style=for-the-badge" alt="Buy Me a Coffee">
+  </a>
+  <a href="https://ko-fi.com/G2G2E2W8B" target="_blank" rel="noopener noreferrer">
+    <img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="ko-fi">
   </a>
 </p>
 
-
 ## Table of Contents
-- [Overview](#overview)
-- [Requirements & Compatibility](#requirements--compatibility)
-- [Quick Start](#quick-start)
-  - [Direct execution (recommended)](#direct-execution-recommended)
-  - [Offline / local install](#offline--local-install)
-- [What Is the Release Selector?](#what-is-the-release-selector)
-- [VM Templates System](#vm-templates-system)
-- [Features](#features)
-- [Community & Contribution](#community--contribution)
-- [Support the Project](#support-the-project)
-- [License](#license)
+
+* [Overview](#overview)
+* [Requirements & Compatibility](#requirements--compatibility)
+* [Quick Start](#quick-start)
+
+  * [Direct execution (recommended)](#direct-execution-recommended)
+  * [Offline / local install](#offline--local-install)
+* [What Is the Release Selector?](#what-is-the-release-selector)
+* [VM Templates System](#vm-templates-system)
+* [Features](#features)
+* [Community & Contribution](#community--contribution)
+* [Star History](#star-history)
+* [Support the Project](#support-the-project)
+* [License](#license)
 
 ---
 
 ## Overview
+
 **PECU** is a single-shell utility that makes day-to-day Proxmox VE management
 as painless as possible:
 
-* one-line installer  
-* interactive menus for repositories, kernel flags, GPU passthrough, etc.  
-* reversible operations (backup / rollback built-in)  
-* auto-detects NVIDIA, AMD **and** Intel iGPUs out of the box  
+* one-line installer
+* interactive menus for repositories, kernel flags, GPU passthrough, etc.
+* reversible operations (backup / rollback built-in)
+* auto-detects NVIDIA, AMD **and** Intel iGPUs out of the box
 * **NEW**: declarative VM template system with CLI management tools
-* **NEW**: full Proxmox VE 9.x series support with enhanced compatibility and performance optimizations  
+* **NEW**: full Proxmox VE 9.x series support with enhanced compatibility and performance optimizations
 
 ---
 
@@ -61,30 +69,27 @@ as painless as possible:
 > The selector and the underlying scripts are designed for a **typical, up-to-date Proxmox host**.
 > If your stack falls outside the matrix below, use at your own risk.
 
-|                              |                                                                                                                                                                                                                                           |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Platform**                 | <img src="https://img.shields.io/badge/Proxmox VE-7.x %2F 8.x %2F 9.x-000000?style=for-the-badge&logo=proxmox&logoColor=white" alt="Proxmox 7 / 8 / 9 badge"> *(fully supports latest Proxmox VE 9.x with enhanced compatibility)*     |
-| **CPU arch**                 | <img src="https://img.shields.io/badge/x86--64-required-6A737D?style=for-the-badge">                                                                                                                                                      |
-| **Privileges**               | <img src="https://img.shields.io/badge/root_or_sudo-required-E74C3C?style=for-the-badge" alt="root badge">                                                                                                                                                                                                              
+|                |                                                                                                                                                                                                                                    |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Platform**   | <img src="https://img.shields.io/badge/Proxmox VE-7.x %2F 8.x %2F 9.x-000000?style=for-the-badge&logo=proxmox&logoColor=white" alt="Proxmox 7 / 8 / 9 badge"> *(fully supports latest Proxmox VE 9.x with enhanced compatibility)* |
+| **CPU arch**   | <img src="https://img.shields.io/badge/x86--64-required-6A737D?style=for-the-badge">                                                                                                                                               |
+| **Privileges** | <img src="https://img.shields.io/badge/root_or_sudo-required-E74C3C?style=for-the-badge" alt="root badge">                                                                                                                         |
 
 > **Heads-up** PECU does **not** support ARM / Raspberry Pi builds of Proxmox at this time.
 > Community ports are welcome, but official testing is x86-64 only.
 
 ---
 
-
 ## Quick Start
 
 ### Direct execution (recommended)
 
-> **New in 2025-05** – a tiny selector script fetches **all** tagged releases and  
+> **New in 2025-05** – a tiny selector script fetches **all** tagged releases and
 > lets you launch whichever version (Stable, Beta, Experimental…) you want.
 
 ```bash
 bash <(curl -sL \https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/refs/heads/main/scripts/pecu_release_selector.sh)
 ```
-
-
 
 #### Release Selector
 
@@ -99,13 +104,12 @@ bash <(curl -sL \https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Co
 </p>
 
 #### PECU-Script
+
 <p align="center">
   <img src="https://github.com/user-attachments/assets/efeeff90-543b-4905-9b42-dbcf10647129" width="90%" alt="PECU Script Interface">
 </p>
 
 ---
-
-
 
 ### Offline / local install
 
@@ -130,8 +134,7 @@ sudo ./proxmox-configurator.sh
   The channels keep the list tidy and make it obvious which way the project is heading.
 * Marking a build as **Experimental** instantly flags it orange in the menu,
   so I can ship rough prototypes or quick-fix versions without confusing people who only want Stable releases.
-lector.
-* `pecu_release_selector_old.sh` still exists **only as a shim** that `exec`s the new script — **it will be removed on _05 July 2025_**.
+* `pecu_release_selector_old.sh` still exists **only as a shim** that `exec`s the new script — **it will be removed on *05 July 2025***.
 
 ---
 
@@ -168,11 +171,11 @@ sudo src/tools/templatectl.sh apply templates/windows/windows-gaming.yaml \
 
 ### Available Templates
 
-| Template | Channel | OS Type | Description |
-|----------|---------|---------|-------------|
-| `windows-gaming` | Stable | win11 | Windows 11 VM optimized for gaming with GPU passthrough support |
-| `linux-workstation` | Stable | l26 | Linux workstation for development and productivity |
-| `media-server` | Stable | l26 | Lightweight Linux VM for media services (Plex, Jellyfin, etc.) |
+| Template            | Channel | OS Type | Description                                                     |
+| ------------------- | ------- | ------- | --------------------------------------------------------------- |
+| `windows-gaming`    | Stable  | win11   | Windows 11 VM optimized for gaming with GPU passthrough support |
+| `linux-workstation` | Stable  | l26     | Linux workstation for development and productivity              |
+| `media-server`      | Stable  | l26     | Lightweight Linux VM for media services (Plex, Jellyfin, etc.)  |
 
 See [templates/README.md](templates/README.md) for detailed documentation.
 
@@ -180,34 +183,37 @@ See [templates/README.md](templates/README.md) for detailed documentation.
 
 ## Features
 
-| Category              | Highlights                                                                               |
-| --------------------- | ---------------------------------------------------------------------------------------- |
-| **Repositories**      | Backup / restore `sources.list`, add "non-subscription" repo, edit with Nano.            |
-| **GPU Passthrough**   | Wizard-style setup for NVIDIA, AMD, Intel; supports driverctl override; rollback option. |
-| **Kernel Tweaks**     | Add `pcie_acs_override`, `video=efifb:off`, or custom flags with risk prompts.           |
-| **Multi-GPU**         | Detects multiple GPUs and lets you choose the one to passthrough.                        |
-| **Intel iGPU (test)** | Experimental automatic isolation of iGPU functions.                                      |
-| **VM Templates**      | Declarative YAML templates with CLI tools for common VM configurations.                  |
-| **Template Validation** | JSON Schema validation and CI/CD integration for template quality assurance.           |
-| **Proxmox 9.x**       | Full support for the latest Proxmox VE 9.x series with enhanced compatibility and performance optimizations. |
-| **Logging**           | Detailed `/var/log/pecu.log` with timestamps and automatic log rotation.                 |="center">
+| Category                | Highlights                                                                                                   |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------ |
+| **Repositories**        | Backup / restore `sources.list`, add "non-subscription" repo, edit with Nano.                                |
+| **GPU Passthrough**     | Wizard-style setup for NVIDIA, AMD, Intel; supports driverctl override; rollback option.                     |
+| **Kernel Tweaks**       | Add `pcie_acs_override`, `video=efifb:off`, or custom flags with risk prompts.                               |
+| **Multi-GPU**           | Detects multiple GPUs and lets you choose the one to passthrough.                                            |
+| **Intel iGPU (test)**   | Experimental automatic isolation of iGPU functions.                                                          |
+| **VM Templates**        | Declarative YAML templates with CLI tools for common VM configurations.                                      |
+| **Template Validation** | JSON Schema validation and CI/CD integration for template quality assurance.                                 |
+| **Proxmox 9.x**         | Full support for the latest Proxmox VE 9.x series with enhanced compatibility and performance optimizations. |
+| **Logging**             | Detailed `/var/log/pecu.log` with timestamps and automatic log rotation.                                     |
 
 ---
-
----
-
 
 ## Community & Contribution
 
-PECU grows through clear bug reports, well-scoped ideas, and peer-reviewed code.  
+PECU grows through clear bug reports, well-scoped ideas, and peer-reviewed code.
 If you would like to get involved, choose the channel that best suits your needs:
 
-| Purpose | Channel |
-|---------|---------|
-| **Bug reports / feature requests** | Use the GitHub [Issue tracker](../../issues). Please include the tag you were running, a concise description, and any relevant console output. |
-| **Code contributions** | Fork the repository, branch from `main`, run `shellcheck`, keep commits focused, then open a Pull Request. |
-| **Technical discussion and quick feedback** | Join the PECU Discord server: <https://discord.gg/euQTVNc2xg>. The server is used for informal Q&A, brainstorming future features, and sharing configuration tips. |
-| **Sustained support and early-access builds** | Patreon memberships are available at <https://www.patreon.com/c/DVNILXP95>. Patrons receive preview builds, detailed implementation notes, and can vote on the development roadmap. |
+| Purpose                                       | Channel                                                                                                                                                                                                                  |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Bug reports / feature requests**            | Use the GitHub [Issue tracker](../../issues). Please include the tag you were running, a concise description, and any relevant console output.                                                                           |
+| **Code contributions**                        | Fork the repository, branch from `main`, run `shellcheck`, keep commits focused, then open a Pull Request.                                                                                                               |
+| **Technical discussion and quick feedback**   | Join the PECU Discord server: [https://discord.gg/euQTVNc2xg](https://discord.gg/euQTVNc2xg). The server is used for informal Q\&A, brainstorming future features, and sharing configuration tips.                       |
+| **Sustained support and early-access builds** | Patreon memberships are available at [https://www.patreon.com/c/DVNILXP95](https://www.patreon.com/c/DVNILXP95). Patrons receive preview builds, detailed implementation notes, and can vote on the development roadmap. |
+
+---
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Danilop95/Proxmox-Enhanced-Configuration-Utility\&type=Date)](https://www.star-history.com/#Danilop95/Proxmox-Enhanced-Configuration-Utility&Date)
 
 ---
 
@@ -216,14 +222,16 @@ If you would like to get involved, choose the channel that best suits your needs
 If PECU saves you time in daily operations and you wish to accelerate its development, consider a one-off donation:
 
 <p align="center">
-  <a href="https://buymeacoffee.com/danilop95ps" target="_blank">
+  <a href="https://buymeacoffee.com/danilop95ps" target="_blank" rel="noopener noreferrer" style="margin-right:8px;">
     <img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png"
          alt="Buy Me a Coffee" height="37">
+  </a>
+  <a href="https://ko-fi.com/G2G2E2W8B" target="_blank" rel="noopener noreferrer" style="margin-left:8px;">
+    <img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="ko-fi">
   </a>
 </p>
 
 Your support funds additional test hardware.
-
 
 ## License
 
