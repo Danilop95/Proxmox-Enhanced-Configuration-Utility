@@ -1,22 +1,51 @@
 #!/bin/bash
-# ---------------------------------------------------------
-# PROXMOX ENHANCED CONFIG UTILITY (PECU)
-# -----------------------------------------------------------------------------
-#        ██████╗ ███████╗ ██████╗██╗   ██╗
-#        ██╔══██╗██╔════╝██╔════╝██║   ██║
-#        ██████╔╝█████╗  ██║     ██║   ██║
-#        ██╔═══╝ ██╔══╝  ██║     ██║   ██║
-#        ██║     ███████╗╚██████╗╚██████╔╝
-#        ╚═╝     ╚══════╝ ╚═════╝ ╚═════╝ 
-# -----------------------------------------------------------------------------
-#
-# By Daniel Puente García (@Danilop95/DVNILXP)
-# Version: 3.0
-# Date: 2025-08-06
-# Description: Complete GPU passthrough configuration utility for Proxmox VE
-#              Supports NVIDIA, AMD, Intel GPUs including datacenter cards
-#              Automated IOMMU, VFIO, blacklisting, and VM template creation
-# ---------------------------------------------------------
+################################################################################
+#                                                                              #
+#                 ██████╗ ███████╗ ██████╗██╗   ██╗                           #
+#                 ██╔══██╗██╔════╝██╔════╝██║   ██║                           #
+#                 ██████╔╝█████╗  ██║     ██║   ██║                           #
+#                 ██╔═══╝ ██╔══╝  ██║     ██║   ██║                           #
+#                 ██║     ███████╗╚██████╗╚██████╔╝                           #
+#                 ╚═╝     ╚══════╝ ╚═════╝ ╚═════╝                            #
+#                                                                              #
+#              PROXMOX ENHANCED CONFIGURATION UTILITY (PECU)                  #
+#                  GPU Passthrough Configuration Suite                        #
+#                                                                              #
+################################################################################
+#                                                                              #
+#  Author:        Daniel Puente García                                        #
+#  GitHub:        @Danilop95                                                  #
+#  Version:       3.1                                                          #
+#  Release Date:  November 4, 2025                                            #
+#                                                                              #
+#  ──────────────────────────────────────────────────────────────────────────  #
+#                                                                              #
+#  💖 Support this project:                                                   #
+#     • Buy Me a Coffee: https://buymeacoffee.com/danilop95                   #
+#     • Official Website: https://pecu.tools                                  #
+#                                                                              #
+#  ──────────────────────────────────────────────────────────────────────────  #
+#                                                                              #
+#  Description:                                                                #
+#    Complete GPU passthrough configuration utility for Proxmox VE            #
+#    • Supports NVIDIA, AMD, Intel GPUs (including datacenter cards)          #
+#    • Automated IOMMU detection and configuration                            #
+#    • VFIO module setup and management                                       #
+#    • Intelligent GPU driver blacklisting                                    #
+#    • VM template creation and management                                    #
+#    • Bootloader detection (systemd-boot/GRUB)                               #
+#    • Idempotent repository management                                       #
+#    • Live configuration verification                                        #
+#                                                                              #
+#  Supported Systems:                                                          #
+#    • Proxmox VE 7.x (Debian 11 - Bullseye)                                  #
+#    • Proxmox VE 8.x (Debian 12 - Bookworm)                                  #
+#    • Proxmox VE 9.x (Debian 13 - Trixie)                                    #
+#                                                                              #
+#  License:       MIT License                                                  #
+#  Repository:    github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility #
+#                                                                              #
+################################################################################
 
 # Colors for output
 RED='\e[0;31m'
@@ -30,11 +59,11 @@ NC='\e[0m' # No Color
 # Application metadata
 APP_ID="PECU"
 APP_NAME="Proxmox-Enhanced-Configuration-Utility"
-AUTHOR="Daniel Puente Garcia — @Danilop95"
-VERSION="3.0"
-BUILD_DATE="2025-08-06"
-BMAC_URL="https://buymeacoffee.com/danilop95ps"
-PATRON_URL="https://patreon.com/dvnilxp95"
+AUTHOR="Daniel Puente García"
+VERSION="3.1"
+BUILD_DATE="2025-11-04"
+BMAC_URL="https://buymeacoffee.com/danilop95"
+WEBSITE_URL="https://pecu.tools"
 
 # Configuration constants
 VFIO_MODULES=("vfio" "vfio_pci" "vfio_iommu_type1")
@@ -202,19 +231,14 @@ detect_system_info() {
         CPU_VENDOR="unknown"
     fi
     
-    # Detect boot type
-    if [[ -d "/sys/firmware/efi" ]]; then
-        if command -v pve-efiboot-tool >/dev/null 2>&1; then
-            BOOT_TYPE="systemd-boot"
-            log_info "Detected UEFI with systemd-boot"
-        else
-            BOOT_TYPE="grub-uefi"
-            log_info "Detected UEFI with GRUB"
-        fi
-    else
-        BOOT_TYPE="grub-legacy"
-        log_info "Detected Legacy BIOS with GRUB"
-    fi
+    # Detect boot type using robust detection
+    BOOT_TYPE=$(detect_bootloader)
+    case "$BOOT_TYPE" in
+        "systemd-boot") log_info "Detected UEFI with systemd-boot" ;;
+        "grub-uefi") log_info "Detected UEFI with GRUB" ;;
+        "grub-legacy") log_info "Detected Legacy BIOS with GRUB" ;;
+        *) log_warning "Unknown boot type: $BOOT_TYPE" ;;
+    esac
     
     # Check IOMMU status - improved detection
     if dmesg | grep -qE "IOMMU|DMAR|AMD-Vi" && [[ -d "/sys/kernel/iommu_groups" ]]; then
@@ -229,7 +253,102 @@ detect_system_info() {
     fi
 }
 
-# Check hardware requirements
+# ---------------------------------------------------------
+# Bootloader Detection and Module Validation
+# ---------------------------------------------------------
+
+# Robust bootloader detection for systemd-boot vs GRUB
+detect_bootloader() {
+    local boot_type="unknown"
+    
+    # Check for UEFI
+    if [[ -d "/sys/firmware/efi" ]]; then
+        # Check for systemd-boot (Proxmox 7+)
+        # Multiple indicators for robust detection
+        if command -v pve-efiboot-tool >/dev/null 2>&1 || command -v proxmox-boot-tool >/dev/null 2>&1; then
+            # Verify cmdline file exists
+            if [[ -f "/etc/kernel/cmdline" ]]; then
+                boot_type="systemd-boot"
+            elif [[ -d "/etc/kernel" ]]; then
+                # Directory exists but no cmdline file - create it
+                log_warning "systemd-boot detected but /etc/kernel/cmdline missing - creating"
+                mkdir -p /etc/kernel
+                # Copy current cmdline as base
+                cat /proc/cmdline > /etc/kernel/cmdline 2>/dev/null || echo "root=ZFS=rpool/ROOT/pve-1 boot=zfs" > /etc/kernel/cmdline
+                boot_type="systemd-boot"
+            else
+                log_warning "systemd-boot tools found but /etc/kernel missing"
+                boot_type="grub-uefi"
+            fi
+        else
+            boot_type="grub-uefi"
+        fi
+    else
+        boot_type="grub-legacy"
+    fi
+    
+    echo "$boot_type"
+}
+
+# Validate and ensure kernel module exists before loading
+# Args: module_name
+# Returns: 0 if valid, 1 if invalid
+ensure_module() {
+    local module="$1"
+    
+    if [[ -z "$module" ]]; then
+        log_error "ensure_module: No module name provided"
+        return 1
+    fi
+    
+    # Test if module can be loaded (dry-run)
+    if modprobe -n "$module" >/dev/null 2>&1; then
+        log_debug "Module '$module' validation passed"
+        return 0
+    else
+        log_error "Module '$module' does not exist or cannot be loaded"
+        return 1
+    fi
+}
+
+# Add module to modules-load.d if valid and not already present (idempotent)
+# Args: module_name, config_file
+add_module_persistent() {
+    local module="$1"
+    local config_file="${2:-/etc/modules-load.d/vfio.conf}"
+    
+    # Validate module exists
+    if ! ensure_module "$module"; then
+        log_error "Cannot add invalid module '$module' to $config_file"
+        return 1
+    fi
+    
+    # Check if already present
+    if [[ -f "$config_file" ]] && grep -q "^${module}$" "$config_file"; then
+        log_debug "Module '$module' already in $config_file"
+        return 0
+    fi
+    
+    # Add module
+    echo "$module" >> "$config_file"
+    log_success "Added module '$module' to $config_file"
+    
+    # Try to load it now
+    if ! lsmod | grep -q "^${module}"; then
+        if modprobe "$module" 2>/dev/null; then
+            log_success "Loaded module '$module'"
+        else
+            log_warning "Module '$module' added to config but failed to load immediately"
+        fi
+    fi
+    
+    return 0
+}
+
+# ---------------------------------------------------------
+# Hardware Requirements and Detection
+# ---------------------------------------------------------
+
 check_hardware_requirements() {
     log_info "Checking hardware requirements for GPU passthrough..."
     local requirements_met=true
@@ -477,28 +596,80 @@ configure_systemd_boot_iommu() {
     local params="$1"
     log_info "Configuring systemd-boot with IOMMU parameters: $params"
     
-    if [[ ! -f "/etc/kernel/cmdline" ]]; then
-        log_error "systemd-boot cmdline file not found"
-        return 1
+    local cmdline_file="/etc/kernel/cmdline"
+    
+    # Ensure cmdline file exists
+    if [[ ! -f "$cmdline_file" ]]; then
+        log_warning "systemd-boot cmdline file not found at $cmdline_file"
+        
+        # Try to create it from current boot
+        if [[ -f "/proc/cmdline" ]]; then
+            log_info "Creating $cmdline_file from current /proc/cmdline"
+            mkdir -p /etc/kernel
+            cat /proc/cmdline > "$cmdline_file"
+        else
+            log_error "Cannot create cmdline file - /proc/cmdline not available"
+            return 1
+        fi
     fi
     
     # Backup cmdline
-    cp /etc/kernel/cmdline "$BACKUP_DIR/cmdline.bak.$(date +%Y%m%d_%H%M%S)"
+    cp "$cmdline_file" "$BACKUP_DIR/cmdline.bak.$(date +%Y%m%d_%H%M%S)"
     
-    # Check if parameters already exist
-    if grep -q "$params" /etc/kernel/cmdline; then
+    # Check if parameters already exist (word boundary check)
+    local param_check
+    local already_present=true
+    for param in $params; do
+        local param_base="${param%%=*}"
+        if ! grep -qE "(^| )${param_base}(=| |$)" "$cmdline_file"; then
+            already_present=false
+            break
+        fi
+    done
+    
+    if $already_present; then
         log_warning "IOMMU parameters already present in cmdline"
         return 0
     fi
     
-    # Add parameters
-    sed -i "s/$/ $params/" /etc/kernel/cmdline
+    # Add parameters (idempotent - only add if not present)
+    local current_cmdline=$(cat "$cmdline_file")
+    echo "$current_cmdline $params" | sed 's/  */ /g; s/^ //; s/ $//' > "$cmdline_file"
     
-    # Refresh boot entries
-    if pve-efiboot-tool refresh; then
-        log_success "systemd-boot updated successfully"
+    log_info "Updated $cmdline_file"
+    
+    # Refresh boot entries - try both tool names (proxmox-boot-tool is newer)
+    local refresh_success=false
+    if command -v proxmox-boot-tool >/dev/null 2>&1; then
+        log_info "Running proxmox-boot-tool refresh..."
+        if proxmox-boot-tool refresh 2>&1 | tee -a "$LOG_FILE"; then
+            refresh_success=true
+            log_success "systemd-boot updated with proxmox-boot-tool"
+        else
+            log_warning "proxmox-boot-tool refresh failed, trying reinit..."
+            if proxmox-boot-tool reinit 2>&1 | tee -a "$LOG_FILE"; then
+                log_info "Reinit successful, running refresh again..."
+                if proxmox-boot-tool refresh 2>&1 | tee -a "$LOG_FILE"; then
+                    refresh_success=true
+                    log_success "systemd-boot updated after reinit"
+                fi
+            fi
+        fi
+    elif command -v pve-efiboot-tool >/dev/null 2>&1; then
+        log_info "Running pve-efiboot-tool refresh..."
+        if pve-efiboot-tool refresh 2>&1 | tee -a "$LOG_FILE"; then
+            refresh_success=true
+            log_success "systemd-boot updated with pve-efiboot-tool"
+        fi
     else
-        log_error "Failed to update systemd-boot"
+        log_error "No systemd-boot tool found (proxmox-boot-tool or pve-efiboot-tool)"
+        return 1
+    fi
+    
+    if ! $refresh_success; then
+        log_error "Failed to update systemd-boot - cmdline file updated but boot entries may be stale"
+        whiptail --title "Boot Update Warning" --msgbox \
+            "Kernel parameters were written to $cmdline_file\nbut boot entry refresh failed.\n\nYou may need to run manually:\nproxmox-boot-tool refresh\n\nOr check if ESP is mounted correctly." 12 60
         return 1
     fi
     
@@ -523,17 +694,41 @@ add_kernel_parameter() {
             
             # Check for parameter (handle = in parameters correctly)
             local param_base="${param%%=*}"
-            if grep -q "\b${param_base}\b" "$cmdline_file"; then
+            if grep -qE "(^| )${param_base}(=| |$)" "$cmdline_file"; then
                 log_warning "Parameter $param_base already exists in cmdline"
                 return 0
             fi
             
+            # Backup
+            cp "$cmdline_file" "$BACKUP_DIR/cmdline.param.$(date +%Y%m%d_%H%M%S)"
+            
             # Add parameter
-            sed -i "s/$/ $param/" "$cmdline_file"
-            if pve-efiboot-tool refresh; then
+            local current_cmdline=$(cat "$cmdline_file")
+            echo "$current_cmdline $param" | sed 's/  */ /g; s/^ //; s/ $//' > "$cmdline_file"
+            
+            # Refresh with proper tool
+            local refresh_tool=""
+            if command -v proxmox-boot-tool >/dev/null 2>&1; then
+                refresh_tool="proxmox-boot-tool"
+            elif command -v pve-efiboot-tool >/dev/null 2>&1; then
+                refresh_tool="pve-efiboot-tool"
+            else
+                log_error "No systemd-boot refresh tool available"
+                return 1
+            fi
+            
+            if $refresh_tool refresh 2>&1 | tee -a "$LOG_FILE"; then
                 log_success "Added $param to systemd-boot"
             else
                 log_error "Failed to refresh EFI boot"
+                # Try reinit and refresh for proxmox-boot-tool
+                if [[ "$refresh_tool" == "proxmox-boot-tool" ]]; then
+                    log_info "Attempting reinit then refresh..."
+                    if proxmox-boot-tool reinit && proxmox-boot-tool refresh; then
+                        log_success "Added $param after reinit"
+                        return 0
+                    fi
+                fi
                 return 1
             fi
             ;;
@@ -545,6 +740,9 @@ add_kernel_parameter() {
                 return 1
             fi
             
+            # Backup
+            cp "$grub_file" "$BACKUP_DIR/grub.param.$(date +%Y%m%d_%H%M%S)"
+            
             # Check if GRUB_CMDLINE_LINUX_DEFAULT exists
             if ! grep -q "^GRUB_CMDLINE_LINUX_DEFAULT=" "$grub_file"; then
                 echo 'GRUB_CMDLINE_LINUX_DEFAULT=""' >> "$grub_file"
@@ -552,14 +750,15 @@ add_kernel_parameter() {
             
             # Check for parameter
             local param_base="${param%%=*}"
-            if grep -q "\b${param_base}\b" "$grub_file"; then
+            if grep "^GRUB_CMDLINE_LINUX_DEFAULT=" "$grub_file" | grep -qE "\b${param_base}\b"; then
                 log_warning "Parameter $param_base already exists in GRUB config"
                 return 0
             fi
             
-            # Add parameter safely
-            sed -i "/^GRUB_CMDLINE_LINUX_DEFAULT=/ s/\"$/ $param\"/" "$grub_file"
-            if update-grub; then
+            # Add parameter safely - handle existing quotes properly
+            sed -i "/^GRUB_CMDLINE_LINUX_DEFAULT=/ s/\"\([^\"]*\)\"/\"\1 $param\"/" "$grub_file"
+            
+            if update-grub 2>&1 | tee -a "$LOG_FILE"; then
                 log_success "Added $param to GRUB"
             else
                 log_error "Failed to update GRUB"
@@ -613,32 +812,34 @@ configure_additional_parameters() {
 configure_vfio_modules() {
     log_info "Configuring VFIO modules..."
     
-    # Create modules configuration
-    cat > /etc/modules-load.d/vfio.conf << EOF
+    local vfio_conf="/etc/modules-load.d/vfio.conf"
+    local all_modules_valid=true
+    
+    # Create header for modules config file
+    cat > "$vfio_conf" << EOF
 # VFIO modules for GPU passthrough
 # Generated by PECU on $(date)
-vfio
-vfio_pci
-vfio_iommu_type1
 EOF
     
-    # Ensure modules are loaded
+    # Validate and add each module
+    log_info "Validating VFIO kernel modules..."
     for module in "${VFIO_MODULES[@]}"; do
-        if ! lsmod | grep -q "^$module"; then
-            if modprobe "$module"; then
-                log_success "Loaded module: $module"
-            else
-                log_error "Failed to load module: $module"
-                return 1
-            fi
-        else
-            log_info "Module already loaded: $module"
+        if ! add_module_persistent "$module" "$vfio_conf"; then
+            log_error "Failed to validate/add module: $module"
+            all_modules_valid=false
         fi
     done
     
+    if ! $all_modules_valid; then
+        log_error "Some VFIO modules failed validation - check kernel version compatibility"
+        whiptail --title "Module Validation Error" --msgbox \
+            "Some VFIO modules could not be validated.\n\nThis may indicate:\n- Kernel version mismatch\n- Missing kernel modules\n- Incorrect module names\n\nCheck $LOG_FILE for details." 12 60
+        return 1
+    fi
+    
     # Update state
     sed -i 's/VFIO_CONFIGURED=false/VFIO_CONFIGURED=true/' "$STATE_FILE"
-    log_success "VFIO modules configured successfully"
+    log_success "VFIO modules configured and validated successfully"
     
     return 0
 }
@@ -862,6 +1063,137 @@ EOF
 }
 
 # ---------------------------------------------------------
+# Repository Management Functions (Idempotent)
+# ---------------------------------------------------------
+
+# Add a repository line to a file only if not already present (idempotent)
+# Args: file_path, repo_line, [description]
+# Returns: 0 if added or exists, 1 on error
+add_repo_line() {
+    local file_path="$1"
+    local repo_line="$2"
+    local description="${3:-repository entry}"
+    
+    if [[ -z "$file_path" ]] || [[ -z "$repo_line" ]]; then
+        log_error "add_repo_line: file_path and repo_line required"
+        return 1
+    fi
+    
+    # Create parent directory if needed
+    local dir_path=$(dirname "$file_path")
+    if [[ ! -d "$dir_path" ]]; then
+        mkdir -p "$dir_path" || {
+            log_error "Failed to create directory: $dir_path"
+            return 1
+        }
+    fi
+    
+    # Create file with header if it doesn't exist
+    if [[ ! -f "$file_path" ]]; then
+        cat > "$file_path" << EOF
+# PECU-MANAGED: APT Repository Configuration
+# Managed by Proxmox Enhanced Configuration Utility
+# Generated on $(date)
+# DO NOT EDIT - Changes may be overwritten by PECU
+EOF
+        chmod 644 "$file_path"
+        log_debug "Created new repo file: $file_path"
+    fi
+    
+    # Check for exact match (using grep -qxF for exact line match)
+    if grep -qxF "$repo_line" "$file_path"; then
+        log_debug "Repository line already present: $repo_line"
+        return 0
+    fi
+    
+    # Check if similar line exists (same URL but different format)
+    local repo_url=$(echo "$repo_line" | awk '{print $2}')
+    if [[ -n "$repo_url" ]] && grep -qF "$repo_url" "$file_path"; then
+        log_warning "Similar repository URL already exists in $file_path: $repo_url"
+        log_warning "Existing line differs in format - not adding duplicate"
+        return 0
+    fi
+    
+    # Add the line
+    echo "$repo_line" >> "$file_path"
+    log_success "Added $description: $repo_line"
+    
+    return 0
+}
+
+# Remove PECU-managed repository lines from a file
+# Args: file_path
+# Returns: 0 on success
+remove_pecu_repos() {
+    local file_path="$1"
+    
+    if [[ ! -f "$file_path" ]]; then
+        log_debug "File does not exist, nothing to remove: $file_path"
+        return 0
+    fi
+    
+    # Check if file is PECU-managed
+    if ! grep -q "^# PECU-MANAGED:" "$file_path"; then
+        log_warning "File is not PECU-managed, skipping: $file_path"
+        return 0
+    fi
+    
+    # Backup before removing
+    cp "$file_path" "$BACKUP_DIR/$(basename "$file_path").removed.$(date +%Y%m%d_%H%M%S)"
+    
+    # Remove the file
+    rm -f "$file_path"
+    log_success "Removed PECU-managed repository file: $file_path"
+    
+    return 0
+}
+
+# Dry-run mode: show what would be added without making changes
+# Args: file_path, repo_line, description
+show_repo_change() {
+    local file_path="$1"
+    local repo_line="$2"
+    local description="${3:-repository entry}"
+    
+    if [[ ! -f "$file_path" ]]; then
+        echo "  [NEW FILE] $file_path"
+        echo "    → $repo_line"
+    elif grep -qxF "$repo_line" "$file_path"; then
+        echo "  [EXISTS] $description"
+        echo "    ✓ $repo_line"
+    else
+        echo "  [ADD] $description to $file_path"
+        echo "    + $repo_line"
+    fi
+}
+
+# Get Debian codename from Proxmox version
+get_debian_codename() {
+    local pve_version
+    
+    # Try to get PVE version
+    if command -v pveversion >/dev/null 2>&1; then
+        pve_version=$(pveversion | cut -d'/' -f2 | cut -d'.' -f1 2>/dev/null)
+    fi
+    
+    # Map PVE version to Debian codename
+    case "$pve_version" in
+        7) echo "bullseye" ;;    # Debian 11
+        8) echo "bookworm" ;;    # Debian 12
+        9) echo "trixie" ;;      # Debian 13
+        *)
+            # Fallback: detect from /etc/os-release
+            if [[ -f /etc/os-release ]]; then
+                source /etc/os-release
+                echo "${VERSION_CODENAME:-bookworm}"
+            else
+                echo "bookworm"  # Safe default
+            fi
+            ;;
+    esac
+}
+
+# ---------------------------------------------------------
 # Advanced Configuration Functions
 # ---------------------------------------------------------
 
@@ -938,58 +1270,259 @@ install_vendor_reset() {
     fi
 }
 
-# Configure sources.list for additional packages
+# Configure sources.list for additional packages (idempotent)
 configure_sources_list() {
-    log_info "Configuring APT sources..."
+    log_info "Configuring APT sources (idempotent mode)..."
     
-    # Backup sources.list
-    cp /etc/apt/sources.list "$BACKUP_DIR/sources.list.bak.$(date +%Y%m%d_%H%M%S)"
+    # Get Debian codename
+    local debian_codename=$(get_debian_codename)
+    local pve_version
     
-    # Check Proxmox version
-    local pve_version=$(pveversion | cut -d'/' -f2 | cut -d'.' -f1)
-    local debian_codename=""
-    
-    case "$pve_version" in
-        7) debian_codename="bullseye" ;;
-        8) debian_codename="bookworm" ;;
-        9) debian_codename="trixie" ;;
-        *) debian_codename="bookworm" ;;  # Default to latest stable
-    esac
+    if command -v pveversion >/dev/null 2>&1; then
+        pve_version=$(pveversion | cut -d'/' -f2 | cut -d'.' -f1 2>/dev/null)
+    else
+        pve_version="unknown"
+    fi
     
     log_info "Detected Proxmox VE $pve_version (Debian $debian_codename)"
     
-    # Create separate sources list file (cleaner approach)
-    local sources_file="/etc/apt/sources.list.d/pve-install.list"
+    # Backup main sources.list if not already backed up recently
+    local backup_marker="$BACKUP_DIR/.sources_backed_up_$(date +%Y%m%d)"
+    if [[ ! -f "$backup_marker" ]] && [[ -f /etc/apt/sources.list ]]; then
+        cp /etc/apt/sources.list "$BACKUP_DIR/sources.list.bak.$(date +%Y%m%d_%H%M%S)"
+        touch "$backup_marker"
+        log_info "Backed up /etc/apt/sources.list"
+    fi
     
-    if [[ ! -f "$sources_file" ]]; then
-        log_info "Creating additional package sources..."
-        cat > "$sources_file" << EOF
-# Additional Debian repositories for PECU
-# Generated by PECU on $(date)
-deb http://ftp.debian.org/debian $debian_codename main contrib
-deb http://ftp.debian.org/debian $debian_codename-updates main contrib
-deb http://security.debian.org/debian-security $debian_codename-security main contrib
-EOF
+    # Define repository configuration
+    local pecu_sources_file="/etc/apt/sources.list.d/pecu-repos.list"
+    local repos_added=0
+    
+    # Debian main repositories
+    local debian_main="deb http://ftp.debian.org/debian $debian_codename main contrib"
+    local debian_updates="deb http://ftp.debian.org/debian $debian_codename-updates main contrib"
+    local debian_security=""
+    
+    # Security repo format differs by version
+    case "$debian_codename" in
+        bullseye|bookworm)
+            debian_security="deb http://security.debian.org/debian-security $debian_codename-security main contrib"
+            ;;
+        trixie|forky)  # Debian 13+ uses different security format
+            debian_security="deb http://security.debian.org/debian-security $debian_codename-security main contrib"
+            ;;
+        *)
+            debian_security="deb http://security.debian.org/debian-security $debian_codename-security main contrib"
+            ;;
+    esac
+    
+    log_info "Adding Debian repositories to $pecu_sources_file..."
+    
+    # Add repositories idempotently
+    if add_repo_line "$pecu_sources_file" "$debian_main" "Debian main repository"; then
+        ((repos_added++))
+    fi
+    
+    if add_repo_line "$pecu_sources_file" "$debian_updates" "Debian updates repository"; then
+        ((repos_added++))
+    fi
+    
+    if add_repo_line "$pecu_sources_file" "$debian_security" "Debian security repository"; then
+        ((repos_added++))
+    fi
+    
+    # Proxmox no-subscription repository (optional)
+    if whiptail --title "Proxmox Repository" --yesno \
+        "Add Proxmox no-subscription repository?\n\nThis provides access to the Proxmox package repository without an enterprise subscription.\n\nRecommended for home labs and testing.\n\nAdd repository?" 12 70; then
         
-        log_success "Additional repositories configured"
-        return 0
+        local pve_repo="deb http://download.proxmox.com/debian/pve $debian_codename pve-no-subscription"
+        
+        if add_repo_line "$pecu_sources_file" "$pve_repo" "Proxmox no-subscription repository"; then
+            ((repos_added++))
+            log_info "Proxmox no-subscription repository added"
+        fi
     else
-        log_info "Additional repositories already configured"
-        return 0
+        log_info "Skipping Proxmox no-subscription repository"
     fi
     
-    if ! grep -q "pve-no-subscription" /etc/apt/sources.list; then
-        echo "# PVE pve-no-subscription repository" >> /etc/apt/sources.list
-        echo "deb http://download.proxmox.com/debian/pve $debian_codename pve-no-subscription" >> /etc/apt/sources.list
-        sources_updated=true
+    # Summary
+    if [[ $repos_added -gt 0 ]]; then
+        log_success "Repository configuration complete"
+        log_info "Managed file: $pecu_sources_file"
+        
+        # Update package lists
+        if whiptail --title "Update Package Lists" --yesno \
+            "Repository configuration updated.\n\nRun 'apt update' now to refresh package lists?" 10 60; then
+            
+            log_info "Updating APT package lists..."
+            if apt update 2>&1 | tee -a "$LOG_FILE"; then
+                log_success "Package lists updated successfully"
+            else
+                log_warning "Some warnings during apt update (this is often normal)"
+            fi
+        else
+            log_info "Skipping apt update - run manually when ready"
+        fi
+    else
+        log_info "All repositories already configured - no changes needed"
     fi
     
-    if $sources_updated; then
-        log_success "APT sources updated"
-        apt update
-    else
-        log_info "APT sources already configured"
+    # Show current configuration
+    if [[ -f "$pecu_sources_file" ]]; then
+        local repo_count=$(grep -c "^deb " "$pecu_sources_file" 2>/dev/null || echo 0)
+        log_info "Total repositories in PECU config: $repo_count"
     fi
+    
+    return 0
+}
+
+# Show current repository configuration status
+show_repo_status() {
+    log_info "Checking current repository configuration..."
+    
+    local status_report=""
+    status_report+="═══════════════════════════════════════════════════════\n"
+    status_report+="           REPOSITORY CONFIGURATION STATUS\n"
+    status_report+="═══════════════════════════════════════════════════════\n\n"
+    
+    # System info
+    local debian_codename=$(get_debian_codename)
+    local pve_version
+    if command -v pveversion >/dev/null 2>&1; then
+        pve_version=$(pveversion | cut -d'/' -f2 | cut -d'.' -f1 2>/dev/null)
+    else
+        pve_version="N/A"
+    fi
+    
+    status_report+="System Information:\n"
+    status_report+="  Proxmox VE: $pve_version\n"
+    status_report+="  Debian Codename: $debian_codename\n\n"
+    
+    # PECU-managed repositories
+    local pecu_sources="/etc/apt/sources.list.d/pecu-repos.list"
+    status_report+="PECU-Managed Repositories:\n"
+    status_report+="────────────────────────────────────────────────────\n"
+    
+    if [[ -f "$pecu_sources" ]]; then
+        local repo_count=$(grep -c "^deb " "$pecu_sources" 2>/dev/null || echo 0)
+        status_report+="  File: $pecu_sources\n"
+        status_report+="  Status: ✓ Configured\n"
+        status_report+="  Repositories: $repo_count\n\n"
+        
+        status_report+="  Configured entries:\n"
+        while IFS= read -r line; do
+            if [[ "$line" =~ ^deb ]]; then
+                status_report+="    • $line\n"
+            fi
+        done < "$pecu_sources"
+    else
+        status_report+="  Status: ✗ Not configured\n"
+        status_report+="  File: $pecu_sources (does not exist)\n"
+    fi
+    
+    status_report+="\n"
+    
+    # Legacy check - old pve-install.list file
+    local old_sources="/etc/apt/sources.list.d/pve-install.list"
+    if [[ -f "$old_sources" ]]; then
+        status_report+="Legacy Configuration:\n"
+        status_report+="────────────────────────────────────────────────────\n"
+        status_report+="  ⚠ Old file detected: $old_sources\n"
+        status_report+="  This file may contain duplicate entries.\n"
+        status_report+="  Consider removing and re-running PECU configuration.\n\n"
+    fi
+    
+    # Check for user-managed repositories
+    status_report+="Other Repository Files:\n"
+    status_report+="────────────────────────────────────────────────────\n"
+    local other_repos=$(find /etc/apt/sources.list.d/ -name "*.list" ! -name "pecu-repos.list" 2>/dev/null | wc -l)
+    status_report+="  Count: $other_repos files\n"
+    
+    if [[ $other_repos -gt 0 ]]; then
+        status_report+="  Files:\n"
+        find /etc/apt/sources.list.d/ -name "*.list" ! -name "pecu-repos.list" 2>/dev/null | while read -r file; do
+            status_report+="    - $(basename "$file")\n"
+        done
+    fi
+    
+    status_report+="\n"
+    status_report+="Main sources.list:\n"
+    status_report+="────────────────────────────────────────────────────\n"
+    if [[ -f /etc/apt/sources.list ]]; then
+        local main_repo_count=$(grep -c "^deb " /etc/apt/sources.list 2>/dev/null || echo 0)
+        status_report+="  Status: ✓ Present\n"
+        status_report+="  Repositories: $main_repo_count\n"
+    else
+        status_report+="  Status: ✗ Missing\n"
+    fi
+    
+    status_report+="\n"
+    status_report+="═══════════════════════════════════════════════════════\n"
+    
+    # Display report
+    echo -e "$status_report" | tee -a "$LOG_FILE"
+    
+    whiptail --title "Repository Status" --scrolltext --msgbox \
+        "$status_report" 30 65
+    
+    return 0
+}
+
+# Dry-run preview of repository configuration changes
+preview_repo_changes() {
+    log_info "Generating repository configuration preview..."
+    
+    local debian_codename=$(get_debian_codename)
+    local pecu_sources_file="/etc/apt/sources.list.d/pecu-repos.list"
+    
+    local preview=""
+    preview+="═══════════════════════════════════════════════════════\n"
+    preview+="        REPOSITORY CONFIGURATION PREVIEW\n"
+    preview+="                  (DRY-RUN MODE)\n"
+    preview+="═══════════════════════════════════════════════════════\n\n"
+    
+    preview+="Target Debian: $debian_codename\n"
+    preview+="Target File: $pecu_sources_file\n\n"
+    
+    preview+="Planned Changes:\n"
+    preview+="────────────────────────────────────────────────────\n"
+    
+    # Check each repository
+    local debian_main="deb http://ftp.debian.org/debian $debian_codename main contrib"
+    show_repo_change "$pecu_sources_file" "$debian_main" "Debian main" | while read -r line; do
+        preview+="$line\n"
+    done
+    
+    local debian_updates="deb http://ftp.debian.org/debian $debian_codename-updates main contrib"
+    show_repo_change "$pecu_sources_file" "$debian_updates" "Debian updates" | while read -r line; do
+        preview+="$line\n"
+    done
+    
+    local debian_security="deb http://security.debian.org/debian-security $debian_codename-security main contrib"
+    show_repo_change "$pecu_sources_file" "$debian_security" "Debian security" | while read -r line; do
+        preview+="$line\n"
+    done
+    
+    local pve_repo="deb http://download.proxmox.com/debian/pve $debian_codename pve-no-subscription"
+    show_repo_change "$pecu_sources_file" "$pve_repo" "Proxmox no-subscription" | while read -r line; do
+        preview+="$line\n"
+    done
+    
+    preview+="\n"
+    preview+="Legend:\n"
+    preview+="  [NEW FILE] - File will be created\n"
+    preview+="  [ADD]      - Line will be added\n"
+    preview+="  [EXISTS]   - Already configured (no change)\n"
+    preview+="\n"
+    preview+="═══════════════════════════════════════════════════════\n"
+    preview+="Note: This is a preview only. No changes will be made.\n"
+    preview+="Run 'Configure APT Sources' to apply changes.\n"
+    preview+="═══════════════════════════════════════════════════════\n"
+    
+    echo -e "$preview" | tee -a "$LOG_FILE"
+    
+    whiptail --title "Repository Preview (Dry-Run)" --scrolltext --msgbox \
+        "$preview" 30 65
     
     return 0
 }
@@ -1096,6 +1629,155 @@ check_passthrough_status() {
     
     return 0
 }
+
+# Live verification of applied configuration
+# Checks /proc/cmdline, lsmod, and required configuration elements
+# Returns non-zero if any required element is missing
+verify_configuration_live() {
+    log_info "Running live configuration verification..."
+    
+    local verification_failed=false
+    local verification_report=""
+    local current_cmdline=$(cat /proc/cmdline 2>/dev/null)
+    
+    verification_report+="═══════════════════════════════════════════════════════\n"
+    verification_report+="           LIVE CONFIGURATION VERIFICATION\n"
+    verification_report+="═══════════════════════════════════════════════════════\n\n"
+    
+    # 1. Check kernel parameters in /proc/cmdline
+    verification_report+="[1] Kernel Parameters (from /proc/cmdline):\n"
+    verification_report+="────────────────────────────────────────────────────\n"
+    
+    local required_params=()
+    case "$CPU_VENDOR" in
+        "intel") required_params=("intel_iommu=on" "iommu=pt") ;;
+        "amd") required_params=("amd_iommu=on" "iommu=pt") ;;
+    esac
+    
+    local param_status="✓"
+    for param in "${required_params[@]}"; do
+        if echo "$current_cmdline" | grep -qE "(^| )${param}( |$)"; then
+            verification_report+="  ✓ $param: ACTIVE\n"
+        else
+            verification_report+="  ✗ $param: MISSING\n"
+            param_status="✗"
+            verification_failed=true
+        fi
+    done
+    
+    if [[ "$param_status" == "✓" ]]; then
+        verification_report+="  Status: OK - All required params active\n"
+    else
+        verification_report+="  Status: FAIL - Missing required params\n"
+        verification_report+="  Action: Reboot required for changes to take effect\n"
+    fi
+    verification_report+="\n"
+    
+    # 2. Check VFIO kernel modules
+    verification_report+="[2] VFIO Kernel Modules (from lsmod):\n"
+    verification_report+="────────────────────────────────────────────────────\n"
+    
+    local modules_status="✓"
+    for module in "${VFIO_MODULES[@]}"; do
+        if lsmod | grep -q "^${module}"; then
+            verification_report+="  ✓ $module: LOADED\n"
+        else
+            verification_report+="  ✗ $module: NOT LOADED\n"
+            modules_status="✗"
+            verification_failed=true
+        fi
+    done
+    
+    if [[ "$modules_status" == "✓" ]]; then
+        verification_report+="  Status: OK - All VFIO modules loaded\n"
+    else
+        verification_report+="  Status: FAIL - Missing modules\n"
+        verification_report+="  Action: Run 'modprobe <module>' or reboot\n"
+    fi
+    verification_report+="\n"
+    
+    # 3. Check configuration files
+    verification_report+="[3] Configuration Files:\n"
+    verification_report+="────────────────────────────────────────────────────\n"
+    
+    local config_status="✓"
+    
+    # Check kernel cmdline file
+    local cmdline_file=""
+    case "$BOOT_TYPE" in
+        "systemd-boot") cmdline_file="/etc/kernel/cmdline" ;;
+        "grub-"*) cmdline_file="/etc/default/grub" ;;
+    esac
+    
+    if [[ -f "$cmdline_file" ]] && [[ -s "$cmdline_file" ]]; then
+        verification_report+="  ✓ Bootloader config: $cmdline_file\n"
+    else
+        verification_report+="  ✗ Bootloader config: Missing or empty\n"
+        config_status="✗"
+        verification_failed=true
+    fi
+    
+    # Check modules-load.d
+    if [[ -f "/etc/modules-load.d/vfio.conf" ]] && [[ -s "/etc/modules-load.d/vfio.conf" ]]; then
+        verification_report+="  ✓ Module autoload: /etc/modules-load.d/vfio.conf\n"
+    else
+        verification_report+="  ✗ Module autoload: Missing or empty\n"
+        config_status="✗"
+        verification_failed=true
+    fi
+    
+    # Check VFIO device config if it should exist
+    if [[ -f "$VFIO_CONFIG" ]]; then
+        verification_report+="  ✓ VFIO device config: $VFIO_CONFIG\n"
+    else
+        verification_report+="  ⚠ VFIO device config: Not yet configured\n"
+    fi
+    
+    verification_report+="\n"
+    
+    # 4. IOMMU status
+    verification_report+="[4] IOMMU Status:\n"
+    verification_report+="────────────────────────────────────────────────────\n"
+    
+    if [[ -d "/sys/kernel/iommu_groups" ]]; then
+        local group_count=$(find /sys/kernel/iommu_groups -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l)
+        verification_report+="  ✓ IOMMU groups: $group_count found\n"
+        verification_report+="  Status: OK - IOMMU active\n"
+    else
+        verification_report+="  ✗ IOMMU groups: Not found\n"
+        verification_report+="  Status: FAIL - IOMMU not active\n"
+        verification_report+="  Action: Enable in BIOS and verify kernel params\n"
+        verification_failed=true
+    fi
+    verification_report+="\n"
+    
+    # 5. Summary
+    verification_report+="═══════════════════════════════════════════════════════\n"
+    if $verification_failed; then
+        verification_report+="  OVERALL STATUS: ✗ VERIFICATION FAILED\n"
+        verification_report+="  Some components are not correctly configured.\n"
+        verification_report+="  A reboot is required for kernel parameters.\n"
+    else
+        verification_report+="  OVERALL STATUS: ✓ VERIFICATION PASSED\n"
+        verification_report+="  All components correctly configured.\n"
+    fi
+    verification_report+="═══════════════════════════════════════════════════════\n"
+    
+    # Display report
+    echo -e "$verification_report" | tee -a "$LOG_FILE"
+    
+    whiptail --title "Configuration Verification" --scrolltext --msgbox \
+        "$verification_report" 30 65
+    
+    if $verification_failed; then
+        log_error "Configuration verification failed"
+        return 1
+    else
+        log_success "Configuration verification passed"
+        return 0
+    fi
+}
+
 # ---------------------------------------------------------
 # VM Template Creation Functions
 # ---------------------------------------------------------
@@ -1430,12 +2112,23 @@ rollback_gpu_passthrough() {
     
     # Remove configuration files
     log_info "Removing configuration files..."
-    local configs=("$VFIO_CONFIG" "$BLACKLIST_CONFIG" "$KVM_CONFIG" "/etc/modules-load.d/vfio.conf")
+    local configs=("$VFIO_CONFIG" "$BLACKLIST_CONFIG" "$KVM_CONFIG" "/etc/modules-load.d/vfio.conf" "/etc/modprobe.d/vfio_iommu_type1.conf")
     for config in "${configs[@]}"; do
         if [[ -f "$config" ]]; then
             mv "$config" "$BACKUP_DIR/$(basename "$config").removed.$(date +%Y%m%d_%H%M%S)" || rollback_success=false
         fi
     done
+    
+    # Remove PECU-managed repository file (optional)
+    if whiptail --title "Remove Repository Config" --yesno \
+        "Also remove PECU-managed APT repository configuration?\n\nFile: /etc/apt/sources.list.d/pecu-repos.list\n\nYour system repositories will not be affected." 10 70; then
+        remove_pecu_repos "/etc/apt/sources.list.d/pecu-repos.list"
+        # Clean up old legacy file if exists
+        if [[ -f "/etc/apt/sources.list.d/pve-install.list" ]]; then
+            log_info "Removing legacy repository file..."
+            mv "/etc/apt/sources.list.d/pve-install.list" "$BACKUP_DIR/pve-install.list.removed.$(date +%Y%m%d_%H%M%S)"
+        fi
+    fi
     
     # Remove vendor-reset if installed
     if lsmod | grep -q "vendor_reset"; then
@@ -1484,32 +2177,40 @@ EOF
 # Show loading banner
 show_loading_banner() {
     clear
-    echo -e "${BLUE}┌─────────────────────────────────────────────────────────────┐${NC}"
-    echo -e "${BLUE}│         PROXMOX ENHANCED CONFIG UTILITY (PECU) v3.0        │${NC}"
-    echo -e "${BLUE}└─────────────────────────────────────────────────────────────┘${NC}"
-    echo -e "${GREEN}By: $AUTHOR${NC}"
-    echo -e "${GREEN}Support: $BMAC_URL${NC}\n"
     
-    local banner_lines=(
-        ' ██████╗ ███████╗ ██████╗██╗   ██╗'
-        ' ██╔══██╗██╔════╝██╔════╝██║   ██║'
-        ' ██████╔╝█████╗  ██║     ██║   ██║'
-        ' ██╔═══╝ ██╔══╝  ██║     ██║   ██║'
-        ' ██║     ███████╗╚██████╗╚██████╔╝'
-        ' ╚═╝     ╚══════╝ ╚═════╝ ╚═════╝'
-    )
+    # Banner principal
+    echo -e "${BLUE}╔═══════════════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${BLUE}║                                                                           ║${NC}"
+    echo -e "${BLUE}║${YELLOW}            ██████╗ ███████╗ ██████╗██╗   ██╗                            ${BLUE}║${NC}"
+    echo -e "${BLUE}║${YELLOW}            ██╔══██╗██╔════╝██╔════╝██║   ██║                            ${BLUE}║${NC}"
+    echo -e "${BLUE}║${YELLOW}            ██████╔╝█████╗  ██║     ██║   ██║                            ${BLUE}║${NC}"
+    echo -e "${BLUE}║${YELLOW}            ██╔═══╝ ██╔══╝  ██║     ██║   ██║                            ${BLUE}║${NC}"
+    echo -e "${BLUE}║${YELLOW}            ██║     ███████╗╚██████╗╚██████╔╝                            ${BLUE}║${NC}"
+    echo -e "${BLUE}║${YELLOW}            ╚═╝     ╚══════╝ ╚═════╝ ╚═════╝                             ${BLUE}║${NC}"
+    echo -e "${BLUE}║                                                                           ║${NC}"
+    echo -e "${BLUE}║${CYAN}              PROXMOX ENHANCED CONFIGURATION UTILITY                      ${BLUE}║${NC}"
+    echo -e "${BLUE}║${CYAN}                GPU Passthrough Configuration Suite                       ${BLUE}║${NC}"
+    echo -e "${BLUE}║${PURPLE}                          Version 3.1                                     ${BLUE}║${NC}"
+    echo -e "${BLUE}║                                                                           ║${NC}"
+    echo -e "${BLUE}╠═══════════════════════════════════════════════════════════════════════════╣${NC}"
+    echo -e "${BLUE}║                                                                           ║${NC}"
+    echo -e "${BLUE}║${GREEN}  Developer:${NC}  Daniel Puente García                                       ${BLUE}║${NC}"
+    echo -e "${BLUE}║${GREEN}  GitHub:${NC}     @Danilop95                                                  ${BLUE}║${NC}"
+    echo -e "${BLUE}║${GREEN}  Support:${NC}    https://buymeacoffee.com/danilop95                         ${BLUE}║${NC}"
+    echo -e "${BLUE}║${GREEN}  Website:${NC}    https://pecu.tools                                         ${BLUE}║${NC}"
+    echo -e "${BLUE}║                                                                           ║${NC}"
+    echo -e "${BLUE}╠═══════════════════════════════════════════════════════════════════════════╣${NC}"
+    echo -e "${BLUE}║${CYAN}  Features:${NC}                                                               ${BLUE}║${NC}"
+    echo -e "${BLUE}║${NC}    • NVIDIA, AMD & Intel GPU Support (including datacenter cards)       ${BLUE}║${NC}"
+    echo -e "${BLUE}║${NC}    • Automated IOMMU & VFIO Configuration                                ${BLUE}║${NC}"
+    echo -e "${BLUE}║${NC}    • Bootloader Detection (systemd-boot/GRUB)                            ${BLUE}║${NC}"
+    echo -e "${BLUE}║${NC}    • Idempotent Repository Management                                    ${BLUE}║${NC}"
+    echo -e "${BLUE}║${NC}    • VM Template Creation & Management                                   ${BLUE}║${NC}"
+    echo -e "${BLUE}║                                                                           ║${NC}"
+    echo -e "${BLUE}╚═══════════════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
     
-    echo -e "${YELLOW}"
-    for line in "${banner_lines[@]}"; do
-        printf "  %s\n" "$line"
-        sleep 0.03
-    done
-    echo -e "${NC}"
-    
-    echo -e "${CYAN}Complete GPU Passthrough Configuration Suite${NC}"
-    echo -e "${CYAN}Supports NVIDIA, AMD, Intel GPUs • IOMMU • VFIO • VM Templates${NC}\n"
-    
-    sleep 1
+    sleep 2
     clear
 }
 
@@ -1643,9 +2344,13 @@ complete_gpu_passthrough_setup() {
     
     log_success "Complete GPU passthrough configuration finished!"
     
+    # Run live verification
+    log_info "Running post-configuration verification..."
+    verify_configuration_live
+    
     # Summary
     whiptail --title "Configuration Complete" --msgbox \
-        "GPU Passthrough configuration completed successfully!\n\n✅ IOMMU configured\n✅ VFIO modules set up\n✅ GPU drivers blacklisted\n✅ Device bindings configured\n✅ KVM options optimized\n\nNext steps:\n1. REBOOT the system\n2. Create VM templates\n3. Add GPU to VMs via Hardware menu\n\nReboot now?" 18 60
+        "GPU Passthrough configuration completed successfully!\n\n✅ IOMMU configured\n✅ VFIO modules set up\n✅ GPU drivers blacklisted\n✅ Device bindings configured\n✅ KVM options optimized\n\nNext steps:\n1. REBOOT the system\n2. Verify configuration after reboot\n3. Create VM templates\n4. Add GPU to VMs via Hardware menu\n\nReboot now?" 20 60
     
     if [[ $? -eq 0 ]]; then
         ask_for_reboot
@@ -1663,15 +2368,16 @@ hardware_detection_menu() {
     while true; do
         local choice
         choice=$(whiptail --title "Hardware Detection & Validation" --menu \
-            "System hardware detection and validation options:" 18 75 9 \
+            "System hardware detection and validation options:" 20 75 10 \
             1 "Check Hardware Requirements" \
             2 "Detect System Information" \
             3 "Scan for GPU Devices" \
             4 "Analyze IOMMU Groups" \
             5 "Check Current Passthrough Status" \
-            6 "View System Logs (dmesg)" \
-            7 "Test VFIO Module Loading" \
-            8 "Back to Main Menu" \
+            6 "Live Configuration Verification" \
+            7 "View System Logs (dmesg)" \
+            8 "Test VFIO Module Loading" \
+            9 "Back to Main Menu" \
             3>&1 1>&2 2>&3)
         
         case "$choice" in
@@ -1684,11 +2390,12 @@ hardware_detection_menu() {
             3) detect_gpus ;;
             4) check_iommu_groups ;;
             5) check_passthrough_status ;;
-            6) 
+            6) verify_configuration_live ;;
+            7) 
                 local dmesg_output=$(dmesg | grep -i "iommu\|vfio\|amd-vi\|dmar" | tail -20)
                 whiptail --title "System Logs" --scrolltext --msgbox "$dmesg_output" 20 80
                 ;;
-            7)
+            8)
                 log_info "Testing VFIO module loading..."
                 for module in "${VFIO_MODULES[@]}"; do
                     if modprobe "$module" 2>/dev/null; then
@@ -1698,7 +2405,7 @@ hardware_detection_menu() {
                     fi
                 done
                 ;;
-            8) break ;;
+            9) break ;;
             *) break ;;
         esac
     done
@@ -1709,7 +2416,7 @@ configuration_menu() {
     while true; do
         local choice
         choice=$(whiptail --title "GPU Passthrough Configuration" --menu \
-            "Configure GPU passthrough components:" 18 75 10 \
+            "Configure GPU passthrough components:" 20 75 12 \
             1 "Configure IOMMU (Kernel Parameters)" \
             2 "Configure VFIO Modules" \
             3 "Configure GPU Driver Blacklist" \
@@ -1717,9 +2424,11 @@ configuration_menu() {
             5 "Configure KVM Options" \
             6 "Configure Additional Kernel Parameters" \
             7 "Install vendor-reset (AMD GPU Fix)" \
-            8 "Configure APT Sources" \
-            9 "Install Dependencies" \
-            10 "Back to Main Menu" \
+            8 "Configure APT Sources (Idempotent)" \
+            9 "Preview Repository Changes (Dry-Run)" \
+            10 "Show Repository Status" \
+            11 "Install Dependencies" \
+            12 "Back to Main Menu" \
             3>&1 1>&2 2>&3)
         
         case "$choice" in
@@ -1731,8 +2440,10 @@ configuration_menu() {
             6) configure_additional_parameters ;;
             7) install_vendor_reset ;;
             8) configure_sources_list ;;
-            9) install_dependencies ;;
-            10) break ;;
+            9) preview_repo_changes ;;
+            10) show_repo_status ;;
+            11) install_dependencies ;;
+            12) break ;;
             *) break ;;
         esac
     done
@@ -1910,7 +2621,7 @@ help_menu() {
 main_menu() {
     while true; do
         local choice
-        choice=$(whiptail --backtitle "PECU v$VERSION - GPU Passthrough Configuration Suite" \
+        choice=$(whiptail --backtitle "PECU v$VERSION | By Daniel Puente García (@Danilop95) | Support: buymeacoffee.com/danilop95 | pecu.tools" \
             --title "PROXMOX ENHANCED CONFIG UTILITY" --menu \
             "Complete GPU passthrough configuration and management suite\nSupports NVIDIA, AMD, Intel GPUs | IOMMU | VFIO | VM Templates\n\nSelect an option:" \
             20 80 9 \
