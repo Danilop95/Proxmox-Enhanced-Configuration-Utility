@@ -7,7 +7,7 @@
 #        ██║     ███████╗╚██████╗╚██████╔╝
 #        ╚═╝     ╚══════╝ ╚═════╝ ╚═════╝
 # -----------------------------------------------------------------------------
-#  PECU Release Selector · 2025-11-25
+#  PECU Release Selector · 2025-12-10
 #  Author  : Daniel Puente García — https://github.com/Danilop95
 #  Donate  : https://buymeacoffee.com/danilop95ps
 #  Project : Proxmox Enhanced Configuration Utility (PECU)
@@ -29,8 +29,12 @@
 #  - Data collected: instance_id (random UUID), PECU version/channel, OS/distro,
 #    architecture, kernel, init system, Proxmox version/cluster/VMs/containers,
 #    CPU (model/vendor/cores/threads/sockets/virtualization), RAM/swap,
-#    GPU (count/vendor/model/VRAM/passthrough), storage tech (ZFS/Ceph).
-#  - NOT collected: hostnames, IPs, usernames, file paths, disk space/usage.
+#    GPU (count/vendor/model/VRAM/passthrough), storage tech (ZFS/Ceph),
+#    usage_profile (enum: homelab_personal/hosting_commercial/etc),
+#    coarse usage counters (feature usage aggregates, no config details),
+#    Proxmox subscription mode, HA status, storage types (anonymous).
+#  - NOT collected: hostnames, IPs, usernames, file paths, disk space/usage,
+#    VM names/configs, storage IDs, pool names, or any personal data.
 #  - Control: Set PECU_TELEMETRY=off to disable, or PECU_TELEMETRY=on to enable.
 #  - Config file: ~/.config/pecu/telemetry.opt (enabled/disabled/auto)
 #  - Interactive prompt: On first run (if TTY), you will be asked once.
@@ -53,8 +57,9 @@ if [[ -t 1 ]] && command -v tput &>/dev/null && tput setaf 1 &>/dev/null 2>&1; t
   L=$(tput setaf 4 2>/dev/null || echo '')
   M=$(tput setaf 5 2>/dev/null || echo '')
   C=$(tput setaf 6 2>/dev/null || echo '')
+  W=$(tput setaf 7 2>/dev/null || echo '')
 else
-  NC='' B='' U='' SO='' RS='' R='' G='' Y='' O='' L='' M='' C=''
+  NC='' B='' U='' SO='' RS='' R='' G='' Y='' O='' L='' M='' C='' W=''
 fi
 
 declare -A COL=(
@@ -78,6 +83,7 @@ PECU_LOCAL_HOST=""
 PECU_LOCAL_PORT="8000"
 PECU_PORT_PROVIDED=false
 PECU_TELEMETRY_VERBOSE=false
+PECU_SUPPORT_MODE=false
 SITE=""
 TELEMETRY_ENDPOINT=""
 RELEASES_URL=""
@@ -89,6 +95,20 @@ SUDO_CMD=""
 TAG=""
 CHN=""
 ASSET=""
+
+# ── usage counters (telemetry) ───────────────────────────────────────────────
+usage_repo_actions=0
+usage_gpu_passthrough_runs=0
+usage_kernel_tweaks_runs=0
+usage_vm_templates_validate=0
+usage_vm_templates_apply=0
+usage_rollback_runs=0
+last_run_actions_total=0
+last_run_actions_failed=0
+last_run_last_error=""
+
+# JSON preview mode flag
+PECU_JSON_PREVIEW=false
 
 # ── parse command-line arguments ────────────────────────────────────────────
 parse_args() {
@@ -126,6 +146,15 @@ parse_args() {
         PECU_TELEMETRY_VERBOSE=true
         shift
         ;;
+      -j|--json-preview)
+        PECU_JSON_PREVIEW=true
+        shift
+        ;;
+      -s|--support-info)
+        PECU_SUPPORT_MODE=true
+        PECU_TELEMETRY="on"
+        shift
+        ;;
       -h|--help)
         cat <<'HELP'
 PECU Release Selector
@@ -149,6 +178,17 @@ Options:
                         Enable verbose telemetry logging (shows payload and response)
                         Useful for debugging telemetry issues
                         Creates log entries in: ~/.config/pecu/telemetry.log
+  
+  -j, --json-preview    Preview telemetry JSON payload without sending to API
+                        Shows the exact JSON structure and data that would be sent
+                        Useful for validating data collection and debugging
+                        Does not create instance ID or send any network requests
+  
+  -s, --support-info    Send telemetry and display Support Information
+                        Automatically enables telemetry (bypasses consent prompt)
+                        Shows Instance ID and Support Token for diagnostic purposes
+                        Use this when requesting help from PECU support team
+                        Note: When using with curl, use: bash <(curl -sL URL) -- -s
   
   -h, --help            Display this help message
 
@@ -179,6 +219,15 @@ Examples:
   
   # Enable verbose telemetry logging
   ./pecu_release_selector.sh -v
+  
+  # Preview telemetry JSON without sending
+  ./pecu_release_selector.sh -j
+  
+  # Send telemetry and display support information
+  ./pecu_release_selector.sh -s
+  
+  # One-liner for remote execution with support info (note the -- separator)
+  bash <(curl -sL https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/refs/heads/main/scripts/pecu_release_selector.sh) -- -s
   
   # Combine options
   ./pecu_release_selector.sh -l -v
@@ -298,6 +347,59 @@ box_double() {
 hr() { printf '%s\n' "$(repeat '─' "$(cols)")"; }
 
 # ── instance ID & support footer ─────────────────────────────────────────────
+# ── usage tracking helper ────────────────────────────────────────────────────
+# Usage counter pattern:
+#   Call pecu_usage_increment <counter_name> when operation succeeds
+#   Call pecu_usage_error <error_type> when operation fails
+# Examples:
+#   pecu_usage_increment repo_actions           # After fixing repos
+#   pecu_usage_increment gpu_passthrough        # After configuring GPU passthrough
+#   pecu_usage_increment kernel_tweaks          # After applying kernel parameters
+#   pecu_usage_increment templates_validate     # After validating a VM template
+#   pecu_usage_increment templates_apply        # After applying a VM template
+#   pecu_usage_increment rollback               # After performing a rollback
+#   pecu_usage_error repo_network_error         # When apt-get update fails
+#   pecu_usage_error repo_write_failed          # When repository file write fails
+#   pecu_usage_error repo_permission_denied     # When lacking sudo/root access
+pecu_usage_increment() {
+  local counter_name="$1"
+  case "$counter_name" in
+    repo_actions)
+      ((usage_repo_actions++))
+      ((last_run_actions_total++))
+      ;;
+    gpu_passthrough)
+      ((usage_gpu_passthrough_runs++))
+      ((last_run_actions_total++))
+      ;;
+    kernel_tweaks)
+      ((usage_kernel_tweaks_runs++))
+      ((last_run_actions_total++))
+      ;;
+    templates_validate)
+      ((usage_vm_templates_validate++))
+      ((last_run_actions_total++))
+      ;;
+    templates_apply)
+      ((usage_vm_templates_apply++))
+      ((last_run_actions_total++))
+      ;;
+    rollback)
+      ((usage_rollback_runs++))
+      ((last_run_actions_total++))
+      ;;
+    *)
+      log_telemetry_event "UNKNOWN_COUNTER" "Unknown counter: $counter_name"
+      ;;
+  esac
+}
+
+pecu_usage_error() {
+  local error_code="$1"
+  ((last_run_actions_failed++))
+  last_run_last_error="$error_code"
+}
+
 get_pecu_instance_id() {
   local dir="${XDG_CONFIG_HOME:-$HOME/.config}/pecu"
   local id_file="$dir/instance.id"
@@ -522,27 +624,32 @@ check_telemetry_consent() {
       echo -e "${C}║${NC}  ${B}PECU Anonymous Usage Statistics${NC}                         ${C}║${NC}" >&2
       echo -e "${C}╚═══════════════════════════════════════════════════════════════╝${NC}"
       echo ""
-      echo -e "${Y}PECU can send anonymous usage metrics to help improve the software.${NC}"
+      echo -e "${Y}PECU will send anonymous usage and environment metrics to help improve the software.${NC}"
+      echo -e "${Y}This can be disabled at any time.${NC}"
       echo ""
       echo -e "${G}Data collected:${NC}"
       echo -e "  • Instance ID (random UUID, no personal info)"
       echo -e "  • PECU version, channel, and selector version"
+      echo -e "  • Usage profile (homelab/commercial/corporate/educational/other)"
+      echo -e "  • Feature usage counters (aggregated, no configuration details)"
       echo -e "  • OS, distro, architecture, kernel, init system"
-      echo -e "  • Proxmox VE version, cluster status, VM/container counts"
+      echo -e "  • Proxmox VE: version, cluster, VM/container counts, subscription mode, HA"
       echo -e "  • CPU: model, vendor, cores, threads, sockets, virtualization"
       echo -e "  • RAM total and swap usage (MB)"
       echo -e "  • GPU: count, vendor, model, VRAM, passthrough config"
-      echo -e "  • Storage: ZFS/Ceph presence and pool counts"
+      echo -e "  • Storage: ZFS/Ceph presence, pool counts, anonymous storage types"
       echo ""
       echo -e "${R}NOT collected:${NC}"
       echo -e "  • Hostnames, IP addresses, MAC addresses"
       echo -e "  • Usernames or personal identification"
       echo -e "  • Disk space or usage statistics"
-      echo -e "  • VM configurations, file paths, or sensitive data"
+      echo -e "  • VM names, configurations, file paths, or sensitive data"
+      echo -e "  • Storage IDs, pool names, or specific paths"
       echo ""
       echo -e "${Y}Purpose:${NC}"
       echo -e "  • Aggregate usage statistics (installation counts, popular versions)"
       echo -e "  • Hardware compatibility analysis"
+      echo -e "  • Feature usage patterns to prioritize development"
       echo -e "  • Bug detection and performance optimization"
       echo ""
       echo -e "More info: ${L}${SITE}/telemetry${NC}"
@@ -550,13 +657,22 @@ check_telemetry_consent() {
       echo ""
       
       local answer
-      read -rp "Allow sending anonymous usage metrics? [y/N]: " answer || answer="n"
+      read -rp "Allow sending anonymous usage metrics? [Y/n] (default: Yes): " answer || answer=""
       echo ""
       
       mkdir -p "$dir" 2>/dev/null || true
       
       case "${answer,,}" in
-        y|yes)
+        n|no)
+          printf 'disabled' > "$opt_file" 2>/dev/null || true
+          chmod 600 "$opt_file" 2>/dev/null || true
+          log_telemetry_event "CONSENT_DENIED" "User declined telemetry via interactive prompt"
+          echo -e "${Y}Telemetry disabled. You can enable it later by editing: ${C}$opt_file${NC}"
+          echo ""
+          return 1
+          ;;
+        *)
+          # Empty input or y/yes = consent (default is Yes)
           printf 'enabled' > "$opt_file" 2>/dev/null || true
           chmod 600 "$opt_file" 2>/dev/null || true
           log_telemetry_event "CONSENT_GRANTED" "User accepted telemetry via interactive prompt"
@@ -565,14 +681,6 @@ check_telemetry_consent() {
           echo ""
           return 0
           ;;
-        *)
-          printf 'disabled' > "$opt_file" 2>/dev/null || true
-          chmod 600 "$opt_file" 2>/dev/null || true
-          log_telemetry_event "CONSENT_DENIED" "User declined telemetry via interactive prompt"
-          echo -e "${Y}Telemetry disabled. You can enable it later by editing: ${C}$opt_file${NC}"
-          echo ""
-          return 1
-          ;;
       esac
     else
       return 1
@@ -580,6 +688,68 @@ check_telemetry_consent() {
   fi
   
   return 1
+}
+
+get_usage_profile() {
+  local dir="${XDG_CONFIG_HOME:-$HOME/.config}/pecu"
+  local profile_file="$dir/usage.profile"
+  
+  mkdir -p "$dir" 2>/dev/null || true
+  
+  if [[ -f "$profile_file" && -r "$profile_file" ]]; then
+    local profile
+    profile=$(cat "$profile_file" 2>/dev/null | tr -d '\n\r\t ' | tr '[:upper:]' '[:lower:]')
+    case "$profile" in
+      homelab_personal|hosting_commercial|internal_corporate|educational_lab|other)
+        printf '%s' "$profile"
+        return 0
+        ;;
+    esac
+  fi
+  
+  # Ask user interactively if in TTY and no valid profile exists
+  if [[ -t 0 && -t 1 ]]; then
+    echo ""
+    echo -e "${C}╔═══════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${C}║${NC}  ${B}PECU Usage Profile${NC}                                       ${C}║${NC}"
+    echo -e "${C}╚═══════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo -e "${Y}To better understand PECU usage patterns, please select your profile:${NC}"
+    echo ""
+    echo -e "  ${G}1)${NC} homelab_personal     - Personal homelab or self-hosted"
+    echo -e "  ${G}2)${NC} hosting_commercial   - Commercial hosting / service provider"
+    echo -e "  ${G}3)${NC} internal_corporate   - Corporate / enterprise internal IT"
+    echo -e "  ${G}4)${NC} educational_lab      - Educational institution / lab"
+    echo -e "  ${G}5)${NC} other                - Other use case"
+    echo ""
+    
+    local selection
+    read -rp "Select profile [1-5] (default: 1 - homelab_personal): " selection || selection="1"
+    echo ""
+    
+    local profile="homelab_personal"
+    case "${selection}" in
+      1|"") profile="homelab_personal" ;;
+      2) profile="hosting_commercial" ;;
+      3) profile="internal_corporate" ;;
+      4) profile="educational_lab" ;;
+      5) profile="other" ;;
+      *) profile="homelab_personal" ;;
+    esac
+    
+    printf '%s' "$profile" > "$profile_file" 2>/dev/null || true
+    chmod 600 "$profile_file" 2>/dev/null || true
+    
+    echo -e "${G}✓ Usage profile set to: ${profile}${NC}"
+    echo -e "${Y}  You can change this by editing: ${C}$profile_file${NC}"
+    echo ""
+    
+    printf '%s' "$profile"
+    return 0
+  fi
+  
+  # Default fallback
+  printf 'homelab_personal'
 }
 
 log_telemetry_event() {
@@ -706,13 +876,73 @@ send_pecu_telemetry() {
     
     # Count storage definitions
     if [[ -r /etc/pve/storage.cfg ]]; then
-      pve_storage_count=$(grep -c '^[[:space:]]*storage[[:space:]]\+.*' /etc/pve/storage.cfg 2>/dev/null || echo 0)
+      pve_storage_count=$(grep -cE '^[a-z]+:' /etc/pve/storage.cfg 2>/dev/null || echo 0)
     fi
     
     # Cluster detection
     if [[ -r /etc/pve/corosync.conf ]]; then
       pve_cluster="true"
       pve_cluster_nodes=$(grep -c 'node[[:space:]]\+{' /etc/pve/corosync.conf 2>/dev/null || echo 0)
+    fi
+    
+    # --- Enhanced Proxmox metrics ---
+    # Subscription mode detection
+    local pve_subscription_mode="unknown"
+    if [[ -f /etc/apt/sources.list.d/pve-enterprise.list ]]; then
+      if grep -qE '^[^#]*enterprise' /etc/apt/sources.list.d/pve-enterprise.list 2>/dev/null; then
+        pve_subscription_mode="enterprise"
+      fi
+    fi
+    if [[ -f /etc/apt/sources.list.d/pve-no-subscription.list ]]; then
+      if grep -qE '^[^#]*pve-no-subscription' /etc/apt/sources.list.d/pve-no-subscription.list 2>/dev/null; then
+        pve_subscription_mode="no-subscription"
+      fi
+    fi
+    if [[ -f /etc/apt/sources.list.d/pvetest.list ]]; then
+      if grep -qE '^[^#]*pvetest' /etc/apt/sources.list.d/pvetest.list 2>/dev/null; then
+        pve_subscription_mode="test"
+      fi
+    fi
+    
+    # HA detection
+    local pve_ha_enabled="false"
+    if [[ -d /etc/pve/ha ]] && ls /etc/pve/ha/*.cfg &>/dev/null 2>&1; then
+      pve_ha_enabled="true"
+    fi
+    
+    # Storage types detection (anonymous, no IDs or names)
+    local pve_storage_types_raw=""
+    if [[ -r /etc/pve/storage.cfg ]]; then
+      pve_storage_types_raw=$(awk '/^[[:space:]]*type[[:space:]]/ {print $2}' /etc/pve/storage.cfg 2>/dev/null | sort -u | tr '\n' ',' | sed 's/,$//')
+    fi
+    local pve_storage_types="$pve_storage_types_raw"
+    
+    # Root filesystem type detection
+    local rootfs_type="unknown"
+    local root_mount root_fstype
+    root_mount=$(df / 2>/dev/null | tail -1 | awk '{print $1}')
+    root_fstype=$(df -T / 2>/dev/null | tail -1 | awk '{print $2}')
+    
+    if [[ "$root_fstype" == "zfs" ]] || [[ "$root_mount" =~ zfs ]]; then
+      rootfs_type="zfs"
+    elif [[ "$root_fstype" == "btrfs" ]]; then
+      rootfs_type="btrfs"
+    elif [[ "$root_fstype" == "ext4" ]] || [[ "$root_fstype" == "ext3" ]] || [[ "$root_fstype" == "ext2" ]]; then
+      if [[ "$root_mount" =~ /dev/mapper ]]; then
+        rootfs_type="lvm-ext4"
+      else
+        rootfs_type="ext4"
+      fi
+    elif [[ "$root_fstype" == "xfs" ]]; then
+      if [[ "$root_mount" =~ /dev/mapper ]]; then
+        rootfs_type="lvm-xfs"
+      else
+        rootfs_type="xfs"
+      fi
+    elif [[ "$root_mount" =~ /dev/mapper ]]; then
+      rootfs_type="lvm"
+    else
+      rootfs_type="$root_fstype"
     fi
   fi
   
@@ -879,6 +1109,10 @@ send_pecu_telemetry() {
     fi
   fi
   
+  # --- Get usage profile ---
+  local usage_profile
+  usage_profile=$(get_usage_profile)
+  
   local payload jq_error
   
   jq_error=$(mktemp)
@@ -886,6 +1120,7 @@ send_pecu_telemetry() {
     --arg instance_id "$instance_id" \
     --arg pecu_version "${TAG:-unknown}" \
     --arg pecu_channel "${CHN:-unknown}" \
+    --arg usage_profile "$usage_profile" \
     --arg os "$os" \
     --arg arch "$arch" \
     --arg kernel "$kernel" \
@@ -901,6 +1136,10 @@ send_pecu_telemetry() {
     --arg pve_qemu_count "$pve_qemu_count" \
     --arg pve_lxc_count "$pve_lxc_count" \
     --arg pve_storage_count "$pve_storage_count" \
+    --arg pve_subscription_mode "${pve_subscription_mode:-unknown}" \
+    --arg pve_ha_enabled "${pve_ha_enabled:-false}" \
+    --arg rootfs_type "${rootfs_type:-unknown}" \
+    --arg pve_storage_types "${pve_storage_types:-}" \
     --arg cpu_model "$cpu_model" \
     --arg cpu_vendor "$cpu_vendor" \
     --arg cpu_cores "$cpu_cores" \
@@ -927,6 +1166,15 @@ send_pecu_telemetry() {
     --arg gpu_vram_max_mb "$gpu_vram_max_mb" \
     --arg gpu_vram_avg_mb "$gpu_vram_avg_mb" \
     --arg gpu_vram_known_count "$gpu_vram_known_count" \
+    --arg usage_repo_actions "$usage_repo_actions" \
+    --arg usage_gpu_passthrough_runs "$usage_gpu_passthrough_runs" \
+    --arg usage_kernel_tweaks_runs "$usage_kernel_tweaks_runs" \
+    --arg usage_vm_templates_validate "$usage_vm_templates_validate" \
+    --arg usage_vm_templates_apply "$usage_vm_templates_apply" \
+    --arg usage_rollback_runs "$usage_rollback_runs" \
+    --arg last_run_actions_total "$last_run_actions_total" \
+    --arg last_run_actions_failed "$last_run_actions_failed" \
+    --arg last_run_last_error "$last_run_last_error" \
     '
     def to_bool: (. == "true" or . == "1");
     def to_int: (try tonumber catch 0);
@@ -935,6 +1183,7 @@ send_pecu_telemetry() {
       instance_id: $instance_id,
       pecu_version: $pecu_version,
       pecu_channel: $pecu_channel,
+      usage_profile: $usage_profile,
       os: $os,
       arch: $arch,
       kernel: $kernel,
@@ -950,6 +1199,10 @@ send_pecu_telemetry() {
       pve_qemu_count: ($pve_qemu_count | to_int),
       pve_lxc_count: ($pve_lxc_count | to_int),
       pve_storage_count: ($pve_storage_count | to_int),
+      pve_subscription_mode: $pve_subscription_mode,
+      pve_ha_enabled: ($pve_ha_enabled | to_bool),
+      rootfs_type: $rootfs_type,
+      pve_storage_types: $pve_storage_types,
       cpu_model: $cpu_model,
       cpu_vendor: $cpu_vendor,
       cpu_cores: ($cpu_cores | to_int),
@@ -975,7 +1228,16 @@ send_pecu_telemetry() {
       gpu_vram_min_mb: ($gpu_vram_min_mb | to_int),
       gpu_vram_max_mb: ($gpu_vram_max_mb | to_int),
       gpu_vram_avg_mb: ($gpu_vram_avg_mb | to_int),
-      gpu_vram_known_count: ($gpu_vram_known_count | to_int)
+      gpu_vram_known_count: ($gpu_vram_known_count | to_int),
+      usage_repo_actions: ($usage_repo_actions | to_int),
+      usage_gpu_passthrough_runs: ($usage_gpu_passthrough_runs | to_int),
+      usage_kernel_tweaks_runs: ($usage_kernel_tweaks_runs | to_int),
+      usage_vm_templates_validate: ($usage_vm_templates_validate | to_int),
+      usage_vm_templates_apply: ($usage_vm_templates_apply | to_int),
+      usage_rollback_runs: ($usage_rollback_runs | to_int),
+      last_run_actions_total: ($last_run_actions_total | to_int),
+      last_run_actions_failed: ($last_run_actions_failed | to_int),
+      last_run_last_error: $last_run_last_error
     }
     | with_entries(select(.value != "" and .value != null))
     ' 2>"$jq_error") || {
@@ -989,6 +1251,60 @@ send_pecu_telemetry() {
   
   if ! echo "$payload" | jq -e . >/dev/null 2>&1; then
     log_telemetry_event "PAYLOAD_INVALID" "Generated payload is not valid JSON"
+    return 0
+  fi
+
+  # JSON preview mode: save to file and display with pager
+  if [[ "${PECU_JSON_PREVIEW:-false}" == "true" ]]; then
+    local preview_dir="$HOME/.config/pecu"
+    local preview_file="$preview_dir/telemetry-preview.json"
+    local timestamp=$(date +"%Y-%m-%d %H:%M:%S")
+    
+    # Ensure directory exists
+    mkdir -p "$preview_dir" 2>/dev/null || true
+    
+    # Save formatted JSON to file with header
+    {
+      echo "# PECU Telemetry JSON Preview"
+      echo "# Generated: $timestamp"
+      echo "# Endpoint: $TELEMETRY_ENDPOINT"
+      echo "# Preview mode - no data transmitted"
+      echo ""
+      echo "$payload" | jq '.' 2>/dev/null || echo "$payload"
+    } > "$preview_file" 2>/dev/null
+    
+    echo -e "${G}═══════════════════════════════════════════════════════════════════${NC}"
+    echo -e "${G}  PECU Telemetry JSON Preview${NC}"
+    echo -e "${G}═══════════════════════════════════════════════════════════════════${NC}"
+    echo ""
+    echo -e "${C}✓ JSON saved to: ${W}$preview_file${NC}"
+    echo -e "${Y}  Endpoint: $TELEMETRY_ENDPOINT${NC}"
+    echo -e "${Y}  Preview mode - no data transmitted${NC}"
+    echo ""
+    echo -e "${G}Opening JSON in pager for review...${NC}"
+    echo -e "${G}(Use arrow keys to navigate, 'q' to exit, you can select and copy text)${NC}"
+    echo ""
+    sleep 1
+    
+    # Display with pager for easy navigation and copying
+    if command -v less &>/dev/null; then
+      echo "$payload" | jq -C '.' 2>/dev/null | less -R +Gg || less "$preview_file"
+    else
+      # Fallback if less not available - use more or cat
+      if command -v more &>/dev/null; then
+        echo "$payload" | jq '.' 2>/dev/null | more || more "$preview_file"
+      else
+        echo "$payload" | jq '.' 2>/dev/null || cat "$preview_file"
+      fi
+    fi
+    
+    echo ""
+    echo -e "${G}═══════════════════════════════════════════════════════════════════${NC}"
+    echo -e "${C}JSON preview saved at: ${W}$preview_file${NC}"
+    echo -e "${G}You can review it anytime with: ${W}cat $preview_file | jq .${NC}"
+    echo -e "${G}═══════════════════════════════════════════════════════════════════${NC}"
+    
+    log_telemetry_event "JSON_PREVIEW" "Saved and displayed telemetry JSON preview: $preview_file"
     return 0
   fi
 
@@ -1073,9 +1389,56 @@ send_pecu_telemetry() {
     if [[ "$http_code" =~ ^2[0-9]{2}$ ]]; then
       echo -e "${G}✓ Telemetry sent successfully${NC}" >&2
       log_telemetry_event "SENT_SUCCESS" "HTTP $http_code - version=${TAG:-unknown} cpu=$cpu_vendor/${cpu_cores}c/${cpu_threads}t gpu=${gpu_count}x${gpu_vendor} ram=${total_ram_mb}MB proxmox=$proxmox_detected"
+      
+      # Display support information if in support mode
+      if [[ "${PECU_SUPPORT_MODE:-false}" == "true" ]]; then
+        local support_token
+        support_token=$(echo "$instance_id" | cut -c1-4 | tr '[:lower:]' '[:upper:]')-$(echo "$instance_id" | cut -c5-8 | tr '[:lower:]' '[:upper:]')-$(echo "$instance_id" | cut -c9-12 | tr '[:lower:]' '[:upper:]')
+        
+        echo "" >&2
+        echo -e "${G}═══════════════════════════════════════════════════════════════════${NC}" >&2
+        echo -e "${G}  PECU Support Information${NC}" >&2
+        echo -e "${G}═══════════════════════════════════════════════════════════════════${NC}" >&2
+        echo "" >&2
+        echo -e "${C}Instance ID:${NC}" >&2
+        echo -e "  ${W}$instance_id${NC}" >&2
+        echo "" >&2
+        echo -e "${C}Support Token:${NC}" >&2
+        echo -e "  ${B}PECU-$support_token${NC}" >&2
+        echo "" >&2
+        echo -e "${Y}Please provide the Support Token above to the PECU support team.${NC}" >&2
+        echo "" >&2
+        echo -e "${C}System Summary:${NC}" >&2
+        echo -e "  Version:  ${W}${TAG:-unknown}${NC}" >&2
+        echo -e "  Channel:  ${W}${CHN:-unknown}${NC}" >&2
+        echo -e "  Profile:  ${W}$usage_profile${NC}" >&2
+        echo -e "  Proxmox:  ${W}$pve_version${NC} (detected: $proxmox_detected)" >&2
+        echo "" >&2
+        echo -e "${G}═══════════════════════════════════════════════════════════════════${NC}" >&2
+        echo "" >&2
+        
+        log_telemetry_event "SUPPORT_INFO_DISPLAYED" "token=PECU-$support_token"
+      fi
     else
       echo -e "${R}✗ Telemetry failed (HTTP $http_code)${NC}" >&2
       log_telemetry_event "SENT_FAILED" "HTTP $http_code - endpoint=$TELEMETRY_ENDPOINT"
+      
+      # Show error in support mode
+      if [[ "${PECU_SUPPORT_MODE:-false}" == "true" ]]; then
+        echo "" >&2
+        echo -e "${R}═══════════════════════════════════════════════════════════════════${NC}" >&2
+        echo -e "${R}  Support Information Unavailable${NC}" >&2
+        echo -e "${R}═══════════════════════════════════════════════════════════════════${NC}" >&2
+        echo "" >&2
+        echo -e "${Y}Telemetry could not be sent (HTTP $http_code)${NC}" >&2
+        echo -e "${Y}Please check your internet connection and try again.${NC}" >&2
+        echo "" >&2
+        echo -e "${C}Retry command:${NC}" >&2
+        echo -e "  ${W}bash <(curl -sL https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/refs/heads/main/scripts/pecu_release_selector.sh) -s${NC}" >&2
+        echo "" >&2
+        echo -e "${R}═══════════════════════════════════════════════════════════════════${NC}" >&2
+        echo "" >&2
+      fi
     fi
     echo "" >&2
   else
@@ -1087,12 +1450,61 @@ send_pecu_telemetry() {
       --max-time 5 \
       --data "$payload" 2>&1) || true
     
+    http_code=$(echo "$response" | tail -n1 2>/dev/null | grep -E '^[0-9]{3}$' || echo "000")
+    
     if [[ $PECU_TELEMETRY_VERBOSE == true ]]; then
-      http_code=$(echo "$response" | tail -n1 2>/dev/null | grep -E '^[0-9]{3}$' || echo "000")
       if [[ "$http_code" =~ ^2[0-9]{2}$ ]]; then
         log_telemetry_event "SENT_SUCCESS" "HTTP $http_code - version=${TAG:-unknown} cpu=$cpu_vendor/${cpu_cores}c/${cpu_threads}t gpu=${gpu_count}x${gpu_vendor} ram=${total_ram_mb}MB proxmox=$proxmox_detected"
       else
         log_telemetry_event "SENT_FAILED" "HTTP $http_code - endpoint=$TELEMETRY_ENDPOINT"
+      fi
+    fi
+    
+    # Display support information if in support mode (silent mode path)
+    if [[ "${PECU_SUPPORT_MODE:-false}" == "true" ]]; then
+      if [[ "$http_code" =~ ^2[0-9]{2}$ ]]; then
+        echo -e "${G}✓ Telemetry sent successfully${NC}" >&2
+        
+        local support_token
+        support_token=$(echo "$instance_id" | cut -c1-4 | tr '[:lower:]' '[:upper:]')-$(echo "$instance_id" | cut -c5-8 | tr '[:lower:]' '[:upper:]')-$(echo "$instance_id" | cut -c9-12 | tr '[:lower:]' '[:upper:]')
+        
+        echo "" >&2
+        echo -e "${G}═══════════════════════════════════════════════════════════════════${NC}" >&2
+        echo -e "${G}  PECU Support Information${NC}" >&2
+        echo -e "${G}═══════════════════════════════════════════════════════════════════${NC}" >&2
+        echo "" >&2
+        echo -e "${C}Instance ID:${NC}" >&2
+        echo -e "  ${W}$instance_id${NC}" >&2
+        echo "" >&2
+        echo -e "${C}Support Token:${NC}" >&2
+        echo -e "  ${B}PECU-$support_token${NC}" >&2
+        echo "" >&2
+        echo -e "${Y}Please provide the Support Token above to the PECU support team.${NC}" >&2
+        echo "" >&2
+        echo -e "${C}System Summary:${NC}" >&2
+        echo -e "  Version:  ${W}${TAG:-unknown}${NC}" >&2
+        echo -e "  Channel:  ${W}${CHN:-unknown}${NC}" >&2
+        echo -e "  Profile:  ${W}$usage_profile${NC}" >&2
+        echo -e "  Proxmox:  ${W}$pve_version${NC} (detected: $proxmox_detected)" >&2
+        echo "" >&2
+        echo -e "${G}═══════════════════════════════════════════════════════════════════${NC}" >&2
+        echo "" >&2
+        
+        log_telemetry_event "SUPPORT_INFO_DISPLAYED" "token=PECU-$support_token"
+      else
+        echo "" >&2
+        echo -e "${R}═══════════════════════════════════════════════════════════════════${NC}" >&2
+        echo -e "${R}  Support Information Unavailable${NC}" >&2
+        echo -e "${R}═══════════════════════════════════════════════════════════════════${NC}" >&2
+        echo "" >&2
+        echo -e "${Y}Telemetry could not be sent (HTTP $http_code)${NC}" >&2
+        echo -e "${Y}Please check your internet connection and try again.${NC}" >&2
+        echo "" >&2
+        echo -e "${C}Retry command:${NC}" >&2
+        echo -e "  ${W}bash <(curl -sL https://raw.githubusercontent.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/refs/heads/main/scripts/pecu_release_selector.sh) -- -s${NC}" >&2
+        echo "" >&2
+        echo -e "${R}═══════════════════════════════════════════════════════════════════${NC}" >&2
+        echo "" >&2
       fi
     fi
   fi
@@ -1136,22 +1548,39 @@ fix_proxmox_repos() {
     if [[ $IS_ROOT == true ]]; then
       [[ -f /etc/apt/sources.list.d/pve-enterprise.list ]] && sed -i 's/^deb/#deb/' /etc/apt/sources.list.d/pve-enterprise.list 2>/dev/null || true
       [[ -f /etc/apt/sources.list.d/ceph.list ]] && sed -i 's/^deb/#deb/' /etc/apt/sources.list.d/ceph.list 2>/dev/null || true
-      printf "deb http://download.proxmox.com/debian/pve bookworm pve-no-subscription\n" > /etc/apt/sources.list.d/pve-no-subscription.list 2>/dev/null || return 1
-      printf "deb http://download.proxmox.com/debian/ceph-quincy bookworm no-subscription\n" > /etc/apt/sources.list.d/ceph-no-subscription.list 2>/dev/null || return 1
-      apt-get -qq update 2>/dev/null || { echo -e "${Y}Warning: apt-get update failed${NC}"; return 1; }
+      printf "deb http://download.proxmox.com/debian/pve bookworm pve-no-subscription\n" > /etc/apt/sources.list.d/pve-no-subscription.list 2>/dev/null || { pecu_usage_error repo_write_failed; return 1; }
+      printf "deb http://download.proxmox.com/debian/ceph-quincy bookworm no-subscription\n" > /etc/apt/sources.list.d/ceph-no-subscription.list 2>/dev/null || { pecu_usage_error repo_write_failed; return 1; }
+      apt-get -qq update 2>/dev/null || { echo -e "${Y}Warning: apt-get update failed${NC}"; pecu_usage_error repo_network_error; return 1; }
+      pecu_usage_increment repo_actions
     elif [[ $HAS_SUDO == true ]]; then
       [[ -f /etc/apt/sources.list.d/pve-enterprise.list ]] && sudo sed -i 's/^deb/#deb/' /etc/apt/sources.list.d/pve-enterprise.list 2>/dev/null || true
       [[ -f /etc/apt/sources.list.d/ceph.list ]] && sudo sed -i 's/^deb/#deb/' /etc/apt/sources.list.d/ceph.list 2>/dev/null || true
-      printf "deb http://download.proxmox.com/debian/pve bookworm pve-no-subscription\n" | sudo tee /etc/apt/sources.list.d/pve-no-subscription.list >/dev/null 2>&1 || return 1
-      printf "deb http://download.proxmox.com/debian/ceph-quincy bookworm no-subscription\n" | sudo tee /etc/apt/sources.list.d/ceph-no-subscription.list >/dev/null 2>&1 || return 1
-      sudo apt-get -qq update 2>/dev/null || { echo -e "${Y}Warning: apt-get update failed${NC}"; return 1; }
+      printf "deb http://download.proxmox.com/debian/pve bookworm pve-no-subscription\n" | sudo tee /etc/apt/sources.list.d/pve-no-subscription.list >/dev/null 2>&1 || { pecu_usage_error repo_write_failed; return 1; }
+      printf "deb http://download.proxmox.com/debian/ceph-quincy bookworm no-subscription\n" | sudo tee /etc/apt/sources.list.d/ceph-no-subscription.list >/dev/null 2>&1 || { pecu_usage_error repo_write_failed; return 1; }
+      sudo apt-get -qq update 2>/dev/null || { echo -e "${Y}Warning: apt-get update failed${NC}"; pecu_usage_error repo_network_error; return 1; }
+      pecu_usage_increment repo_actions
     else
       echo -e "${Y}Warning: Cannot configure repositories without root privileges or sudo.${NC}"
+      pecu_usage_error repo_permission_denied
       return 1
     fi
   fi
   return 0
 }
+
+# ── Support Mode: Direct telemetry and exit ──────────────────────────────────
+if [[ "${PECU_SUPPORT_MODE:-false}" == "true" ]]; then
+  echo ""
+  echo -e "${G}═══════════════════════════════════════════════════════════════════${NC}"
+  echo -e "${G}  PECU Support Information Generator${NC}"
+  echo -e "${G}═══════════════════════════════════════════════════════════════════${NC}"
+  echo ""
+  echo -e "${Y}Collecting system information and sending telemetry...${NC}"
+  echo ""
+  
+  send_pecu_telemetry
+  exit 0
+fi
 
 banner
 proxmox_hint
