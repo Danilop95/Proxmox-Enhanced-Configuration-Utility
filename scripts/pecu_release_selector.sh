@@ -7,7 +7,7 @@
 #        ██║     ███████╗╚██████╗╚██████╔╝
 #        ╚═╝     ╚══════╝ ╚═════╝ ╚═════╝
 # -----------------------------------------------------------------------------
-#  PECU Release Selector · 2025-12-10
+#  PECU Release Selector · 2025-12-11
 #  Author  : Daniel Puente García — https://github.com/Danilop95
 #  Donate  : https://buymeacoffee.com/danilop95ps
 #  Project : Proxmox Enhanced Configuration Utility (PECU)
@@ -24,6 +24,18 @@
 #  - Fixed: mkdir -p for jq installation to ~/.local/bin
 #  - Fixed: Robust UI functions that don't abort on terminal command failures
 #
+#  New Features (2025-12-11):
+#  - JSON Preview Mode (-j/--json-preview): View telemetry payload without sending
+#  - Support Mode (-s/--support-info): Generate support token for troubleshooting
+#  - Enhanced telemetry metrics: Proxmox subscription mode, HA status, rootfs type
+#  - Improved CPU topology detection (sockets, cores per socket, threads per core)
+#  - GPU VRAM statistics (total, min, max, average across all GPUs)
+#  - Storage types enumeration (anonymous, privacy-preserving)
+#  - Better HMAC signature generation with multiple fallback methods
+#  - Support token display with formatted PECU-XXXX-XXXX-XXXX format
+#  - Telemetry preview saved to ~/.config/pecu/telemetry-preview.json
+#  - Enhanced error handling and retry instructions for support mode
+#
 #  TELEMETRY NOTICE:
 #  This script collects OPTIONAL anonymous usage statistics to improve PECU.
 #  - Data collected: instance_id (random UUID), PECU version/channel, OS/distro,
@@ -32,15 +44,16 @@
 #    GPU (count/vendor/model/VRAM/passthrough), storage tech (ZFS/Ceph),
 #    usage_profile (enum: homelab_personal/hosting_commercial/etc),
 #    coarse usage counters (feature usage aggregates, no config details),
-#    Proxmox subscription mode, HA status, storage types (anonymous).
+#    Proxmox subscription mode, HA status, storage types (anonymous), rootfs type.
 #  - NOT collected: hostnames, IPs, usernames, file paths, disk space/usage,
 #    VM names/configs, storage IDs, pool names, or any personal data.
 #  - Control: Set PECU_TELEMETRY=off to disable, or PECU_TELEMETRY=on to enable.
 #  - Config file: ~/.config/pecu/telemetry.opt (enabled/disabled/auto)
 #  - Interactive prompt: On first run (if TTY), you will be asked once.
+#  - Preview mode: Use -j to see exact JSON payload without sending anything.
+#  - Support mode: Use -s to generate support token and send diagnostic info.
 #  - More info: https://pecu.tools/telemetry (or your configured SITE)
 # -----------------------------------------------------------------------------
-
 set -Eeuo pipefail
 
 # ── colours ──────────────────────────────────────────────────────────────────
@@ -1024,10 +1037,11 @@ send_pecu_telemetry() {
     ceph_present="true"
   fi
   
-  # --- GPU detection and metrics ---
+  # --- GPU detection and metrics (Enhanced Multi-GPU Support) ---
   local gpu_count gpu_vendor gpu_model
   local gpu_nvidia_count gpu_amd_count gpu_intel_count gpu_passthrough_detected
   local gpu_vram_total_mb gpu_vram_min_mb gpu_vram_max_mb gpu_vram_avg_mb gpu_vram_known_count
+  local -a gpu_list_json
   
   gpu_count=0
   gpu_vendor=""
@@ -1041,6 +1055,76 @@ send_pecu_telemetry() {
   gpu_vram_max_mb=0
   gpu_vram_avg_mb=0
   gpu_vram_known_count=0
+  gpu_list_json=()
+  
+  # Function to extract VRAM from PCI device using multiple methods
+  get_gpu_vram_mb() {
+    local pci_addr="$1"
+    local vendor="$2"
+    local vram_mb=0
+    
+    # Method 1: Try nvidia-smi for NVIDIA GPUs (most accurate)
+    if [[ "$vendor" == "NVIDIA" ]] && command -v nvidia-smi &>/dev/null; then
+      local gpu_idx
+      gpu_idx=$(nvidia-smi --query-gpu=pci.bus_id --format=csv,noheader 2>/dev/null | grep -in "${pci_addr^^}" | cut -d: -f1 || echo "")
+      if [[ -n "$gpu_idx" ]]; then
+        gpu_idx=$((gpu_idx - 1))
+        vram_mb=$(nvidia-smi --id=$gpu_idx --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null | tr -d '\r' | head -n1 || echo 0)
+        if [[ "$vram_mb" =~ ^[0-9]+$ ]] && [[ $vram_mb -gt 0 ]]; then
+          echo "$vram_mb"
+          return 0
+        fi
+      fi
+    fi
+    
+    # Method 2: Try sysfs BAR size (works for many GPUs)
+    if [[ -d "/sys/bus/pci/devices/$pci_addr" ]]; then
+      local resource_file="/sys/bus/pci/devices/$pci_addr/resource"
+      if [[ -r "$resource_file" ]]; then
+        # BAR0 or BAR1 usually contains VRAM - get largest BAR
+        local max_bar=0
+        while IFS=' ' read -r start end flags; do
+          if [[ -n "$start" ]] && [[ -n "$end" ]]; then
+            local bar_size=$(( (0x$end - 0x$start + 1) / 1024 / 1024 ))
+            [[ $bar_size -gt $max_bar ]] && max_bar=$bar_size
+          fi
+        done < "$resource_file"
+        if [[ $max_bar -gt 64 ]]; then  # Likely VRAM if > 64MB
+          echo "$max_bar"
+          return 0
+        fi
+      fi
+    fi
+    
+    # Method 3: Try lspci -v to parse memory info
+    if command -v lspci &>/dev/null; then
+      local mem_info
+      mem_info=$(lspci -v -s "$pci_addr" 2>/dev/null | grep -i "Memory.*prefetchable" | head -n1 || true)
+      if [[ -n "$mem_info" ]]; then
+        # Extract size (e.g., "[size=8G]" or "[size=512M]")
+        if [[ "$mem_info" =~ \[size=([0-9]+)G\] ]]; then
+          vram_mb=$((${BASH_REMATCH[1]} * 1024))
+          echo "$vram_mb"
+          return 0
+        elif [[ "$mem_info" =~ \[size=([0-9]+)M\] ]]; then
+          vram_mb=${BASH_REMATCH[1]}
+          echo "$vram_mb"
+          return 0
+        fi
+      fi
+    fi
+    
+    # Method 4: AMD-specific rocm-smi
+    if [[ "$vendor" == "AMD" ]] && command -v rocm-smi &>/dev/null; then
+      vram_mb=$(rocm-smi --showmeminfo vram --csv 2>/dev/null | grep -i "$pci_addr" | awk -F',' '{print $2}' | tr -d ' ' || echo 0)
+      if [[ "$vram_mb" =~ ^[0-9]+$ ]] && [[ $vram_mb -gt 0 ]]; then
+        echo "$vram_mb"
+        return 0
+      fi
+    fi
+    
+    echo "0"
+  }
   
   if command -v lspci &>/dev/null; then
     local gpu_map
@@ -1053,52 +1137,84 @@ send_pecu_telemetry() {
       gpu_amd_count=$(echo "$gpu_map" | grep -ciE 'AMD|Advanced Micro Devices' || echo 0)
       gpu_intel_count=$(echo "$gpu_map" | grep -ci 'Intel' || echo 0)
       
-      local first_gpu
-      first_gpu=$(printf '%s\n' "$gpu_map" | head -n1 || true)
-      gpu_model=$(printf '%s\n' "$first_gpu" | cut -d' ' -f3- || echo "")
-      
-      case "$first_gpu" in
-        *NVIDIA*) gpu_vendor="NVIDIA" ;;
-        *AMD*|*Advanced\ Micro\ Devices*) gpu_vendor="AMD" ;;
-        *Intel*) gpu_vendor="Intel" ;;
-        *) gpu_vendor="Other" ;;
-      esac
-    fi
-  fi
-  
-  if command -v nvidia-smi &>/dev/null; then
-    local nv_vram gpu_vram_list
-    nv_vram=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null | tr -d '\r' || true)
-    
-    if [[ -n "$nv_vram" ]]; then
-      gpu_vram_list=""
-      for v in $nv_vram; do
-        if [[ "$v" =~ ^[0-9]+$ ]]; then
-          gpu_vram_list="$gpu_vram_list $v"
-        fi
-      done
-      
-      if [[ -n "$gpu_vram_list" ]]; then
-        for v in $gpu_vram_list; do
-          if [[ ! "$v" =~ ^[0-9]+$ ]]; then
-            continue
-          fi
-          
-          if [[ $gpu_vram_known_count -eq 0 ]]; then
-            gpu_vram_min_mb=$v
-            gpu_vram_max_mb=$v
-          else
-            [[ $v -lt $gpu_vram_min_mb ]] && gpu_vram_min_mb=$v
-            [[ $v -gt $gpu_vram_max_mb ]] && gpu_vram_max_mb=$v
-          fi
-          
-          gpu_vram_total_mb=$((gpu_vram_total_mb + v))
-          gpu_vram_known_count=$((gpu_vram_known_count + 1))
-        done
+      # Process each GPU individually
+      local gpu_idx=0
+      while IFS= read -r gpu_line; do
+        if [[ -z "$gpu_line" ]]; then continue; fi
         
-        if [[ $gpu_vram_known_count -gt 0 ]]; then
-          gpu_vram_avg_mb=$((gpu_vram_total_mb / gpu_vram_known_count))
+        # Extract PCI address (e.g., "41:00.0")
+        local pci_addr
+        pci_addr=$(echo "$gpu_line" | awk '{print $1}' | tr -d ':')
+        local pci_addr_formatted="0000:$pci_addr"
+        
+        # Extract device name
+        local device_name
+        device_name=$(echo "$gpu_line" | sed 's/^[^ ]* [^:]*: //' | sed 's/ \[.*\]$//' || echo "Unknown")
+        
+        # Determine vendor
+        local vendor="Other"
+        case "$gpu_line" in
+          *NVIDIA*) vendor="NVIDIA" ;;
+          *AMD*|*Advanced\ Micro\ Devices*) vendor="AMD" ;;
+          *Intel*) vendor="Intel" ;;
+          *Matrox*) vendor="Matrox" ;;
+          *ASPEED*) vendor="ASPEED" ;;
+        esac
+        
+        # Extract PCI IDs [vendor:device]
+        local pci_id=""
+        if [[ "$gpu_line" =~ \[([0-9a-f]{4}):([0-9a-f]{4})\] ]]; then
+          pci_id="${BASH_REMATCH[1]}:${BASH_REMATCH[2]}"
         fi
+        
+        # Get VRAM
+        local vram_mb
+        vram_mb=$(get_gpu_vram_mb "$pci_addr_formatted" "$vendor")
+        
+        # Update statistics
+        if [[ "$vram_mb" =~ ^[0-9]+$ ]] && [[ $vram_mb -gt 0 ]]; then
+          if [[ $gpu_vram_known_count -eq 0 ]]; then
+            gpu_vram_min_mb=$vram_mb
+            gpu_vram_max_mb=$vram_mb
+          else
+            [[ $vram_mb -lt $gpu_vram_min_mb ]] && gpu_vram_min_mb=$vram_mb
+            [[ $vram_mb -gt $gpu_vram_max_mb ]] && gpu_vram_max_mb=$vram_mb
+          fi
+          gpu_vram_total_mb=$((gpu_vram_total_mb + vram_mb))
+          gpu_vram_known_count=$((gpu_vram_known_count + 1))
+        fi
+        
+        # Store first GPU info for legacy fields
+        if [[ $gpu_idx -eq 0 ]]; then
+          gpu_vendor="$vendor"
+          gpu_model="$device_name"
+        fi
+        
+        # Build JSON object for this GPU
+        local gpu_json
+        gpu_json=$(jq -nc \
+          --arg idx "$gpu_idx" \
+          --arg pci "$pci_addr" \
+          --arg pci_id "$pci_id" \
+          --arg vendor "$vendor" \
+          --arg model "$device_name" \
+          --arg vram "$vram_mb" \
+          '{
+            index: ($idx | tonumber),
+            pci_address: $pci,
+            pci_id: $pci_id,
+            vendor: $vendor,
+            model: $model,
+            vram_mb: ($vram | tonumber)
+          }' 2>/dev/null || echo '{}')
+        
+        gpu_list_json+=("$gpu_json")
+        gpu_idx=$((gpu_idx + 1))
+      done <<< "$gpu_map"
+      
+      # Calculate average VRAM
+      if [[ $gpu_vram_known_count -gt 0 ]]; then
+        gpu_vram_avg_mb=$((gpu_vram_total_mb / gpu_vram_known_count))
       fi
     fi
   fi
@@ -1114,6 +1230,12 @@ send_pecu_telemetry() {
   usage_profile=$(get_usage_profile)
   
   local payload jq_error
+  
+  # Build GPU list JSON array
+  local gpu_list_json_str="[]"
+  if [[ ${#gpu_list_json[@]} -gt 0 ]]; then
+    gpu_list_json_str=$(printf '%s\n' "${gpu_list_json[@]}" | jq -s '.' 2>/dev/null || echo "[]")
+  fi
   
   jq_error=$(mktemp)
   payload=$(jq -cn \
@@ -1166,6 +1288,7 @@ send_pecu_telemetry() {
     --arg gpu_vram_max_mb "$gpu_vram_max_mb" \
     --arg gpu_vram_avg_mb "$gpu_vram_avg_mb" \
     --arg gpu_vram_known_count "$gpu_vram_known_count" \
+    --argjson gpu_devices "$gpu_list_json_str" \
     --arg usage_repo_actions "$usage_repo_actions" \
     --arg usage_gpu_passthrough_runs "$usage_gpu_passthrough_runs" \
     --arg usage_kernel_tweaks_runs "$usage_kernel_tweaks_runs" \
@@ -1229,6 +1352,7 @@ send_pecu_telemetry() {
       gpu_vram_max_mb: ($gpu_vram_max_mb | to_int),
       gpu_vram_avg_mb: ($gpu_vram_avg_mb | to_int),
       gpu_vram_known_count: ($gpu_vram_known_count | to_int),
+      gpu_devices: $gpu_devices,
       usage_repo_actions: ($usage_repo_actions | to_int),
       usage_gpu_passthrough_runs: ($usage_gpu_passthrough_runs | to_int),
       usage_kernel_tweaks_runs: ($usage_kernel_tweaks_runs | to_int),
