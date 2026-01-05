@@ -1,0 +1,169 @@
+name: PECU Release Channel Badge Sync
+
+on:
+  release:
+    types: [published, edited]
+  schedule:
+    # Every 6 hours (adjust as needed)
+    - cron: "0 */6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pecu-release-channel-badge-sync
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    # Avoid loops only for release-triggered runs caused by the bot itself.
+    if: ${{ github.event_name != 'release' || github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Sync channel badges in release notes
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const core = require("@actions/core");
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const START = "<!-- PECU_CHANNEL_BADGE_START -->";
+            const END   = "<!-- PECU_CHANNEL_BADGE_END -->";
+
+            const palette = {
+              stable:       { label: "Stable",       color: "2E8B57" },
+              beta:         { label: "Beta",         color: "1E90FF" },
+              preview:      { label: "Preview",      color: "F59E0B" },
+              experimental: { label: "Experimental", color: "FF8C00" },
+              nightly:      { label: "Nightly",      color: "8B5CF6" },
+              deprecated:   { label: "Deprecated",   color: "6B7280" },
+            };
+
+            function normalizeChannel(raw) {
+              if (!raw) return null;
+              let v = raw.trim();
+
+              // Common typos / variants
+              const lower = v.toLowerCase();
+              if (lower === "deprecates") v = "Deprecated";
+              if (lower === "depreciated") v = "Deprecated";
+
+              return v;
+            }
+
+            function buildBadgeBlock(channelRaw) {
+              const channelKey = channelRaw.toLowerCase();
+              const picked = palette[channelKey] || { label: channelRaw, color: "6B7280" };
+
+              const labelEnc = encodeURIComponent(picked.label.replace(/\s+/g, " "));
+              const badgeUrl =
+                `https://img.shields.io/badge/PECU%20Channel-${labelEnc}-${picked.color}` +
+                `?style=for-the-badge&logo=github&logoColor=white`;
+
+              return [
+                START,
+                `<p align="center">`,
+                `  <img src="${badgeUrl}" alt="PECU Channel: ${picked.label}">`,
+                `</p>`,
+                END,
+              ].join("\n");
+            }
+
+            function upsertBadge(body, badgeBlock) {
+              const text = body || "";
+
+              const hasMarkers = text.includes(START) && text.includes(END);
+
+              if (hasMarkers) {
+                const re = new RegExp(`${START}[\\s\\S]*?${END}`, "m");
+                return text.replace(re, badgeBlock);
+              }
+
+              // Append at bottom with a divider to keep it visually clean
+              const trimmed = text.replace(/\s+$/g, "");
+              return `${trimmed}\n\n---\n\n${badgeBlock}\n`;
+            }
+
+            function extractChannel(body) {
+              const text = body || "";
+              // Read from anywhere in body (including inside <!-- --> blocks)
+              const match = text.match(/PECU-Channel:\s*([^\n\r]+)/i);
+              if (!match) return null;
+              return normalizeChannel(match[1]);
+            }
+
+            async function processRelease(release) {
+              const body = release.body || "";
+              const channel = extractChannel(body);
+
+              if (!channel) {
+                core.info(`Release ${release.tag_name}: PECU-Channel not found. Skipping.`);
+                return { updated: false, reason: "no-channel" };
+              }
+
+              const badgeBlock = buildBadgeBlock(channel);
+              const nextBody = upsertBadge(body, badgeBlock);
+
+              if (nextBody === body) {
+                core.info(`Release ${release.tag_name}: already up to date.`);
+                return { updated: false, reason: "no-change" };
+              }
+
+              await github.rest.repos.updateRelease({
+                owner,
+                repo,
+                release_id: release.id,
+                body: nextBody,
+              });
+
+              core.info(`Release ${release.tag_name}: updated badge -> ${channel}`);
+              return { updated: true, reason: "updated" };
+            }
+
+            async function listAllReleases() {
+              const releases = [];
+              let page = 1;
+
+              while (true) {
+                const res = await github.rest.repos.listReleases({
+                  owner,
+                  repo,
+                  per_page: 100,
+                  page,
+                });
+
+                if (!res.data || res.data.length === 0) break;
+
+                releases.push(...res.data);
+                if (res.data.length < 100) break;
+                page += 1;
+              }
+
+              return releases;
+            }
+
+            // Mode selection
+            if (context.eventName === "release") {
+              const release = context.payload.release;
+              await processRelease(release);
+              return;
+            }
+
+            // Scheduled / manual: scan everything
+            const releases = await listAllReleases();
+            core.info(`Scanning ${releases.length} releases...`);
+
+            let updatedCount = 0;
+            let skippedNoChannel = 0;
+
+            for (const r of releases) {
+              const result = await processRelease(r);
+              if (result.updated) updatedCount += 1;
+              if (result.reason === "no-channel") skippedNoChannel += 1;
+            }
+
+            core.info(`Done. Updated: ${updatedCount}. Skipped (no channel): ${skippedNoChannel}.`);
