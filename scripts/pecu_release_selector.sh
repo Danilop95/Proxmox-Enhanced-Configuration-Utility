@@ -1665,30 +1665,152 @@ proxmox_hint() {
   fi
 }
 
-fix_proxmox_repos() {
-  if [[ -f /etc/pve/.version ]] && [[ ! -f /etc/apt/sources.list.d/pve-no-subscription.list ]]; then
-    echo -e "${Y}Configuring community repositories for Proxmox (no subscription)…${NC}"
-    
-    if [[ $IS_ROOT == true ]]; then
-      [[ -f /etc/apt/sources.list.d/pve-enterprise.list ]] && sed -i 's/^deb/#deb/' /etc/apt/sources.list.d/pve-enterprise.list 2>/dev/null || true
-      [[ -f /etc/apt/sources.list.d/ceph.list ]] && sed -i 's/^deb/#deb/' /etc/apt/sources.list.d/ceph.list 2>/dev/null || true
-      printf "deb http://download.proxmox.com/debian/pve bookworm pve-no-subscription\n" > /etc/apt/sources.list.d/pve-no-subscription.list 2>/dev/null || { pecu_usage_error repo_write_failed; return 1; }
-      printf "deb http://download.proxmox.com/debian/ceph-quincy bookworm no-subscription\n" > /etc/apt/sources.list.d/ceph-no-subscription.list 2>/dev/null || { pecu_usage_error repo_write_failed; return 1; }
-      apt-get -qq update 2>/dev/null || { echo -e "${Y}Warning: apt-get update failed${NC}"; pecu_usage_error repo_network_error; return 1; }
-      pecu_usage_increment repo_actions
-    elif [[ $HAS_SUDO == true ]]; then
-      [[ -f /etc/apt/sources.list.d/pve-enterprise.list ]] && sudo sed -i 's/^deb/#deb/' /etc/apt/sources.list.d/pve-enterprise.list 2>/dev/null || true
-      [[ -f /etc/apt/sources.list.d/ceph.list ]] && sudo sed -i 's/^deb/#deb/' /etc/apt/sources.list.d/ceph.list 2>/dev/null || true
-      printf "deb http://download.proxmox.com/debian/pve bookworm pve-no-subscription\n" | sudo tee /etc/apt/sources.list.d/pve-no-subscription.list >/dev/null 2>&1 || { pecu_usage_error repo_write_failed; return 1; }
-      printf "deb http://download.proxmox.com/debian/ceph-quincy bookworm no-subscription\n" | sudo tee /etc/apt/sources.list.d/ceph-no-subscription.list >/dev/null 2>&1 || { pecu_usage_error repo_write_failed; return 1; }
-      sudo apt-get -qq update 2>/dev/null || { echo -e "${Y}Warning: apt-get update failed${NC}"; pecu_usage_error repo_network_error; return 1; }
-      pecu_usage_increment repo_actions
-    else
-      echo -e "${Y}Warning: Cannot configure repositories without root privileges or sudo.${NC}"
-      pecu_usage_error repo_permission_denied
-      return 1
-    fi
+# Detect the Debian codename for the running Proxmox VE version.
+# Checks pveversion first, then /etc/os-release as fallback.
+# Outputs: bullseye (PVE 7) | bookworm (PVE 8) | trixie (PVE 9) | bookworm (fallback)
+get_pve_codename() {
+  local major=""
+  if command -v pveversion &>/dev/null; then
+    local pvline
+    pvline="$(pveversion 2>/dev/null | head -n1 || echo "")"
+    major="$(printf '%s\n' "$pvline" | awk -F'[ /]' \
+      '{for(i=1;i<=NF;i++) if($i~/^[0-9]+\.[0-9]+/){split($i,a,".");print a[1];exit}}')"
   fi
+  if [[ -z "$major" ]] && [[ -r /etc/os-release ]]; then
+    local codename
+    codename="$(. /etc/os-release 2>/dev/null && printf '%s' "${VERSION_CODENAME:-}")"
+    [[ -n "$codename" ]] && { printf '%s' "$codename"; return 0; }
+  fi
+  case "$major" in
+    7) printf 'bullseye' ;;
+    8) printf 'bookworm' ;;
+    9) printf 'trixie'   ;;
+    *) printf 'bookworm' ;;
+  esac
+}
+
+# Detect the correct Ceph no-subscription channel for the running PVE version.
+# PVE 7: pacific | PVE 8: reef (current default) | PVE 9: squid | fallback: reef
+get_pve_ceph_channel() {
+  local major=""
+  if command -v pveversion &>/dev/null; then
+    local pvline
+    pvline="$(pveversion 2>/dev/null | head -n1 || echo "")"
+    major="$(printf '%s\n' "$pvline" | awk -F'[ /]' \
+      '{for(i=1;i<=NF;i++) if($i~/^[0-9]+\.[0-9]+/){split($i,a,".");print a[1];exit}}')"
+  fi
+  case "$major" in
+    7) printf 'pacific' ;;
+    8) printf 'reef'    ;;
+    9) printf 'squid'   ;;
+    *) printf 'reef'    ;;
+  esac
+}
+
+# Returns 0 if this host appears to use Ceph (has a ceph config or pveceph installed).
+# The Ceph repo should only be added on hosts that actually run Ceph.
+host_uses_ceph() {
+  [[ -f /etc/pve/ceph.conf ]] || command -v pveceph &>/dev/null
+}
+
+fix_proxmox_repos() {
+  local pve_codename pve_ceph_channel sources_ext pve_sources_file ceph_sources_file
+  pve_codename="$(get_pve_codename)"
+  pve_ceph_channel="$(get_pve_ceph_channel)"
+
+  # Deb822 (.sources) on trixie (PVE 9+); legacy one-line (.list) on older codenames
+  [[ "$pve_codename" == "trixie" ]] && sources_ext="sources" || sources_ext="list"
+  pve_sources_file="/etc/apt/sources.list.d/pve-no-subscription.${sources_ext}"
+  ceph_sources_file="/etc/apt/sources.list.d/ceph-no-subscription.${sources_ext}"
+
+  # Skip if not a Proxmox host, or if community repo is already configured (either format)
+  if [[ ! -f /etc/pve/.version ]] || \
+     [[ -f /etc/apt/sources.list.d/pve-no-subscription.list ]] || \
+     [[ -f /etc/apt/sources.list.d/pve-no-subscription.sources ]]; then
+    return 0
+  fi
+
+  echo -e "${Y}Configuring community repositories for Proxmox (no subscription)…${NC}"
+  echo -e "${Y}  Detected: codename=${pve_codename}, Ceph channel=ceph-${pve_ceph_channel}${NC}"
+  [[ "$sources_ext" == "sources" ]] && \
+    echo -e "${Y}  Format: Deb822 (.sources) — native format for Debian trixie / PVE 9${NC}"
+
+  # Build repo file content (Deb822 stanza for trixie, one-line format for older codenames)
+  local pve_repo_content ceph_repo_content
+  if [[ "$sources_ext" == "sources" ]]; then
+    pve_repo_content="$(printf \
+      'Types: deb\nURIs: http://download.proxmox.com/debian/pve\nSuites: %s\nComponents: pve-no-subscription\n' \
+      "$pve_codename")"
+    ceph_repo_content="$(printf \
+      'Types: deb\nURIs: http://download.proxmox.com/debian/ceph-%s\nSuites: %s\nComponents: no-subscription\n' \
+      "$pve_ceph_channel" "$pve_codename")"
+  else
+    pve_repo_content="$(printf \
+      'deb http://download.proxmox.com/debian/pve %s pve-no-subscription\n' \
+      "$pve_codename")"
+    ceph_repo_content="$(printf \
+      'deb http://download.proxmox.com/debian/ceph-%s %s no-subscription\n' \
+      "$pve_ceph_channel" "$pve_codename")"
+  fi
+
+  if [[ $IS_ROOT == true ]]; then
+    # Disable enterprise repos — handle both legacy .list and Deb822 .sources formats
+    [[ -f /etc/apt/sources.list.d/pve-enterprise.list ]] \
+      && sed -i 's/^deb/#deb/' /etc/apt/sources.list.d/pve-enterprise.list 2>/dev/null || true
+    [[ -f /etc/apt/sources.list.d/ceph.list ]] \
+      && sed -i 's/^deb/#deb/' /etc/apt/sources.list.d/ceph.list 2>/dev/null || true
+    if [[ -f /etc/apt/sources.list.d/pve-enterprise.sources ]]; then
+      if grep -q '^Enabled:' /etc/apt/sources.list.d/pve-enterprise.sources 2>/dev/null; then
+        sed -i 's/^Enabled: *yes/Enabled: no/' \
+          /etc/apt/sources.list.d/pve-enterprise.sources 2>/dev/null || true
+      else
+        sed -i '/^Types:/i Enabled: no' \
+          /etc/apt/sources.list.d/pve-enterprise.sources 2>/dev/null || true
+      fi
+    fi
+    # Write PVE community repo
+    printf '%s\n' "$pve_repo_content" > "$pve_sources_file" \
+      2>/dev/null || { pecu_usage_error repo_write_failed; return 1; }
+    # Write Ceph repo only if this host uses Ceph
+    if host_uses_ceph; then
+      printf '%s\n' "$ceph_repo_content" > "$ceph_sources_file" \
+        2>/dev/null || { pecu_usage_error repo_write_failed; return 1; }
+    fi
+    apt-get -qq update 2>/dev/null \
+      || { echo -e "${Y}Warning: apt-get update failed${NC}"; pecu_usage_error repo_network_error; return 1; }
+    pecu_usage_increment repo_actions
+  elif [[ $HAS_SUDO == true ]]; then
+    # Disable enterprise repos — handle both legacy .list and Deb822 .sources formats
+    [[ -f /etc/apt/sources.list.d/pve-enterprise.list ]] \
+      && sudo sed -i 's/^deb/#deb/' /etc/apt/sources.list.d/pve-enterprise.list 2>/dev/null || true
+    [[ -f /etc/apt/sources.list.d/ceph.list ]] \
+      && sudo sed -i 's/^deb/#deb/' /etc/apt/sources.list.d/ceph.list 2>/dev/null || true
+    if [[ -f /etc/apt/sources.list.d/pve-enterprise.sources ]]; then
+      if grep -q '^Enabled:' /etc/apt/sources.list.d/pve-enterprise.sources 2>/dev/null; then
+        sudo sed -i 's/^Enabled: *yes/Enabled: no/' \
+          /etc/apt/sources.list.d/pve-enterprise.sources 2>/dev/null || true
+      else
+        sudo sed -i '/^Types:/i Enabled: no' \
+          /etc/apt/sources.list.d/pve-enterprise.sources 2>/dev/null || true
+      fi
+    fi
+    # Write PVE community repo
+    printf '%s\n' "$pve_repo_content" | sudo tee "$pve_sources_file" \
+      >/dev/null 2>&1 || { pecu_usage_error repo_write_failed; return 1; }
+    # Write Ceph repo only if this host uses Ceph
+    if host_uses_ceph; then
+      printf '%s\n' "$ceph_repo_content" | sudo tee "$ceph_sources_file" \
+        >/dev/null 2>&1 || { pecu_usage_error repo_write_failed; return 1; }
+    fi
+    sudo apt-get -qq update 2>/dev/null \
+      || { echo -e "${Y}Warning: apt-get update failed${NC}"; pecu_usage_error repo_network_error; return 1; }
+    pecu_usage_increment repo_actions
+  else
+    echo -e "${Y}Warning: Cannot configure repositories without root privileges or sudo.${NC}"
+    pecu_usage_error repo_permission_denied
+    return 1
+  fi
+
   return 0
 }
 
@@ -1893,11 +2015,11 @@ show_releases_and_select() {
   show_premium_teaser
   printf " %-${ID_W}s Exit\n" 0
 
-  # Mostrar Instance ID para soporte
+  # Show Instance ID for support
   local __inst_id
   __inst_id=$(get_pecu_instance_id 2>/dev/null || echo "unknown")
   echo -e "\n${C}Support Instance ID:${NC} ${__inst_id}"
-  echo -e "Incluye este ID si abres una issue: ${L}https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/issues${NC}"
+  echo -e "Include this ID when opening an issue: ${L}https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/issues${NC}"
 
   while :; do
     read -rp $'\nSelect release # (or P for Premium): ' sel
@@ -1963,8 +2085,8 @@ handle_ui_deps_and_execute() {
     "Source:  GitHub" \
     "Instance ID: ${instance_id}"
 
-  echo -e "${C}Tip:${NC} si algo falla, incluye este Instance ID en tu issue para que podamos"
-  echo -e "      localizar rápidamente la telemetría (si está activada) y ayudarte mejor."
+  echo -e "${C}Tip:${NC} if something goes wrong, include this Instance ID in your issue so we can"
+  echo -e "      quickly locate the telemetry (if enabled) and help you more effectively."
   echo ""
 
   read -rp "Press Y to run | any other key to cancel: " ok
