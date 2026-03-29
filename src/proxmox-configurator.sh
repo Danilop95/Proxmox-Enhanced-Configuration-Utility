@@ -452,20 +452,21 @@ repair_vfio_conf() {
 options vfio-pci ids=$ids_csv disable_vga=1
 EOF
     chmod 644 "$repair_tmp"
+    # Validate the temp file BEFORE replacing the live config.
+    if ! validate_vfio_conf "$repair_tmp"; then
+        rm -f "$repair_tmp"
+        whiptail --title "Repair VFIO Config" --msgbox \
+            "PECU generated a repair candidate but it failed validation.\nNo changes were made.\nCheck log:\n$LOG_FILE" 11 70
+        return 1
+    fi
     mv "$repair_tmp" "$VFIO_CONFIG" || {
         rm -f "$repair_tmp"
         log_error "Failed to atomically replace vfio.conf during repair"
         return 1
     }
 
-    if validate_vfio_conf "$VFIO_CONFIG"; then
-        whiptail --title "Repair VFIO Config" --msgbox "vfio.conf repaired and validated successfully." 9 60
-        return 0
-    else
-        whiptail --title "Repair VFIO Config" --msgbox \
-            "PECU rewrote vfio.conf but validation still fails.\nCheck:\n$VFIO_CONFIG\nand log:\n$LOG_FILE" 12 70
-        return 1
-    fi
+    whiptail --title "Repair VFIO Config" --msgbox "vfio.conf repaired and validated successfully." 9 60
+    return 0
 }
 
 # ---------------------------------------------------------
@@ -1496,17 +1497,19 @@ configure_vfio_device_ids() {
 options vfio-pci ids=$ids_csv $extra_opts
 EOF
     chmod 644 "$vfio_tmp"
+    # Validate the temp file BEFORE replacing the live config.
+    # This guarantees the file on disk is never replaced with invalid content.
+    if ! validate_vfio_conf "$vfio_tmp"; then
+        rm -f "$vfio_tmp"
+        whiptail --title "VFIO Config Error" --msgbox \
+            "vfio.conf validation failed before write (generated content is invalid).\nNo changes were made.\n\nCheck log:\n$LOG_FILE" 12 75
+        return 1
+    fi
     mv "$vfio_tmp" "$VFIO_CONFIG" || {
         rm -f "$vfio_tmp"
         log_error "Failed to atomically replace vfio.conf"
         return 1
     }
-
-    if ! validate_vfio_conf "$VFIO_CONFIG"; then
-        whiptail --title "VFIO Config Error" --msgbox \
-            "vfio.conf validation failed.\nPECU created a backup in:\n$BACKUP_DIR\n\nCheck:\n$VFIO_CONFIG\n\nLog:\n$LOG_FILE" 14 75
-        return 1
-    fi
 
     log_success "VFIO device IDs configured: $ids_csv"
 
