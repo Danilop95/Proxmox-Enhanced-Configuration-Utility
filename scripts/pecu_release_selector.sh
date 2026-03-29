@@ -1714,53 +1714,103 @@ host_uses_ceph() {
 }
 
 fix_proxmox_repos() {
-  if [[ -f /etc/pve/.version ]] && [[ ! -f /etc/apt/sources.list.d/pve-no-subscription.list ]]; then
-    local pve_codename pve_ceph_channel
-    pve_codename="$(get_pve_codename)"
-    pve_ceph_channel="$(get_pve_ceph_channel)"
-    echo -e "${Y}Configuring community repositories for Proxmox (no subscription)…${NC}"
-    echo -e "${Y}  Detected: codename=${pve_codename}, Ceph channel=ceph-${pve_ceph_channel}${NC}"
-    # NOTE: On Debian 13 (trixie), apt prefers Deb822 (.sources) format.
-    # This script writes the legacy .list format for compatibility with PVE 7/8/9.
-    # After install you may run: apt modernize-sources
-    if [[ $IS_ROOT == true ]]; then
-      [[ -f /etc/apt/sources.list.d/pve-enterprise.list ]] \
-        && sed -i 's/^deb/#deb/' /etc/apt/sources.list.d/pve-enterprise.list 2>/dev/null || true
-      [[ -f /etc/apt/sources.list.d/ceph.list ]] \
-        && sed -i 's/^deb/#deb/' /etc/apt/sources.list.d/ceph.list 2>/dev/null || true
-      printf "deb http://download.proxmox.com/debian/pve %s pve-no-subscription\n" \
-        "$pve_codename" > /etc/apt/sources.list.d/pve-no-subscription.list \
-        2>/dev/null || { pecu_usage_error repo_write_failed; return 1; }
-      if host_uses_ceph; then
-        printf "deb http://download.proxmox.com/debian/ceph-%s %s no-subscription\n" \
-          "$pve_ceph_channel" "$pve_codename" > /etc/apt/sources.list.d/ceph-no-subscription.list \
-          2>/dev/null || { pecu_usage_error repo_write_failed; return 1; }
-      fi
-      apt-get -qq update 2>/dev/null \
-        || { echo -e "${Y}Warning: apt-get update failed${NC}"; pecu_usage_error repo_network_error; return 1; }
-      pecu_usage_increment repo_actions
-    elif [[ $HAS_SUDO == true ]]; then
-      [[ -f /etc/apt/sources.list.d/pve-enterprise.list ]] \
-        && sudo sed -i 's/^deb/#deb/' /etc/apt/sources.list.d/pve-enterprise.list 2>/dev/null || true
-      [[ -f /etc/apt/sources.list.d/ceph.list ]] \
-        && sudo sed -i 's/^deb/#deb/' /etc/apt/sources.list.d/ceph.list 2>/dev/null || true
-      printf "deb http://download.proxmox.com/debian/pve %s pve-no-subscription\n" \
-        "$pve_codename" | sudo tee /etc/apt/sources.list.d/pve-no-subscription.list \
-        >/dev/null 2>&1 || { pecu_usage_error repo_write_failed; return 1; }
-      if host_uses_ceph; then
-        printf "deb http://download.proxmox.com/debian/ceph-%s %s no-subscription\n" \
-          "$pve_ceph_channel" "$pve_codename" | sudo tee /etc/apt/sources.list.d/ceph-no-subscription.list \
-          >/dev/null 2>&1 || { pecu_usage_error repo_write_failed; return 1; }
-      fi
-      sudo apt-get -qq update 2>/dev/null \
-        || { echo -e "${Y}Warning: apt-get update failed${NC}"; pecu_usage_error repo_network_error; return 1; }
-      pecu_usage_increment repo_actions
-    else
-      echo -e "${Y}Warning: Cannot configure repositories without root privileges or sudo.${NC}"
-      pecu_usage_error repo_permission_denied
-      return 1
-    fi
+  local pve_codename pve_ceph_channel sources_ext pve_sources_file ceph_sources_file
+  pve_codename="$(get_pve_codename)"
+  pve_ceph_channel="$(get_pve_ceph_channel)"
+
+  # Deb822 (.sources) on trixie (PVE 9+); legacy one-line (.list) on older codenames
+  [[ "$pve_codename" == "trixie" ]] && sources_ext="sources" || sources_ext="list"
+  pve_sources_file="/etc/apt/sources.list.d/pve-no-subscription.${sources_ext}"
+  ceph_sources_file="/etc/apt/sources.list.d/ceph-no-subscription.${sources_ext}"
+
+  # Skip if not a Proxmox host, or if community repo is already configured (either format)
+  if [[ ! -f /etc/pve/.version ]] || \
+     [[ -f /etc/apt/sources.list.d/pve-no-subscription.list ]] || \
+     [[ -f /etc/apt/sources.list.d/pve-no-subscription.sources ]]; then
+    return 0
   fi
+
+  echo -e "${Y}Configuring community repositories for Proxmox (no subscription)…${NC}"
+  echo -e "${Y}  Detected: codename=${pve_codename}, Ceph channel=ceph-${pve_ceph_channel}${NC}"
+  [[ "$sources_ext" == "sources" ]] && \
+    echo -e "${Y}  Format: Deb822 (.sources) — native format for Debian trixie / PVE 9${NC}"
+
+  # Build repo file content (Deb822 stanza for trixie, one-line format for older codenames)
+  local pve_repo_content ceph_repo_content
+  if [[ "$sources_ext" == "sources" ]]; then
+    pve_repo_content="$(printf \
+      'Types: deb\nURIs: http://download.proxmox.com/debian/pve\nSuites: %s\nComponents: pve-no-subscription\n' \
+      "$pve_codename")"
+    ceph_repo_content="$(printf \
+      'Types: deb\nURIs: http://download.proxmox.com/debian/ceph-%s\nSuites: %s\nComponents: no-subscription\n' \
+      "$pve_ceph_channel" "$pve_codename")"
+  else
+    pve_repo_content="$(printf \
+      'deb http://download.proxmox.com/debian/pve %s pve-no-subscription\n' \
+      "$pve_codename")"
+    ceph_repo_content="$(printf \
+      'deb http://download.proxmox.com/debian/ceph-%s %s no-subscription\n' \
+      "$pve_ceph_channel" "$pve_codename")"
+  fi
+
+  if [[ $IS_ROOT == true ]]; then
+    # Disable enterprise repos — handle both legacy .list and Deb822 .sources formats
+    [[ -f /etc/apt/sources.list.d/pve-enterprise.list ]] \
+      && sed -i 's/^deb/#deb/' /etc/apt/sources.list.d/pve-enterprise.list 2>/dev/null || true
+    [[ -f /etc/apt/sources.list.d/ceph.list ]] \
+      && sed -i 's/^deb/#deb/' /etc/apt/sources.list.d/ceph.list 2>/dev/null || true
+    if [[ -f /etc/apt/sources.list.d/pve-enterprise.sources ]]; then
+      if grep -q '^Enabled:' /etc/apt/sources.list.d/pve-enterprise.sources 2>/dev/null; then
+        sed -i 's/^Enabled: *yes/Enabled: no/' \
+          /etc/apt/sources.list.d/pve-enterprise.sources 2>/dev/null || true
+      else
+        sed -i '/^Types:/i Enabled: no' \
+          /etc/apt/sources.list.d/pve-enterprise.sources 2>/dev/null || true
+      fi
+    fi
+    # Write PVE community repo
+    printf '%s\n' "$pve_repo_content" > "$pve_sources_file" \
+      2>/dev/null || { pecu_usage_error repo_write_failed; return 1; }
+    # Write Ceph repo only if this host uses Ceph
+    if host_uses_ceph; then
+      printf '%s\n' "$ceph_repo_content" > "$ceph_sources_file" \
+        2>/dev/null || { pecu_usage_error repo_write_failed; return 1; }
+    fi
+    apt-get -qq update 2>/dev/null \
+      || { echo -e "${Y}Warning: apt-get update failed${NC}"; pecu_usage_error repo_network_error; return 1; }
+    pecu_usage_increment repo_actions
+  elif [[ $HAS_SUDO == true ]]; then
+    # Disable enterprise repos — handle both legacy .list and Deb822 .sources formats
+    [[ -f /etc/apt/sources.list.d/pve-enterprise.list ]] \
+      && sudo sed -i 's/^deb/#deb/' /etc/apt/sources.list.d/pve-enterprise.list 2>/dev/null || true
+    [[ -f /etc/apt/sources.list.d/ceph.list ]] \
+      && sudo sed -i 's/^deb/#deb/' /etc/apt/sources.list.d/ceph.list 2>/dev/null || true
+    if [[ -f /etc/apt/sources.list.d/pve-enterprise.sources ]]; then
+      if grep -q '^Enabled:' /etc/apt/sources.list.d/pve-enterprise.sources 2>/dev/null; then
+        sudo sed -i 's/^Enabled: *yes/Enabled: no/' \
+          /etc/apt/sources.list.d/pve-enterprise.sources 2>/dev/null || true
+      else
+        sudo sed -i '/^Types:/i Enabled: no' \
+          /etc/apt/sources.list.d/pve-enterprise.sources 2>/dev/null || true
+      fi
+    fi
+    # Write PVE community repo
+    printf '%s\n' "$pve_repo_content" | sudo tee "$pve_sources_file" \
+      >/dev/null 2>&1 || { pecu_usage_error repo_write_failed; return 1; }
+    # Write Ceph repo only if this host uses Ceph
+    if host_uses_ceph; then
+      printf '%s\n' "$ceph_repo_content" | sudo tee "$ceph_sources_file" \
+        >/dev/null 2>&1 || { pecu_usage_error repo_write_failed; return 1; }
+    fi
+    sudo apt-get -qq update 2>/dev/null \
+      || { echo -e "${Y}Warning: apt-get update failed${NC}"; pecu_usage_error repo_network_error; return 1; }
+    pecu_usage_increment repo_actions
+  else
+    echo -e "${Y}Warning: Cannot configure repositories without root privileges or sudo.${NC}"
+    pecu_usage_error repo_permission_denied
+    return 1
+  fi
+
   return 0
 }
 
