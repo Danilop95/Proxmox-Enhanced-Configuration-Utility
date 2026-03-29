@@ -2015,11 +2015,11 @@ show_releases_and_select() {
   show_premium_teaser
   printf " %-${ID_W}s Exit\n" 0
 
-  # Mostrar Instance ID para soporte
+  # Show Instance ID for support
   local __inst_id
   __inst_id=$(get_pecu_instance_id 2>/dev/null || echo "unknown")
   echo -e "\n${C}Support Instance ID:${NC} ${__inst_id}"
-  echo -e "Incluye este ID si abres una issue: ${L}https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/issues${NC}"
+  echo -e "Include this ID when opening an issue: ${L}https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/issues${NC}"
 
   while :; do
     read -rp $'\nSelect release # (or P for Premium): ' sel
@@ -2085,8 +2085,8 @@ handle_ui_deps_and_execute() {
     "Source:  GitHub" \
     "Instance ID: ${instance_id}"
 
-  echo -e "${C}Tip:${NC} si algo falla, incluye este Instance ID en tu issue para que podamos"
-  echo -e "      localizar rápidamente la telemetría (si está activada) y ayudarte mejor."
+  echo -e "${C}Tip:${NC} if something goes wrong, include this Instance ID in your issue so we can"
+  echo -e "      quickly locate the telemetry (if enabled) and help you more effectively."
   echo ""
 
   read -rp "Press Y to run | any other key to cancel: " ok
