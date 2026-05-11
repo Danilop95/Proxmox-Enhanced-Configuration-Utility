@@ -482,6 +482,43 @@ check_root() {
     fi
 }
 
+is_uint() {
+    [[ "${1:-}" =~ ^[0-9]+$ ]]
+}
+
+validate_int_range_or_msg() {
+    local value="$1"
+    local min="$2"
+    local max="$3"
+    local label="$4"
+
+    if ! is_uint "$value"; then
+        whiptail --title "Invalid Input" --msgbox "$label must be numeric." 8 60
+        return 1
+    fi
+
+    if (( value < min || value > max )); then
+        whiptail --title "Invalid Input" --msgbox "$label must be between $min and $max." 8 60
+        return 1
+    fi
+
+    return 0
+}
+
+validate_template_vmid_or_msg() {
+    validate_int_range_or_msg "$1" 100 999999999 "VM ID"
+}
+
+validate_template_vm_name_or_msg() {
+    local name="$1"
+    if [[ ! "$name" =~ ^[A-Za-z0-9][A-Za-z0-9-]{0,62}$ ]]; then
+        whiptail --title "Invalid Input" --msgbox \
+            "VM name must be 1-63 characters and use only letters, numbers, and hyphens. It must start with a letter or number." 10 75
+        return 1
+    fi
+    return 0
+}
+
 # Check system dependencies
 check_deps() {
     local missing=()
@@ -3045,20 +3082,25 @@ create_vm_templates() {
 create_windows_gaming_template() {
     local vmid name memory cores storage
 
-    vmid=$(whiptail --inputbox "Enter VM ID (100-999):" 8 40 "200" 3>&1 1>&2 2>&3)
+    vmid=$(whiptail --inputbox "Enter VM ID (>=100):" 8 40 "200" 3>&1 1>&2 2>&3)
     [[ -z "$vmid" ]] && return 1
+    validate_template_vmid_or_msg "$vmid" || return 1
 
     name=$(whiptail --inputbox "Enter VM name:" 8 40 "Windows-Gaming" 3>&1 1>&2 2>&3)
     [[ -z "$name" ]] && return 1
+    validate_template_vm_name_or_msg "$name" || return 1
 
     memory=$(whiptail --inputbox "RAM in MB:" 8 40 "16384" 3>&1 1>&2 2>&3)
     [[ -z "$memory" ]] && return 1
+    validate_int_range_or_msg "$memory" 512 1048576 "RAM in MB" || return 1
 
     cores=$(whiptail --inputbox "CPU cores:" 8 40 "8" 3>&1 1>&2 2>&3)
     [[ -z "$cores" ]] && return 1
+    validate_int_range_or_msg "$cores" 1 "$(nproc)" "CPU cores" || return 1
 
     storage=$(whiptail --inputbox "Disk size (GB):" 8 40 "120" 3>&1 1>&2 2>&3)
     [[ -z "$storage" ]] && return 1
+    validate_int_range_or_msg "$storage" 8 65536 "Disk size" || return 1
 
     log_info "Creating Windows Gaming VM template..."
 
@@ -3111,20 +3153,25 @@ create_windows_gaming_template() {
 create_linux_workstation_template() {
     local vmid name memory cores storage
 
-    vmid=$(whiptail --inputbox "Enter VM ID (100-999):" 8 40 "201" 3>&1 1>&2 2>&3)
+    vmid=$(whiptail --inputbox "Enter VM ID (>=100):" 8 40 "201" 3>&1 1>&2 2>&3)
     [[ -z "$vmid" ]] && return 1
+    validate_template_vmid_or_msg "$vmid" || return 1
 
     name=$(whiptail --inputbox "Enter VM name:" 8 40 "Linux-Workstation" 3>&1 1>&2 2>&3)
     [[ -z "$name" ]] && return 1
+    validate_template_vm_name_or_msg "$name" || return 1
 
     memory=$(whiptail --inputbox "RAM in MB:" 8 40 "32768" 3>&1 1>&2 2>&3)
     [[ -z "$memory" ]] && return 1
+    validate_int_range_or_msg "$memory" 512 1048576 "RAM in MB" || return 1
 
     cores=$(whiptail --inputbox "CPU cores:" 8 40 "16" 3>&1 1>&2 2>&3)
     [[ -z "$cores" ]] && return 1
+    validate_int_range_or_msg "$cores" 1 "$(nproc)" "CPU cores" || return 1
 
     storage=$(whiptail --inputbox "Disk size (GB):" 8 40 "200" 3>&1 1>&2 2>&3)
     [[ -z "$storage" ]] && return 1
+    validate_int_range_or_msg "$storage" 8 65536 "Disk size" || return 1
 
     log_info "Creating Linux Workstation VM template..."
 
@@ -3172,20 +3219,25 @@ create_linux_workstation_template() {
 create_media_server_template() {
     local vmid name memory cores storage
 
-    vmid=$(whiptail --inputbox "Enter VM ID (100-999):" 8 40 "202" 3>&1 1>&2 2>&3)
+    vmid=$(whiptail --inputbox "Enter VM ID (>=100):" 8 40 "202" 3>&1 1>&2 2>&3)
     [[ -z "$vmid" ]] && return 1
+    validate_template_vmid_or_msg "$vmid" || return 1
 
     name=$(whiptail --inputbox "Enter VM name:" 8 40 "Media-Server" 3>&1 1>&2 2>&3)
     [[ -z "$name" ]] && return 1
+    validate_template_vm_name_or_msg "$name" || return 1
 
     memory=$(whiptail --inputbox "RAM in MB:" 8 40 "8192" 3>&1 1>&2 2>&3)
     [[ -z "$memory" ]] && return 1
+    validate_int_range_or_msg "$memory" 512 1048576 "RAM in MB" || return 1
 
     cores=$(whiptail --inputbox "CPU cores:" 8 40 "4" 3>&1 1>&2 2>&3)
     [[ -z "$cores" ]] && return 1
+    validate_int_range_or_msg "$cores" 1 "$(nproc)" "CPU cores" || return 1
 
     storage=$(whiptail --inputbox "Disk size (GB):" 8 40 "50" 3>&1 1>&2 2>&3)
     [[ -z "$storage" ]] && return 1
+    validate_int_range_or_msg "$storage" 8 65536 "Disk size" || return 1
 
     log_info "Creating Media Server VM template..."
 
@@ -3237,11 +3289,10 @@ create_custom_template() {
     local vmid name memory cores storage ostype cpu_type
 
     while true; do
-        vmid=$(whiptail --inputbox "Enter VM ID (100-999):" 8 40 "300" 3>&1 1>&2 2>&3)
+        vmid=$(whiptail --inputbox "Enter VM ID (>=100):" 8 40 "300" 3>&1 1>&2 2>&3)
         [[ -z "$vmid" ]] && return 1
 
-        if [[ "$vmid" -lt 100 || "$vmid" -gt 999 ]]; then
-            whiptail --title "Invalid Input" --msgbox "VM ID must be between 100-999." 8 60
+        if ! validate_template_vmid_or_msg "$vmid"; then
             continue
         fi
 
@@ -3254,12 +3305,12 @@ create_custom_template() {
 
     name=$(whiptail --inputbox "Enter VM name:" 8 50 "Custom-Template" 3>&1 1>&2 2>&3)
     [[ -z "$name" ]] && return 1
+    validate_template_vm_name_or_msg "$name" || return 1
 
     while true; do
         memory=$(whiptail --inputbox "RAM in MB (min 512):" 8 50 "4096" 3>&1 1>&2 2>&3)
         [[ -z "$memory" ]] && return 1
-        if [[ "$memory" -lt 512 ]]; then
-            whiptail --title "Invalid Input" --msgbox "Memory must be at least 512 MB." 8 60
+        if ! validate_int_range_or_msg "$memory" 512 1048576 "RAM in MB"; then
             continue
         fi
         break
@@ -3270,8 +3321,7 @@ create_custom_template() {
     while true; do
         cores=$(whiptail --inputbox "CPU cores (max $max_cores):" 8 50 "2" 3>&1 1>&2 2>&3)
         [[ -z "$cores" ]] && return 1
-        if [[ "$cores" -lt 1 || "$cores" -gt "$max_cores" ]]; then
-            whiptail --title "Invalid Input" --msgbox "CPU cores must be between 1-$max_cores." 8 60
+        if ! validate_int_range_or_msg "$cores" 1 "$max_cores" "CPU cores"; then
             continue
         fi
         break
@@ -3279,6 +3329,7 @@ create_custom_template() {
 
     storage=$(whiptail --inputbox "Disk size (GB):" 8 50 "32" 3>&1 1>&2 2>&3)
     [[ -z "$storage" ]] && return 1
+    validate_int_range_or_msg "$storage" 8 65536 "Disk size" || return 1
 
     ostype=$(whiptail --title "OS Type" --menu "Select OS type:" 15 70 4 \
         "l26" "Linux 2.6/3.x/4.x/5.x kernel" \

@@ -73,6 +73,7 @@ Primary use cases:
 Notes:
 - ARM / Raspberry Pi builds of Proxmox are not supported at this time.
 - This project modifies system configuration (boot params, initramfs, modprobe). Review changes and ensure you have console access before applying.
+- The declarative template tooling needs `python3`, `PyYAML`, and `jsonschema` for local validation. A real Proxmox host is required only for non-dry-run `apply`.
 
 ---
 
@@ -124,6 +125,8 @@ All releases ship a `.tar.gz` bundle.
 ```bash
 VERSION="v2026.01.05"  # choose a tag from the Releases page
 wget "https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/releases/download/${VERSION}/PECU-${VERSION#v}.tar.gz"
+wget "https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/releases/download/${VERSION}/SHA256SUMS"
+sha256sum -c SHA256SUMS
 tar -xzf "PECU-${VERSION#v}.tar.gz"
 cd "PECU-${VERSION#v}"
 
@@ -147,6 +150,8 @@ fi
 
 `pecu_release_selector.sh` is an interactive menu that queries GitHub releases/tags and groups them by `PECU-Channel` metadata (Stable, Beta, Preview, Experimental, Nightly). This is intended to keep the list readable and to reduce accidental use of non-stable builds.
 
+Telemetry in the release selector is optional. In interactive mode it is disabled unless you explicitly opt in; it can also be forced off with `PECU_TELEMETRY=off`. Use `--json-preview` to inspect the telemetry payload without sending it.
+
 The legacy selector script (if present) is kept only for compatibility and may be removed in a future release.
 
 ---
@@ -159,20 +164,26 @@ Highlights:
 
 * Declarative YAML templates for common configurations
 * JSON Schema validation
-* CLI management (`templatectl.sh`) with `--dry-run` rendering
+* CLI management (`templatectl.sh`) with render and `apply --dry-run`
+* Safe apply path: commands are executed as argument arrays, not through `eval`
 * Storage pool flexibility (`local-lvm`, `local`, auto-detection)
+* Explicit policy gates for machine pinning and unsafe raw QEMU `args`
 
 Quick usage:
 
 ```bash
 # List available templates
-src/tools/templatectl.sh list --channel Stable
+src/tools/templatectl.sh list --channel Experimental
 
 # Validate all templates
 src/tools/templatectl.sh validate templates/
 
 # Preview commands (safe, no execution)
 src/tools/templatectl.sh render templates/windows/windows-gaming.yaml \
+  --vmid 200 --storage-pool local-lvm
+
+# Preview apply plan (safe, no execution, no Proxmox required)
+src/tools/templatectl.sh apply templates/windows/windows-gaming.yaml \
   --vmid 200 --storage-pool local-lvm --dry-run
 
 # Apply template (creates VM)
@@ -192,7 +203,7 @@ Before reporting a new issue, review the following known topics:
 * APU/iGPU platforms (e.g., AMD Ryzen Phoenix): VFIO binding must be surgical; incorrect binding can include unintended PCI IDs. See #33.
 * Offline/local install path differences: bundle layout can vary between releases; follow the robust offline steps above. See #31.
 * AMD 5700 XT vendor reset: vendor-reset effectiveness depends on model/kernel; tracked as FYI. See #29.
-* Template behavior reports: tracked in #25.
+* Template behavior reports: tracked in #25. Templates are schema-validated and dry-run tested in CI, but non-dry-run `qm apply` still needs validation on real Proxmox storage/network combinations.
 
 Issue tracker: [https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/issues](https://github.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/issues)
 
@@ -252,7 +263,3 @@ If PECU is useful in your workflows and you want to support continued developmen
 ## License
 
 See [LICENSE](LICENSE).
-
-Important: ensure the README license statement matches the repository `LICENSE` file to avoid confusion (e.g., MIT vs GPL-3.0).
-
-```

@@ -14,14 +14,14 @@
 #  
 #  Fixed Issues:
 #  - #18: Handles execution without sudo when running as root
-#  - #19: Improved jq installation with multiple fallback methods
+#  - #19: jq installation restricted to supported package managers
 #  - Better privilege detection and error handling
 #  - GDPR-compliant telemetry with explicit opt-in/opt-out
 #  - Privacy-friendly instance ID (random UUID, no fingerprinting)
 #  - Enhanced local development mode
 #  - Fixed: local variable used outside function scope
 #  - Fixed: Duplicated dependency installation restart block
-#  - Fixed: mkdir -p for jq installation to ~/.local/bin
+#  - Removed unverified direct jq binary installation fallback
 #  - Fixed: Robust UI functions that don't abort on terminal command failures
 #
 #  New Features (2025-12-11):
@@ -637,8 +637,8 @@ check_telemetry_consent() {
       echo -e "${C}║${NC}  ${B}PECU Anonymous Usage Statistics${NC}                         ${C}║${NC}" >&2
       echo -e "${C}╚═══════════════════════════════════════════════════════════════╝${NC}"
       echo ""
-      echo -e "${Y}PECU will send anonymous usage and environment metrics to help improve the software.${NC}"
-      echo -e "${Y}This can be disabled at any time.${NC}"
+      echo -e "${Y}PECU can send anonymous usage and environment metrics to help improve the software.${NC}"
+      echo -e "${Y}This is optional and disabled unless you explicitly opt in.${NC}"
       echo ""
       echo -e "${G}Data collected:${NC}"
       echo -e "  • Instance ID (random UUID, no personal info)"
@@ -670,22 +670,13 @@ check_telemetry_consent() {
       echo ""
       
       local answer
-      read -rp "Allow sending anonymous usage metrics? [Y/n] (default: Yes): " answer || answer=""
+      read -rp "Allow sending anonymous usage metrics? [y/N] (default: No): " answer || answer=""
       echo ""
       
       mkdir -p "$dir" 2>/dev/null || true
       
       case "${answer,,}" in
-        n|no)
-          printf 'disabled' > "$opt_file" 2>/dev/null || true
-          chmod 600 "$opt_file" 2>/dev/null || true
-          log_telemetry_event "CONSENT_DENIED" "User declined telemetry via interactive prompt"
-          echo -e "${Y}Telemetry disabled. You can enable it later by editing: ${C}$opt_file${NC}"
-          echo ""
-          return 1
-          ;;
-        *)
-          # Empty input or y/yes = consent (default is Yes)
+        y|yes)
           printf 'enabled' > "$opt_file" 2>/dev/null || true
           chmod 600 "$opt_file" 2>/dev/null || true
           log_telemetry_event "CONSENT_GRANTED" "User accepted telemetry via interactive prompt"
@@ -693,6 +684,14 @@ check_telemetry_consent() {
           echo -e "${Y}  You can disable it anytime: ${C}PECU_TELEMETRY=off${NC} or edit ${C}$opt_file${NC}"
           echo ""
           return 0
+          ;;
+        *)
+          printf 'disabled' > "$opt_file" 2>/dev/null || true
+          chmod 600 "$opt_file" 2>/dev/null || true
+          log_telemetry_event "CONSENT_DENIED" "User declined telemetry via interactive prompt"
+          echo -e "${Y}Telemetry disabled. You can enable it later by editing: ${C}$opt_file${NC}"
+          echo ""
+          return 1
           ;;
       esac
     else
@@ -1888,29 +1887,8 @@ for pkg in curl jq tar find awk sed; do
       echo -e "${G}Successfully installed $pkg${NC}"
     else
       if [[ "$pkg" == "jq" ]]; then
-        echo -e "${Y}Standard installation failed, trying alternative methods for jq…${NC}"
-        
-        if curl -fsSL "https://github.com/jqlang/jq/releases/latest/download/jq-linux64" -o "$WORKDIR/jq" 2>/dev/null; then
-          chmod +x "$WORKDIR/jq" 2>/dev/null
-          if "$WORKDIR/jq" --version &>/dev/null 2>&1; then
-            if run_as_admin cp "$WORKDIR/jq" /usr/local/bin/jq 2>/dev/null; then
-              echo -e "${G}Successfully installed jq via direct download${NC}"
-              continue
-            fi
-          fi
-        fi
-        
-        echo -e "${Y}Trying user-local installation for jq…${NC}"
-        mkdir -p "$HOME/.local/bin" 2>/dev/null || true
-        if curl -fsSL "https://github.com/jqlang/jq/releases/latest/download/jq-linux64" -o "$HOME/.local/bin/jq" 2>/dev/null; then
-          chmod +x "$HOME/.local/bin/jq" 2>/dev/null
-          if "$HOME/.local/bin/jq" --version &>/dev/null 2>&1; then
-            export PATH="$HOME/.local/bin:$PATH"
-            echo -e "${G}Successfully installed jq to user directory${NC}"
-            continue
-          fi
-        fi
-        
+        echo -e "${R}Failed to install jq with apt-get.${NC}"
+        echo -e "${Y}For security, PECU does not install unverified jq binaries from direct downloads.${NC}"
         if command -v snap &>/dev/null; then
           echo -e "${Y}Trying snap installation for jq…${NC}"
           if run_as_admin snap install jq 2>/dev/null; then
@@ -1919,11 +1897,10 @@ for pkg in curl jq tar find awk sed; do
           fi
         fi
         
-        echo -e "${R}Failed to install jq using all available methods.${NC}"
+        echo -e "${R}Failed to install jq using supported package managers.${NC}"
         echo -e "${Y}You can try installing it manually with one of these commands:${NC}"
         echo -e "  ${C}apt update && apt install jq${NC}"
         echo -e "  ${C}snap install jq${NC}"
-        echo -e "  ${C}wget https://github.com/jqlang/jq/releases/latest/download/jq-linux64 -O /usr/local/bin/jq && chmod +x /usr/local/bin/jq${NC}"
         exit 1
       else
         echo -e "${R}Failed to install $pkg.${NC}"
@@ -1940,10 +1917,7 @@ if ! command -v jq &>/dev/null || ! echo '{}' | jq . &>/dev/null; then
   echo -e "${Y}Please install jq manually using one of these methods:${NC}"
   echo -e "  ${C}# Method 1: Package manager (preferred)${NC}"
   echo -e "  ${C}apt update && apt install jq${NC}"
-  echo -e "  ${C}# Method 2: Direct download${NC}"
-  echo -e "  ${C}wget https://github.com/jqlang/jq/releases/latest/download/jq-linux64 -O /usr/local/bin/jq${NC}"
-  echo -e "  ${C}chmod +x /usr/local/bin/jq${NC}"
-  echo -e "  ${C}# Method 3: Snap (if available)${NC}"
+  echo -e "  ${C}# Method 2: Snap (if available)${NC}"
   echo -e "  ${C}snap install jq${NC}"
   exit 1
 fi
@@ -2094,42 +2068,103 @@ handle_ui_deps_and_execute() {
 
   send_pecu_telemetry
 
+  local RUN_ATTEMPTED=false
+
   run_raw() {
     local rel="$1"; [[ -n "${rel:-}" ]] || return 1
+    [[ "$rel" =~ ^(src/proxmox-configurator\.sh|proxmox-configurator\.sh)$ ]] || return 1
     local url="$RAW/$TAG/$rel"
     if curl -sfIL "$url" &>/dev/null; then
       local runner="$WORKDIR/runner.sh"
       if curl -fsSL "$url" -o "$runner" 2>/dev/null; then
         chmod +x "$runner" 2>/dev/null
-        (set +e; "$runner"; exit 0)
-        return 0
+        RUN_ATTEMPTED=true
+        (set +e; "$runner")
+        return $?
       fi
     fi
     return 1
   }
 
+  is_safe_asset_url() {
+    local url="$1"
+    [[ "$url" =~ ^https://github\.com/Danilop95/Proxmox-Enhanced-Configuration-Utility/releases/download/[^[:space:]]+/[^[:space:]]+\.tar\.gz$ ]]
+  }
+
+  safe_extract_tgz() {
+    local tgz="$1"
+    local dest="$2"
+    local entry
+
+    while IFS= read -r entry; do
+      case "$entry" in
+        /*|../*|*/../*|..|*/..)
+          echo -e "${R}Unsafe tar entry rejected: $entry${NC}" >&2
+          return 1
+          ;;
+      esac
+    done < <(tar -tzf "$tgz" 2>/dev/null)
+
+    tar --no-same-owner --no-same-permissions -xzf "$tgz" -C "$dest" 2>/dev/null
+  }
+
   run_asset() {
     [[ -n "${ASSET:-}" ]] || return 1
+    if ! is_safe_asset_url "$ASSET"; then
+      echo -e "${R}Release asset URL rejected: $ASSET${NC}" >&2
+      return 1
+    fi
+
     local tgz="$WORKDIR/pecu.tgz"
+    local asset_dir="$WORKDIR/asset"
+    mkdir -p "$asset_dir" 2>/dev/null || return 1
+
     curl -fsSL "$ASSET" -o "$tgz" 2>/dev/null || return 1
-    tar -xzf "$tgz" -C "$WORKDIR" 2>/dev/null || return 1
+    safe_extract_tgz "$tgz" "$asset_dir" || return 1
+
     local sh
-    sh=$(find "$WORKDIR" -name proxmox-configurator.sh -type f 2>/dev/null | head -n1 || true)
+    sh=$(find "$asset_dir" \( -path '*/src/proxmox-configurator.sh' -o -name 'proxmox-configurator.sh' \) -type f 2>/dev/null | sort | head -n1 || true)
     [[ -f "${sh:-}" ]] || return 1
     chmod +x "$sh" 2>/dev/null
-    (set +e; "$sh"; exit 0)
-    return 0
+    RUN_ATTEMPTED=true
+    (set +e; "$sh")
+    return $?
   }
 
   echo -e "${G}→ Executing $TAG …${NC}"
-  local START
-  START=$(date +%s)
-  run_raw "src/proxmox-configurator.sh"  || true
-  run_raw "proxmox-configurator.sh"      || true
+  local run_rc=1
 
-  if (( $(date +%s) - START < 3 )); then
-    echo -e "${Y}Script ended quickly — trying packaged asset…${NC}"
-    run_asset || true
+  if run_asset; then
+    run_rc=0
+  else
+    run_rc=$?
+  fi
+
+  if [[ "$RUN_ATTEMPTED" != "true" ]]; then
+    if run_raw "src/proxmox-configurator.sh"; then
+      run_rc=0
+    else
+      run_rc=$?
+    fi
+  fi
+
+  if [[ "$RUN_ATTEMPTED" != "true" ]]; then
+    if run_raw "proxmox-configurator.sh"; then
+      run_rc=0
+    else
+      run_rc=$?
+    fi
+  fi
+
+  if [[ "$RUN_ATTEMPTED" != "true" ]]; then
+    echo -e "${R}Could not download or execute the selected release safely.${NC}" >&2
+    echo -e "${Y}Checked release asset and raw script paths for tag: $TAG${NC}" >&2
+    return 1
+  fi
+
+  if (( run_rc != 0 )); then
+    echo -e "${R}Selected release exited with status $run_rc.${NC}" >&2
+    return "$run_rc"
   fi
   
   echo -e "\n${Y}Execution completed. Press Enter to continue…${NC}"

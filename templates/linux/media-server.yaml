@@ -3,8 +3,8 @@ kind: VMTemplate
 metadata:
   name: media-server
   displayName: "Media Server (UEFI, Q35)"
-  version: "2025.08.06"
-  channel: Stable
+  version: "2026.05.11-exp1"
+  channel: Experimental
   compat:
     proxmox: ["8.x"]
 spec:
@@ -35,5 +35,6 @@ spec:
       bridge: vmbr0
       firewall: true
   policy:
-    allowMachinePin: false
+    allowMachinePin: true
     addUsbRootHub: false
+    allowUnsafeArgs: false
