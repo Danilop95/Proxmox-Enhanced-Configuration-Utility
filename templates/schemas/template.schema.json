@@ -10,18 +10,30 @@
       "type": "object",
       "required": ["name", "version", "channel"],
       "properties": {
-        "name": { "type": "string", "pattern": "^[a-z0-9-]+$" },
-        "displayName": { "type": "string" },
-        "version": { "type": "string" },
+        "name": { "$ref": "#/$defs/templateName" },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]{4}\\.[0-9]{2}\\.[0-9]{2}([.-][A-Za-z0-9]+)?$"
+        },
         "channel": { "enum": ["Stable", "Beta", "Experimental"] },
         "compat": {
           "type": "object",
           "properties": {
             "proxmox": {
               "type": "array",
-              "items": { "type": "string" }
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "pattern": "^[0-9]+\\.x$"
+              }
             }
-          }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
@@ -34,16 +46,49 @@
           "type": "object",
           "required": ["ostype", "cpu", "sockets", "cores", "memoryMiB", "chipset", "bios"],
           "properties": {
-            "ostype": { "type": "string" },
-            "name": { "type": "string", "pattern": "^[a-z0-9-]+$" },
-            "cpu": { "type": "string" },
-            "sockets": { "type": "integer", "minimum": 1 },
-            "cores": { "type": "integer", "minimum": 1 },
-            "memoryMiB": { "type": "integer", "minimum": 256 },
+            "ostype": {
+              "enum": [
+                "l24",
+                "l26",
+                "solaris",
+                "other",
+                "win7",
+                "win8",
+                "win10",
+                "win11",
+                "w2k",
+                "w2k3",
+                "w2k8",
+                "wvista",
+                "wxp"
+              ]
+            },
+            "name": { "$ref": "#/$defs/vmName" },
+            "cpu": { "$ref": "#/$defs/cpuString" },
+            "sockets": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 8
+            },
+            "cores": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 512
+            },
+            "memoryMiB": {
+              "type": "integer",
+              "minimum": 256,
+              "maximum": 1048576
+            },
             "chipset": { "enum": ["q35", "i440fx", "auto"] },
             "bios": { "enum": ["ovmf", "seabios"] },
             "tablet": { "type": "boolean" },
-            "args": { "type": "string" }
+            "args": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[A-Za-z0-9_.,=:+\\-/ ]+$"
+            }
           },
           "additionalProperties": false
         },
@@ -51,13 +96,22 @@
           "type": "object",
           "required": ["pool", "bootdisk"],
           "properties": {
-            "pool": { "enum": ["auto", "local-lvm", "local"] },
+            "pool": {
+              "anyOf": [
+                { "const": "auto" },
+                { "$ref": "#/$defs/storageId" }
+              ]
+            },
             "bootdisk": {
               "type": "object",
               "required": ["bus", "sizeGiB"],
               "properties": {
                 "bus": { "enum": ["scsi", "virtio", "sata", "ide"] },
-                "sizeGiB": { "type": "integer", "minimum": 8 },
+                "sizeGiB": {
+                  "type": "integer",
+                  "minimum": 8,
+                  "maximum": 65536
+                },
                 "format": { "enum": ["raw", "qcow2"] }
               },
               "additionalProperties": false
@@ -66,7 +120,11 @@
               "type": "object",
               "required": ["sizeGiB"],
               "properties": {
-                "sizeGiB": { "type": "integer", "minimum": 1 },
+                "sizeGiB": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 64
+                },
                 "preEnrolledKeys": { "type": "boolean" }
               },
               "additionalProperties": false
@@ -75,7 +133,11 @@
               "type": "object",
               "required": ["sizeGiB", "version"],
               "properties": {
-                "sizeGiB": { "type": "integer", "minimum": 1 },
+                "sizeGiB": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 64
+                },
                 "version": { "enum": ["v2.0"] }
               },
               "additionalProperties": false
@@ -86,12 +148,16 @@
         "network": {
           "type": "array",
           "minItems": 1,
+          "maxItems": 8,
           "items": {
             "type": "object",
             "required": ["model", "bridge"],
             "properties": {
               "model": { "enum": ["virtio", "e1000", "vmxnet3", "rtl8139"] },
-              "bridge": { "type": "string" },
+              "bridge": {
+                "type": "string",
+                "pattern": "^vmbr[0-9]{1,4}$"
+              },
               "firewall": { "type": "boolean" }
             },
             "additionalProperties": false
@@ -99,15 +165,77 @@
         },
         "policy": {
           "type": "object",
-          "required": ["allowMachinePin", "addUsbRootHub"],
+          "required": ["allowMachinePin", "addUsbRootHub", "allowUnsafeArgs"],
           "properties": {
             "allowMachinePin": { "type": "boolean" },
-            "addUsbRootHub": { "type": "boolean" }
+            "addUsbRootHub": { "type": "boolean" },
+            "allowUnsafeArgs": { "type": "boolean" }
           },
           "additionalProperties": false
         }
       },
       "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "spec": {
+            "properties": {
+              "vm": {
+                "required": ["args"],
+                "properties": {
+                  "args": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "spec": {
+            "properties": {
+              "policy": {
+                "required": ["allowUnsafeArgs"],
+                "properties": {
+                  "allowUnsafeArgs": { "const": true }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "templateName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 63,
+      "pattern": "^[a-z0-9][a-z0-9-]{0,62}$"
+    },
+    "vmName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 63,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9-]{0,62}$"
+    },
+    "storageId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$"
+    },
+    "cpuString": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_.+-]+(,[A-Za-z0-9_.+-]+(=[A-Za-z0-9_.:+-]+)?)*$"
     }
   },
   "additionalProperties": false

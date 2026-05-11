@@ -1,199 +1,386 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# qm.sh — traduce un YAML de plantilla P  local efi_size efi_prek tmp_size tmp_ver
-  efi_size="$(yget "$file" '.spec.storage.efi.sizeGiB // 0')"
-  efi_prek="$(yget "$file" '.spec.storage.efi.preEnrolledKeys // false')"
-  tmp_size="$(yget "$file" '.spec.storage.tpm.sizeGiB // 0')"
-  tmp_ver="$(yget "$file" '.spec.storage.tpm.version // ""')" una serie de comandos 'qm'
-# No ejecuta nada: escribe a STDOUT una lista de comandos, uno por línea.
-# Flags:
-#   --file <path.yaml> (obligatorio)
-#   --vmid <id>        (obligatorio)
-#   --storage-pool <auto|local-lvm|local>  (opcional; sobreescribe YAML)
-#   --disk-size <GiB>  (opcional; sobreescribe tamaño de bootdisk)
-#   --dry-run          (ignorado aquí; el renderer siempre es no-ejecutable)
+# qm.sh - renderiza una plantilla PECU como comandos qm seguros.
+#
+# Este renderer no ejecuta nada. Puede emitir:
+#   --format human  comandos shell-quoted para lectura/dry-run
+#   --format json   JSON estructurado con arrays argv para ejecucion segura
 
-have() { command -v "$1" >/dev/null 2>&1; }
-
-die() { echo "ERROR: $*" >&2; exit 1; }
-
-yget() { yq eval "$2" "$1"; }
-
-detect_pool() {
-  # Detección simple: si existe 'local-lvm' con content images, usarlo; si no, 'local'.
-  if have pvesm; then
-    if pvesm status | awk '{print $1,$5}' | grep -qE '^local-lvm .*images'; then
-      echo "local-lvm"; return
-    fi
-    if pvesm status | awk '{print $1,$5}' | grep -qE '^local .*images'; then
-      echo "local"; return
-    fi
-  fi
-  # Fallback conservador
-  echo "local-lvm"
+die() {
+  echo "ERROR: $*" >&2
+  exit 1
 }
 
-ensure_tools() {
-  for t in yq jq awk sed; do
-    command -v "$t" >/dev/null 2>&1 || die "Falta herramienta: $t"
-  done
+command -v python3 >/dev/null 2>&1 || die "Falta herramienta: python3"
+
+python3 - "$@" <<'PY'
+import argparse
+import json
+import os
+import re
+import shlex
+import shutil
+import subprocess
+import sys
+
+try:
+    import yaml
+except Exception as exc:
+    print(f"ERROR: falta Python module PyYAML: {exc}", file=sys.stderr)
+    sys.exit(1)
+
+
+VMID_RE = re.compile(r"^[0-9]+$")
+VM_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9-]{0,62}$")
+STORAGE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$")
+BRIDGE_RE = re.compile(r"^vmbr[0-9]{1,4}$")
+CPU_RE = re.compile(r"^[A-Za-z0-9_.+-]+(,[A-Za-z0-9_.+-]+(=[A-Za-z0-9_.:+-]+)?)*$")
+ARGS_RE = re.compile(r"^[A-Za-z0-9_.,=:+\-/ ]{1,512}$")
+INT_RE = re.compile(r"^[0-9]+$")
+
+OSTYPES = {
+    "l24", "l26", "solaris", "other",
+    "win7", "win8", "win10", "win11", "w2k", "w2k3", "w2k8", "wvista", "wxp",
 }
 
-main() {
-  ensure_tools
+BUS_TYPES = {"scsi", "virtio", "sata", "ide"}
+DISK_FORMATS = {"raw", "qcow2"}
+NIC_MODELS = {"virtio", "e1000", "vmxnet3", "rtl8139"}
 
-  local file="" vmid="" pool_override="" disk_override="" dry="false"
-  while [[ $# -gt 0 ]]; do
-    case "$1" in
-      --file) file="${2:-}"; shift 2;;
-      --vmid) vmid="${2:-}"; shift 2;;
-      --storage-pool) pool_override="${2:-}"; shift 2;;
-      --disk-size) disk_override="${2:-}"; shift 2;;
-      --dry-run) dry="true"; shift 1;;
-      *) die "Flag desconocido: $1";;
-    esac
-  done
-  [[ -f "$file" ]] || die "No existe YAML: $file"
-  [[ -n "$vmid" ]] || die "--vmid obligatorio"
 
-  # Extrae campos
-  local name ostype cpu sockets cores mem bios chipset tablet args
-  name="$(yget "$file" '.spec.vm.name // .metadata.name')"
-  ostype="$(yget "$file" '.spec.vm.ostype')"
-  cpu="$(yget "$file" '.spec.vm.cpu')"
-  sockets="$(yget "$file" '.spec.vm.sockets')"
-  cores="$(yget "$file" '.spec.vm.cores')"
-  mem="$(yget "$file" '.spec.vm.memoryMiB')"
-  bios="$(yget "$file" '.spec.vm.bios')"
-  chipset="$(yget "$file" '.spec.vm.chipset')"
-  tablet="$(yget "$file" '.spec.vm.tablet // false')"
-  args="$(yget "$file" '.spec.vm.args // ""')"
+def die(message):
+    print(f"ERROR: {message}", file=sys.stderr)
+    sys.exit(1)
 
-  local pool yaml_pool bus size format
-  yaml_pool="$(yget "$file" '.spec.storage.pool')"
-  pool="$yaml_pool"
-  [[ -n "$pool_override" ]] && pool="$pool_override"
-  [[ "$pool" == "auto" || -z "$pool" ]] && pool="$(detect_pool)"
 
-  bus="$(yget "$file" '.spec.storage.bootdisk.bus')"
-  size="$(yget "$file" '.spec.storage.bootdisk.sizeGiB')"
-  format="$(yget "$file" '.spec.storage.bootdisk.format // "raw"')"
-  [[ -n "$disk_override" ]] && size="$disk_override"
+def warn(warnings, message):
+    warnings.append(message)
+    print(f"WARN: {message}", file=sys.stderr)
 
-  local efi_size efi_prek tpm_size tmp_ver
-  efi_size="$(yget "$file" '.spec.storage.efi.sizeGiB // 0')"
-  efi_prek="$(yget "$file" '.spec.storage.efi.preEnrolledKeys // false')"
-  tmp_size="$(yget "$file" '.spec.storage.tmp.sizeGiB // 0')"
-  tmp_ver="$(yget "$file" '.spec.storage.tmp.version // ""')"
 
-  local nic_count nic_model nic_bridge nic_fw
-  nic_count="$(yq eval '.spec.network | length' "$file")"
+def load_template(path):
+    with open(path, "r", encoding="utf-8") as fh:
+        data = yaml.safe_load(fh)
+    if not isinstance(data, dict):
+        die(f"Plantilla vacia o invalida: {path}")
+    return data
 
-  local allow_machine add_usb
-  allow_machine="$(yget "$file" '.spec.policy.allowMachinePin')"
-  add_usb="$(yget "$file" '.spec.policy.addUsbRootHub')"
 
-  # Build qm create command as string
-  local create_cmd="qm create ${vmid}"
-  create_cmd+=" --name ${name}"
-  create_cmd+=" --ostype ${ostype}"
-  create_cmd+=" --cpu '${cpu}'"
-  create_cmd+=" --sockets ${sockets}"
-  create_cmd+=" --cores ${cores}"
-  create_cmd+=" --memory ${mem}"
-  create_cmd+=" --scsihw virtio-scsi-single"
+def get(mapping, dotted, default=None):
+    cur = mapping
+    for part in dotted.split("."):
+        if not isinstance(cur, dict) or part not in cur:
+            return default
+        cur = cur[part]
+    return cur
 
-  if [[ "$bios" == "ovmf" ]]; then
-    create_cmd+=" --bios ovmf"
-    # UEFI requiere máquina Q35 habitualmente, pero NO fijamos --machine si policy no lo permite
-  else
-    create_cmd+=" --bios seabios"
-  fi
 
-  if [[ "${tablet}" == "true" ]]; then
-    create_cmd+=" --tablet 1"
-  else
-    create_cmd+=" --tablet 0"
-  fi
+def parse_int(value, field, minimum=None, maximum=None):
+    if isinstance(value, bool):
+        die(f"{field} debe ser numerico")
+    if isinstance(value, int):
+        num = value
+    elif isinstance(value, str) and INT_RE.match(value):
+        num = int(value)
+    else:
+        die(f"{field} debe ser numerico")
 
-  if [[ -n "$args" && "$args" != "null" ]]; then
-    create_cmd+=" --args \"$args\""
-  fi
+    if minimum is not None and num < minimum:
+        die(f"{field} debe ser >= {minimum}")
+    if maximum is not None and num > maximum:
+        die(f"{field} debe ser <= {maximum}")
+    return num
 
-  # Discos: bootdisk
-  # En local-lvm: 'pool:size' sin format
-  # En local (directory): usamos format si es raw o qcow2
-  local disk_arg=""
-  case "$pool" in
-    local-lvm)
-      disk_arg="${pool}:${size}"
-      ;;
-    local)
-      # Para directory storage permitimos format=raw/qcow2
-      disk_arg="${pool}:${size},format=${format}"
-      ;;
-    *)
-      # Para otros storages (si existen), usamos la sintaxis simple
-      disk_arg="${pool}:${size}"
-      ;;
-  esac
 
-  # Mapea bus → <bus>0
-  local bootdisk="${bus}0"
-  create_cmd+=" --${bootdisk} ${disk_arg}"
-  create_cmd+=" --bootdisk ${bus}"
+def parse_bool(value, field, default=None):
+    if value is None:
+        if default is None:
+            die(f"{field} debe ser booleano")
+        return default
+    if not isinstance(value, bool):
+        die(f"{field} debe ser booleano")
+    return value
 
-  # NICs
-  # Añadimos en create para la primera NIC; siguientes con qm set
-  if (( nic_count > 0 )); then
-    nic_model="$(yq eval '.spec.network[0].model' "$file")"
-    nic_bridge="$(yq eval '.spec.network[0].bridge' "$file")"
-    nic_fw="$(yq eval '.spec.network[0].firewall // false' "$file")"
-    local net0="model=${nic_model},bridge=${nic_bridge}"
-    [[ "$nic_fw" == "true" ]] && net0="${net0},firewall=1"
-    create_cmd+=" --net0 ${net0}"
-  fi
 
-  # Output the main create command
-  echo "$create_cmd"
+def validate_vmid(value):
+    if not isinstance(value, str) or not VMID_RE.fullmatch(value):
+        die("--vmid debe ser numerico")
+    vmid = int(value)
+    if vmid < 100 or vmid > 999999999:
+        die("--vmid debe estar entre 100 y 999999999")
+    return str(vmid)
 
-  # 4) NICs adicionales (net1, net2…)
-  if (( nic_count > 1 )); then
-    for i in $(seq 1 $((nic_count-1))); do
-      nic_model="$(yq eval ".spec.network[$i].model" "$file")"
-      nic_bridge="$(yq eval ".spec.network[$i].bridge" "$file")"
-      nic_fw="$(yq eval ".spec.network[$i].firewall // false" "$file")"
-      local neti="model=${nic_model},bridge=${nic_bridge}"
-      [[ "$nic_fw" == "true" ]] && neti="${neti},firewall=1"
-      echo "qm set ${vmid} --net${i} ${neti}"
-    done
-  fi
 
-  # 5) EFI / TPM (si proceden)
-  if [[ "$bios" == "ovmf" && "$efi_size" != "0" ]]; then
-    local efidisk="${pool}:${efi_size}"
-    # pre-enrolled-keys=1 si procede
-    if [[ "$efi_prek" == "true" ]]; then
-      efidisk="${efidisk},pre-enrolled-keys=1"
-    fi
-    echo "qm set ${vmid} --efidisk0 ${efidisk}"
-  fi
+def validate_regex(value, regex, field):
+    if not isinstance(value, str) or not regex.fullmatch(value):
+        die(f"{field} tiene formato inseguro o no soportado: {value!r}")
+    return value
 
-  if [[ "$tmp_size" != "0" && -n "$tmp_ver" ]]; then
-    local tpmarg="${pool}:${tmp_size},version=${tmp_ver}"
-    echo "qm set ${vmid} --tpmstate0 ${tpmarg}"
-  fi
 
-  # 6) Política: machine pin / usb root hub (por defecto NO)
-  if [[ "$allow_machine" != "true" ]]; then
-    # No hacemos nada: evitamos --machine fijo
-    :
-  fi
-  if [[ "$add_usb" == "true" ]]; then
-    # Si el usuario lo forzara explícitamente (no recomendado)
-    echo "qm set ${vmid} --usb0 host=1d6b:0002"
-  fi
-}
+def detect_pool(warnings):
+    pvesm = shutil.which("pvesm")
+    if not pvesm:
+        warn(warnings, "pvesm no esta disponible; usando fallback local-lvm para render no-Proxmox")
+        return "local-lvm"
 
-main "$@"
+    try:
+        proc = subprocess.run(
+            [pvesm, "status", "--content", "images"],
+            check=False,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+        )
+    except OSError:
+        warn(warnings, "no se pudo ejecutar pvesm; usando fallback local-lvm")
+        return "local-lvm"
+
+    if proc.returncode != 0:
+        warn(warnings, "pvesm status fallo; usando fallback local-lvm")
+        return "local-lvm"
+
+    storage_names = []
+    for line in proc.stdout.splitlines()[1:]:
+        parts = line.split()
+        if not parts:
+            continue
+        storage_names.append(parts[0])
+
+    if "local-lvm" in storage_names:
+        return "local-lvm"
+    if "local" in storage_names:
+        return "local"
+
+    warn(warnings, "no se encontro storage images local/local-lvm; usando fallback local-lvm")
+    return "local-lvm"
+
+
+def disk_volume_arg(pool, size_gib, disk_format):
+    if pool == "local":
+        return f"{pool}:{size_gib},format={disk_format}"
+    return f"{pool}:{size_gib}"
+
+
+def efi_volume_arg(pool, size_gib, disk_format, pre_enrolled_keys):
+    parts = [f"{pool}:{size_gib}"]
+    if pool == "local":
+        parts.append(f"format={disk_format}")
+    parts.append("efitype=4m")
+    parts.append(f"pre-enrolled-keys={1 if pre_enrolled_keys else 0}")
+    return ",".join(parts)
+
+
+def tpm_volume_arg(pool, size_gib, version):
+    return f"{pool}:{size_gib},version={version}"
+
+
+def net_arg(nic):
+    model = validate_regex(nic.get("model"), re.compile(r"^(virtio|e1000|vmxnet3|rtl8139)$"), "network.model")
+    bridge = validate_regex(nic.get("bridge"), BRIDGE_RE, "network.bridge")
+    arg = f"{model},bridge={bridge}"
+    if parse_bool(nic.get("firewall"), "network.firewall", default=False):
+        arg += ",firewall=1"
+    return arg
+
+
+def build_commands(data, args):
+    warnings = []
+    vmid = validate_vmid(args.vmid)
+
+    metadata_name = get(data, "metadata.name")
+    vm = get(data, "spec.vm", {})
+    storage = get(data, "spec.storage", {})
+    policy = get(data, "spec.policy", {})
+    network = get(data, "spec.network", [])
+
+    if not isinstance(vm, dict) or not isinstance(storage, dict):
+        die("spec.vm y spec.storage son obligatorios")
+    if not isinstance(policy, dict):
+        die("spec.policy es obligatorio")
+    if not isinstance(network, list) or not network:
+        die("spec.network debe contener al menos una NIC")
+
+    name = vm.get("name") or metadata_name
+    validate_regex(name, VM_NAME_RE, "spec.vm.name")
+
+    ostype = vm.get("ostype")
+    if ostype not in OSTYPES:
+        die(f"spec.vm.ostype no soportado: {ostype!r}")
+
+    cpu = validate_regex(vm.get("cpu"), CPU_RE, "spec.vm.cpu")
+    sockets = parse_int(vm.get("sockets"), "spec.vm.sockets", 1, 8)
+    cores = parse_int(vm.get("cores"), "spec.vm.cores", 1, 512)
+    memory = parse_int(vm.get("memoryMiB"), "spec.vm.memoryMiB", 256, 1048576)
+
+    bios = vm.get("bios")
+    if bios not in {"ovmf", "seabios"}:
+        die(f"spec.vm.bios no soportado: {bios!r}")
+
+    chipset = vm.get("chipset", "auto")
+    if chipset not in {"q35", "i440fx", "auto"}:
+        die(f"spec.vm.chipset no soportado: {chipset!r}")
+
+    allow_machine_pin = parse_bool(policy.get("allowMachinePin"), "spec.policy.allowMachinePin")
+    add_usb_root_hub = parse_bool(policy.get("addUsbRootHub"), "spec.policy.addUsbRootHub")
+    allow_unsafe_args = parse_bool(policy.get("allowUnsafeArgs"), "spec.policy.allowUnsafeArgs")
+
+    raw_args = vm.get("args")
+    if raw_args in (None, "", "null"):
+        raw_args = ""
+    elif not allow_unsafe_args:
+        die("spec.vm.args requiere spec.policy.allowUnsafeArgs: true")
+    else:
+        validate_regex(raw_args, ARGS_RE, "spec.vm.args")
+
+    yaml_pool = storage.get("pool", "auto")
+    if args.storage_pool:
+        pool = args.storage_pool
+    else:
+        pool = yaml_pool
+    if not isinstance(pool, str):
+        die("spec.storage.pool debe ser string")
+    if pool == "auto":
+        pool = detect_pool(warnings)
+    validate_regex(pool, STORAGE_RE, "storage pool")
+
+    bootdisk = storage.get("bootdisk", {})
+    if not isinstance(bootdisk, dict):
+        die("spec.storage.bootdisk es obligatorio")
+
+    bus = bootdisk.get("bus")
+    if bus not in BUS_TYPES:
+        die(f"spec.storage.bootdisk.bus no soportado: {bus!r}")
+    disk_name = f"{bus}0"
+
+    size_value = args.disk_size if args.disk_size else bootdisk.get("sizeGiB")
+    size_gib = parse_int(size_value, "boot disk size", 8, 65536)
+    disk_format = bootdisk.get("format", "raw")
+    if disk_format not in DISK_FORMATS:
+        die(f"spec.storage.bootdisk.format no soportado: {disk_format!r}")
+
+    tablet = "1" if parse_bool(vm.get("tablet"), "spec.vm.tablet", default=False) else "0"
+
+    create = [
+        "qm", "create", vmid,
+        "--name", name,
+        "--ostype", ostype,
+        "--cpu", cpu,
+        "--sockets", str(sockets),
+        "--cores", str(cores),
+        "--memory", str(memory),
+        "--scsihw", "virtio-scsi-single",
+        "--bios", bios,
+        "--tablet", tablet,
+    ]
+
+    if chipset != "auto":
+        if allow_machine_pin:
+            machine = "q35" if chipset == "q35" else "pc"
+            create.extend(["--machine", machine])
+        else:
+            warn(
+                warnings,
+                f"spec.vm.chipset={chipset} no se aplica porque allowMachinePin=false",
+            )
+
+    if raw_args:
+        create.extend(["--args", raw_args])
+
+    create.extend([f"--{disk_name}", disk_volume_arg(pool, size_gib, disk_format)])
+    create.extend(["--bootdisk", disk_name])
+    create.extend(["--net0", net_arg(network[0])])
+
+    commands = [{"argv": create, "description": "create VM"}]
+
+    for idx, nic in enumerate(network[1:], start=1):
+        commands.append(
+            {
+                "argv": ["qm", "set", vmid, f"--net{idx}", net_arg(nic)],
+                "description": f"set net{idx}",
+            }
+        )
+
+    efi = storage.get("efi")
+    if bios == "ovmf" and isinstance(efi, dict):
+        efi_size = parse_int(efi.get("sizeGiB", 0), "spec.storage.efi.sizeGiB", 0, 64)
+        if efi_size > 0:
+            efi_prek = parse_bool(efi.get("preEnrolledKeys"), "spec.storage.efi.preEnrolledKeys", default=False)
+            commands.append(
+                {
+                    "argv": [
+                        "qm", "set", vmid,
+                        "--efidisk0",
+                        efi_volume_arg(pool, efi_size, disk_format, efi_prek),
+                    ],
+                    "description": "set UEFI disk",
+                }
+            )
+    elif bios == "ovmf":
+        warn(warnings, "bios=ovmf sin spec.storage.efi; Proxmox puede crear una VM UEFI incompleta")
+
+    tpm = storage.get("tpm")
+    if isinstance(tpm, dict):
+        tpm_size = parse_int(tpm.get("sizeGiB", 0), "spec.storage.tpm.sizeGiB", 0, 64)
+        tpm_version = tpm.get("version")
+        if tpm_size > 0:
+            if tpm_version != "v2.0":
+                die("spec.storage.tpm.version debe ser v2.0")
+            commands.append(
+                {
+                    "argv": [
+                        "qm", "set", vmid,
+                        "--tpmstate0",
+                        tpm_volume_arg(pool, tpm_size, tpm_version),
+                    ],
+                    "description": "set TPM state",
+                }
+            )
+
+    if add_usb_root_hub:
+        commands.append(
+            {
+                "argv": ["qm", "set", vmid, "--usb0", "host=1d6b:0002"],
+                "description": "set USB root hub",
+            }
+        )
+
+    return {"commands": commands, "warnings": warnings}
+
+
+def emit_human(result):
+    for message in result["warnings"]:
+        print(f"# WARNING: {message}")
+    for command in result["commands"]:
+        desc = command.get("description")
+        if desc:
+            print(f"# {desc}")
+        print(shlex.join(command["argv"]))
+
+
+def main():
+    parser = argparse.ArgumentParser(description="PECU qm renderer")
+    parser.add_argument("--file", required=True)
+    parser.add_argument("--vmid", required=True)
+    parser.add_argument("--storage-pool", default="")
+    parser.add_argument("--disk-size", default="")
+    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--format", choices=["human", "json"], default="human")
+    parsed = parser.parse_args()
+
+    if not os.path.isfile(parsed.file):
+        die(f"No existe YAML: {parsed.file}")
+
+    data = load_template(parsed.file)
+    result = build_commands(data, parsed)
+
+    if parsed.format == "json":
+        json.dump(result, sys.stdout, separators=(",", ":"))
+        print()
+    else:
+        emit_human(result)
+
+
+if __name__ == "__main__":
+    main()
+PY
